@@ -27,8 +27,8 @@ location / {
 ```
 
 Para una instalación rápida es suficiente copiar la estructura de carpetas de JApp al directorio público <br>
-```/home/username/public_html```<br>
-```C:\xampp\htdocs```<br>
+`/home/username/public_html`<br>
+`C:\xampp\htdocs`<br>
 
 ```php
 <?php // index.php
