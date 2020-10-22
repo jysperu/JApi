@@ -530,3 +530,74 @@ if ( ! function_exists('sql_trans'))
 		return exec_app(__FUNCTION__, $do, $conection);
 	}
 }
+
+if ( ! function_exists('map_app_directories'))
+{
+	/**
+	 * map_app_directories ()
+	 * Función que ejecuta una función establecida con todos los directorios de aplicación como parametro
+	 *
+	 * @param $callback Callable Función a ejecutar
+	 * @param $reverse Boolean Indica si la función a ejecutar se hará a la lista invertida
+	 * @return self
+	 */
+	function map_app_directories(callable $callback, $reverse = FALSE)
+	{
+		return exec_app(__FUNCTION__, $callback, $reverse);
+	}
+}
+
+if ( ! function_exists('ResponseAs'))
+{
+	/**
+	 * ResponseAs ()
+	 */
+	function ResponseAs($type, $mime = NULL, $charset = NULL)
+	{
+		return exec_app(__FUNCTION__, $type, $mime, $charset);
+	}
+}
+
+if ( ! function_exists('process_result_message'))
+{
+	/**
+	 * process_result_message ()
+	 */
+	function process_result_message($return_html = false, $clear = TRUE)
+	{
+		return exec_app(__FUNCTION__, $return_html, $clear);
+	}
+}
+
+if ( ! function_exists('response_success'))
+{
+	/**
+	 * response_success ()
+	 */
+	function response_success($message = NULL, $code = NULL)
+	{
+		return exec_app('success', $message, $code);
+	}
+}
+
+if ( ! function_exists('response_error'))
+{
+	/**
+	 * response_error ()
+	 */
+	function response_error($error = NULL, $code = NULL)
+	{
+		return exec_app('error', $error, $code);
+	}
+}
+
+if ( ! function_exists('response_notice'))
+{
+	/**
+	 * response_notice ()
+	 */
+	function response_notice($message = NULL, $code = NULL)
+	{
+		return exec_app('notice', $message, $code);
+	}
+}
