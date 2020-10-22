@@ -398,7 +398,7 @@ if ( ! class_exists('JApi'))
 			$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower($class)) . '.php';
 			$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower(str_replace('-', '_', $class))) . '.php';
 
-			$directories = $this->get_app_directories(true);
+			$directories = $this->get_app_directories();
 
 			foreach($directories as $directory)
 			{
@@ -2824,7 +2824,7 @@ if ( ! class_exists('JApi'))
 		{
 			if (is_null($base))
 			{
-				$_app_directories_list = $this->get_app_directories(true);
+				$_app_directories_list = $this->get_app_directories();
 
 				$base = HOMEPATH;
 				foreach($_app_directories_list as $base_dir)
@@ -4273,6 +4273,65 @@ if ( ! class_exists('JApi'))
 			}
 
 			return TRUE;
+		}
+
+
+		function snippet ($file, $return_content = TRUE, $declared_variables = [])
+		{
+			$directory = dirname($file);
+			$file_name = basename($file, '.php') . '.php';
+
+			if ($directory === '.')
+			{
+				$directory = DS;
+			}
+			elseif ($directory !== '')
+			{
+				$directory = strtr($directory, '/\\', DS.DS);
+				$directory = DS . ltrim($directory, DS);
+			}
+
+			$file_view = null;
+
+			$_app_directories_list = $this->get_app_directories();
+			foreach($_app_directories_list as $base)
+			{
+				$file_view = $base . '/snippets' . $directory . DS . $file_name;
+
+				if (file_exists($file_view))
+				{
+					break;
+				}
+
+				$file_view = null;
+			}
+
+			if (is_null($file_view))
+			{
+				trigger_error('Vista `' . $file . '` no encontrado', E_USER_WARNING);
+				return NULL;
+			}
+
+			if (is_array($return_content))
+			{
+				$declared_variables = (array)$declared_variables;
+				$declared_variables = array_merge($return_content, $declared_variables);
+
+				$return_content = TRUE;
+			}
+
+			if ($return_content)
+			{
+				ob_start();
+				extract($declared_variables, EXTR_REFS);
+				include $file_view;
+				$content = ob_get_contents();
+				ob_end_clean();
+
+				return $content;
+			}
+
+			return $file_view;
 		}
 
 		public function exit($status = NULL)

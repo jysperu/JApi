@@ -755,3 +755,14 @@ if ( ! function_exists('load_js'))
 		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
 	}
 }
+
+if ( ! function_exists('snippet'))
+{
+	/**
+	 * snippet ()
+	 */
+	function snippet($file, $return_content = TRUE, $declared_variables = [])
+	{
+		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
+	}
+}
