@@ -81,7 +81,7 @@ if ( ! class_exists('JApi'))
 
 			if ( ! file_exists($directory) ||  ! is_dir($directory))
 			{
-				@trigger_error('Directorio `' . $_directory . '` no existe', E_USER_WARNING);
+				trigger_error('Directorio `' . $_directory . '` no existe', E_USER_WARNING);
 				return $this;
 			}
 
@@ -109,7 +109,7 @@ if ( ! class_exists('JApi'))
 			$_app_directories = $this->_app_directories;
 			ksort($_app_directories);
 
-			foreach($this->_app_directories as $orden => $directories)
+			foreach($_app_directories as $orden => $directories)
 			{
 				foreach($directories as $directory)
 				{
@@ -169,10 +169,10 @@ if ( ! class_exists('JApi'))
 			$this->is_command() and chdir(COREPATH);
 
 			/** Iniciando el leído del buffer */
-			//ob_start();
+			ob_start();
 
 			/** Iniciando las variables _SESSION */
-			//session_start();
+			session_start();
 
 			/** Añadiendo los directorios de aplicaciones base */
 			$this
@@ -192,6 +192,9 @@ if ( ! class_exists('JApi'))
 			/** Definiendo el handler para cuando finalice el request ya sea con o sin response */
 			register_shutdown_function([$this, '_handler_shutdown']);
 
+			/** Si se abre alguna conección a la base datos, es recomendado cerrarla */
+			$this -> action_add('do_when_end', [$this, 'sql_stop_all']);
+
 			/** Iniciando autoload */
 			spl_autoload_register([$this, '_init_autoload']);
 
@@ -199,27 +202,27 @@ if ( ! class_exists('JApi'))
 
 			/**
 			 * Cargando todos los archivos de funciones
-			 * El orden a recorrer es de mayor a menor para que los directorios de mayor orden puedan crear primero las funciones actualizadas
+			 * El orden a recorrer es de menor a mayor para que los directorios prioritarios puedan crear primero las funciones actualizadas
 			 */
-			-> map_app_directories ([$this, '_init_load_functions'], true)
+			-> map_app_directories ([$this, '_init_load_functions'])
 
 			/**
 			 * Cargando el autoload de la carpeta vendor
-			 * El orden a recorrer es de mayor a menor para que los directoreios de mayor orden puedan cargar sus librerías actualizadas
+			 * El orden a recorrer es de menor a mayor para que los directoreios prioritarios puedan cargar sus librerías actualizadas
 			 */
-			-> map_app_directories ([$this, '_init_load_vendor'], true)
+			-> map_app_directories ([$this, '_init_load_vendor'])
 
 			/**
 			 * Cargando la configuración de la aplicación
-			 * El orden a recorrer es de menor a mayor para que los directorios de mayor orden puedan sobreescribir los de menor orden
+			 * El orden a recorrer es de mayor a menor para que los directorios prioritariosde puedan sobreescribir los por defecto
 			 */
-			-> map_app_directories ([$this, '_init_load_config'], false)
+			-> map_app_directories ([$this, '_init_load_config'], true)
 
 			/**
 			 * Procesando todos los app.php
-			 * El orden a recorrer es de mayor a menor para que los directoreios de mayor orden puedan procesar sus requerimientos primero
+			 * El orden a recorrer es de menor a mayor para que los directoreios prioritarios puedan procesar sus requerimientos primero
 			 */
-			-> map_app_directories ([$this, '_init_load_app'], true)
+			-> map_app_directories ([$this, '_init_load_app'])
 			;
 		}
 
@@ -295,7 +298,7 @@ if ( ! class_exists('JApi'))
 		 */
 		public function _handler_error ($severity, $message, $filepath, $line)
 		{
-			if (($severity & error_reporting()) !== $severity)
+			if (($severity & (E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED)) !== $severity)
 			{
 				return;
 			}
@@ -429,6 +432,8 @@ if ( ! class_exists('JApi'))
 
 			$config =& $this->_config;
 
+			$config = $this->filter_apply('JApi/config', $config, $dir, $_config_file);
+
 			@include_once ($_config_file);
 		}
 
@@ -439,6 +444,8 @@ if ( ! class_exists('JApi'))
 		{
 			$_app_file = $dir . '/app.php';
 			if ( ! file_exists($_app_file)) return;
+
+			$this->action_apply('JApi/app.php', $dir, $_app_file);
 
 			@include_once ($_app_file);
 		}
@@ -517,7 +524,7 @@ if ( ! class_exists('JApi'))
 		{
 			if (empty($key))
 			{
-				@trigger_error('Hook es requerido', E_USER_ERROR);
+				trigger_error('Hook es requerido', E_USER_WARNING);
 				return NULL;
 			}
 
@@ -631,7 +638,7 @@ if ( ! class_exists('JApi'))
 		{
 			if (empty($key))
 			{
-				@trigger_error('Hook es requerido', E_USER_ERROR);
+				trigger_error('Hook es requerido', E_USER_WARNING);
 				return NULL;
 			}
 
@@ -675,7 +682,7 @@ if ( ! class_exists('JApi'))
 		 * @param array|null 	$trace		(Optional) La ruta que tomó la ejecución hasta llegar al error
 		 * @return void
 		 */
-		public function logger ($message, $code = NULL, $severity = NULL, $meta = NULL, $filepath = NULL, $line = NULL, $trace = NULL, $show = TRUE)
+		public function logger ($message, $code = NULL, $severity = NULL, $meta = NULL, $filepath = NULL, $line = NULL, $trace = NULL)
 		{
 			/**
 			 * Listado de Levels de Errores
@@ -702,8 +709,6 @@ if ( ! class_exists('JApi'))
 
 				E_STRICT		    =>	'Runtime Notice'		
 			];
-
-			is_bool($code) and $show = $code and $code = NULL;
 
 			(is_array($severity) and is_null($meta)) and $meta = $severity and $severity = NULL;
 
@@ -766,14 +771,28 @@ if ( ! class_exists('JApi'))
 			if (is_null($trace))
 			{
 				$trace = debug_backtrace(false);
-				if (in_array($trace[0]['function'], ['_handler_exception', '_handler_error']))
-				{
-					array_shift($trace);
-				}
+			}
+
+			if (in_array($trace[0]['function'], ['logger']))
+			{
+				array_shift($trace);
+			}
+
+			if (in_array($trace[0]['function'], ['_handler_exception', '_handler_error']))
+			{
+				array_shift($trace);
+			}
+
+			if (in_array($trace[0]['function'], ['trigger_error']))
+			{
+				array_shift($trace);
 			}
 
 			if (isset($trace[0]))
 			{
+				$filepath === __FILE__ and $line = NULL;
+				$filepath === __FILE__ and $filepath = NULL;
+
 				is_null($filepath) and $filepath = $trace[0]['file'];
 				is_null($line) and $line = $trace[0]['line'];
 
@@ -794,7 +813,7 @@ if ( ! class_exists('JApi'))
 
 			try
 			{
-				$url = url('array');
+				$url = $this->url('array');
 			}
 			catch (\BasicException $e){}
 			catch (\Exception $e){}
@@ -810,7 +829,7 @@ if ( ! class_exists('JApi'))
 
 			try
 			{
-				$ip_address = ip_address('array');
+				$ip_address = $this->ip_address('array');
 			}
 			catch (\BasicException $e){}
 			catch (\Exception $e){}
@@ -826,8 +845,86 @@ if ( ! class_exists('JApi'))
 
 			$meta['cdkdsp'] = isset($_COOKIE['cdkdsp'])  ? $_COOKIE['cdkdsp']  : NULL; // Código de Dispositivo
 
+			$meta['MYSQL_history'] = $this->_MYSQL_history;
+
+			$trace_slim = array_map(function($arr){
+				return $arr['file'] . '#' . $arr['line'];
+			}, $trace);
+			$meta['trace_slim'] = $trace_slim;
+
 			try
 			{
+				$CON_logs = $this->use_CON_logs()->CON_logs; // Conecta la DB de logs en caso de que no esté conectada
+
+				if ($this -> sql_trans('NUMTRANS', $CON_logs) !== 0)
+				{
+					$this -> sql_trans(false, $CON_logs);
+				}
+
+				if ( ! (bool)mysqli_query($CON_logs, 'SELECT * FROM `_logs` LIMIT 0'))
+				{
+					$_tbldb_created = $this -> sql('
+					CREATE TABLE `_logs` (
+						`id` Bigint NOT NULL AUTO_INCREMENT,
+						`codigo` Varchar (100) NOT NULL, 
+						`message` Text, 
+						`severity` Varchar(300),
+						`code` Varchar(100),
+						`filepath` Text,
+						`line` Int (10),
+						`trace` longtext,
+						`meta` longtext,
+						`estado` Enum ("Registrado", "Visto", "Analizado", "Solucionado") NOT NULL DEFAULT "Registrado",
+						`creado` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						`cantidad` INT (5) NOT NULL DEFAULT 1,
+
+						PRIMARY KEY (`id`),
+						UNIQUE KEY `codigo` (`codigo`)
+					) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC', FALSE, $CON_logs);
+
+					if ( ! $_tbldb_created)
+					{
+						$CON_logs = FALSE;
+						throw new Exception('No se pudo crear la tabla en la db');
+					}
+				}
+
+				$_codigo = md5(json_encode([
+					$message,
+					$severity,
+					$code,
+					$filepath,
+					$line,
+					$trace_slim
+				]));
+
+				$query = '
+				INSERT INTO `_logs` (
+					`codigo`, 
+					`message`, 
+					`severity`, 
+					`code`, 
+					`filepath`, 
+					`line`, 
+					`trace`, 
+					`meta`
+				) 
+				VALUES (
+					' . $this -> sql_qpesc($_codigo , FALSE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($message  , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($severity , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($code     , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($filepath , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($line     , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($trace    , TRUE, $CON_logs) . ', 
+					' . $this -> sql_qpesc($meta     , TRUE, $CON_logs) . '
+				)
+				ON DUPLICATE KEY UPDATE `cantidad` = `cantidad` +1
+				';
+
+				$saved = $this -> sql($query, TRUE, $CON_logs);
+
+				if ( ! $saved)
 				{
 					$CON_logs = FALSE;
 					throw new Exception('No se pudo guardar el registro');
@@ -868,6 +965,7 @@ if ( ! class_exists('JApi'))
 				{
 					chmod($log_file, 0644);
 				}
+				return;
 			}
 		}
 
@@ -1076,6 +1174,1262 @@ if ( ! class_exists('JApi'))
 
 			isset($this->_config[$get]) or $this->_config[$get] = NULL;
 			return $this->_config[$get];
+		}
+
+		/**
+		 * url()
+		 * Obtiene la estructura y datos importantes de la URL
+		 *
+		 * @param	string	$get
+		 * @return	mixed
+		 */
+		public function &url($get = 'base')
+		{
+			static $datos = [];
+
+			if (count($datos) === 0)
+			{
+				$file = __FILE__;
+
+				//Archivo index que se ha leído originalmente
+				$script_name = $_SERVER['SCRIPT_NAME'];
+
+				//Este es la ruta desde el /public_html/{...}/APPPATH/index.php
+				// y sirve para identificar si la aplicación se ejecuta en una subcarpeta
+				// o desde la raiz, con ello podemos añadir esos subdirectorios {...} en el enlace
+				$datos['srvpublic_path'] = '';
+				$datos['srvpublic_path'] = $this->filter_apply('JApi/url/srvpublic_path', $datos['srvpublic_path'], $_SERVER['HTTP_HOST']);
+
+				//Devuelve si usa https (boolean)
+				$datos['https'] = FALSE;
+				if (
+					( ! empty($_SERVER['HTTPS']) && mb_strtolower($_SERVER['HTTPS']) !== 'off') ||
+					(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && mb_strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+					( ! empty($_SERVER['HTTP_FRONT_END_HTTPS']) && mb_strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) !== 'off') ||
+					(isset($_SERVER['REQUEST_SCHEME']) and $_SERVER['REQUEST_SCHEME'] === 'https')
+				)
+				{
+					$datos['https'] = TRUE;
+				}
+
+				isset($_SERVER['REQUEST_SCHEME']) or $_SERVER['REQUEST_SCHEME'] = 'http' . ($datos['https'] ? 's' : '');
+
+				$_parsed = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . ':' . $_SERVER['SERVER_PORT'] . $_SERVER['REQUEST_URI'];
+				$_parsed = parse_url($_parsed);
+
+				//Devuelve 'http' o 'https' (string)
+				$datos['scheme'] = $_parsed['scheme'];
+
+				//Devuelve el host (string)
+				$datos['host'] = $_parsed['host'];
+
+				//Devuelve el port (int)
+				$datos['port'] = $_parsed['port'];
+
+				isset($_parsed['user']) and $datos['user'] = $_parsed['user'];
+				isset($_parsed['pass']) and $datos['pass'] = $_parsed['pass'];
+
+				$datos['path'] = isset($_parsed['path']) ? $_parsed['path'] : '/';
+				empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
+
+				$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
+				$datos['fragment'] = isset($_parsed['fragment']) ? $_parsed['fragment'] : '';
+
+				//Devuelve el port en formato enlace (string)		:8082	para el caso del port 80 o 443 retorna vacío
+				$datos['port-link'] = (new class($datos) implements JsonSerializable {
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$port_link = '';
+						if ($this->datos['port'] <> 80 and $this->datos['port'] <> 443)
+						{
+							$port_link = ':' . $this->datos['port'];
+						}
+						return $port_link;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'port' => $this->datos['port'],
+							'port-link' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve si usa WWW (boolean)
+				$datos['www'] = (bool)preg_match('/^www\./', $datos['host']);
+
+				//Devuelve el base host (string)
+				$datos['host-base'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$host_base = explode('.', $this->datos['host']);
+
+						while (count($host_base) > 2)
+						{
+							array_shift($host_base);
+						}
+
+						$host_base = implode('.', $host_base);
+
+						return $host_base;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host' => $this->datos['host'],
+							'host-base' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve el base host (string)
+				$datos['host-parent'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$host_parent = explode('.', $this->datos['host']);
+
+						if ($this->datos['www'])
+						{
+							array_shift($host_parent);
+						}
+
+						if (count($host_parent) > 2)
+						{
+							array_shift($host_parent);
+						}
+
+						$host_parent = implode('.', $host_parent);
+
+						return $host_parent;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host' => $this->datos['host'],
+							'www' => $this->datos['www'],
+							'host-parent' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve el host mas el port (string)			intranet.net:8082
+				$datos['host-link'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$host_link = $this->datos['host'] . $this->datos['port-link'];
+						return $host_link;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host' => $this->datos['host'],
+							'port-link' => (string)$this->datos['port-link'],
+							'host-link' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve el host sin puntos o guiones	(string)	intranetnet
+				$datos['host-clean'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$host_clean = preg_replace('/[^a-z0-9]/i', '', $this->datos['host']);
+						return $host_clean;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host' => $this->datos['host'],
+							'host-clean' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve el scheme mas el host-link (string)	https://intranet.net:8082
+				$datos['host-uri'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$host_uri = $this->datos['scheme'] . '://' . $this->datos['host-link'];
+						return $host_uri;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'scheme' => $this->datos['scheme'],
+							'host-link' => (string)$this->datos['host-link'],
+							'host-uri' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la URL base hasta la aplicación
+				$datos['base'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$base = $this->datos['host-uri'] . $this->datos['srvpublic_path'];
+						return $base;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host-uri' => (string)$this->datos['host-uri'],
+							'srvpublic_path' => $this->datos['srvpublic_path'],
+							'base' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la URL base hasta el alojamiento real de la aplicación
+				$datos['abs'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$abs = $this->datos['host-uri'] . $this->datos['srvpublic_path'];
+						return $abs;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host-uri' => (string)$this->datos['host-uri'],
+							'srvpublic_path' => $this->datos['srvpublic_path'],
+							'abs' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la URL base hasta el alojamiento real de la aplicación
+				$datos['host-abs'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$abs = str_replace('www.', '', $this->datos['host']) . $this->datos['srvpublic_path'];
+						return $abs;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'host' => (string)$this->datos['host'],
+							'srvpublic_path' => $this->datos['srvpublic_path'],
+							'host-abs' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la URL completa incluido el PATH obtenido
+				$datos['full'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$full = $this->datos['base'] . $this->datos['path'];
+
+						return $full;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'base' => (string)$this->datos['base'],
+							'path' => $this->datos['path'],
+							'full' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la URL completa incluyendo los parametros QUERY si es que hay
+				$datos['full-wq'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$full_wq = $this->datos['full'] . ( ! empty($this->datos['query']) ? '?' : '' ) . $this->datos['query'];
+
+						return $full_wq;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'full' => (string)$this->datos['full'],
+							'query' => $this->datos['query'],
+							'full-wq' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Devuelve la ruta de la aplicación como directorio del cookie
+				$datos['cookie-base'] = $datos['srvpublic_path'] . '/';
+
+				//Devuelve la ruta de la aplicación como directorio del cookie hasta la carpeta de la ruta actual
+				$datos['cookie-full'] = (new class($datos) implements JsonSerializable{
+					private $datos;
+
+					public function __construct(&$datos)
+					{
+						$this->datos =& $datos;
+					}
+
+					public function __toString()
+					{
+						$cookie_full = $this->datos['srvpublic_path'] . rtrim($this->datos['path'], '/') . '/';
+						return $cookie_full;
+					}
+
+					public function __debugInfo()
+					{
+						return [
+							'srvpublic_path' => $this->datos['srvpublic_path'],
+							'path' => $this->datos['path'],
+							'cookie-full' => $this->__toString()
+						];
+					}
+
+					public function jsonSerialize() {
+						return $this->__toString();
+					}
+				});
+
+				//Obtiene todos los datos enviados
+				$datos['request'] =& $this->request('array');
+
+				//Request Method
+				$datos['request_method'] = mb_strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'cli');
+
+				$this->datos = $this->filter_apply('JApi/url', $this->datos);
+			}
+
+			if ($get === 'array')
+			{
+				return $datos;
+			}
+
+			isset($datos[$get]) or $datos[$get] = NULL;
+			return $datos[$get];
+		}
+
+		/**
+		 * request()
+		 * Obtiene los request ($_GET $_POST)
+		 *
+		 * @param	string	$get
+		 * @return	mixed
+		 */
+		public function &request($get = 'array', $default = NULL, $put_default_if_empty = TRUE)
+		{
+			static $datos = [];
+
+			if (count($datos) === 0)
+			{
+				$datos = array_merge(
+					$_REQUEST,
+					$_POST,
+					$_GET
+				);
+
+				$path = explode('/', $this->url('path'));
+				foreach($path as $_p)
+				{
+					if (preg_match('/(.+)(:|=)(.*)/i', $_p, $matches))
+					{
+						$datos[$matches[1]] = $matches[3];
+					}
+				}
+			}
+
+			if ($get === 'array')
+			{
+				return $datos;
+			}
+
+			$get = (array)$get;
+
+			$return = $datos;
+			foreach($get as $_get)
+			{
+				if ( ! isset($return[$_get]))
+				{
+					$return = $default;
+					break;
+				}
+
+				if ($put_default_if_empty and ((is_array($return[$_get]) and count($return[$_get]) === 0) or empty($return[$_get])))
+				{
+					$return = $default;
+					break;
+				}
+
+				$return = $return[$_get];
+			}
+
+			return $return;
+		}
+
+		/**
+		 * ip_address()
+		 * Obtiene el IP del cliente
+		 *
+		 * @param string $get
+		 * @return mixed
+		 */
+		function &ip_address ($get = 'ip_address')
+		{
+			static $datos = [];
+
+			if (count($datos) === 0)
+			{
+				$datos = [
+					'ip_address' => '',
+					'separator' => '',
+					'binary' => '',
+				];
+
+				extract($datos, EXTR_REFS);
+
+				$ip_address = $_SERVER['REMOTE_ADDR'];
+
+				$spoof = NULL;
+				foreach(['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'HTTP_X_CLIENT_IP', 'HTTP_X_CLUSTER_CLIENT_IP'] as $ind)
+				{
+					if ( ! isset($_SERVER[$ind]) OR is_null($_SERVER[$ind]))
+					{
+						continue;
+					}
+
+					$spoof = $_SERVER[$ind];
+					sscanf($spoof, '%[^,]', $spoof);
+
+					if ( ! filter_var($spoof, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
+					{
+						$spoof = NULL;
+						continue;
+					}
+
+					break;
+				}
+
+				is_null($spoof) or $ip_address = $spoof;
+
+				$separator = filter_var($ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? ':' : '.';
+
+				if ($separator === ':')
+				{
+					// Make sure we're have the "full" IPv6 format
+					$binary = explode(':', str_replace('::', str_repeat(':', 9 - substr_count($ip_address, ':')), $ip_address));
+
+					for ($j = 0; $j < 8; $j++)
+					{
+						$binary[$j] = intval($binary[$j], 16);
+					}
+					$sprintf = '%016b%016b%016b%016b%016b%016b%016b%016b';
+				}
+				else
+				{
+					$binary = explode('.', $ip_address);
+					$sprintf = '%08b%08b%08b%08b';
+				}
+
+				$binary = vsprintf($sprintf, $binary);
+
+				if ( ! filter_var($ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
+				{
+					$ip_address = '0.0.0.0';
+				}
+			}
+
+			if ($get === 'array')
+			{
+				return $datos;
+			}
+
+			if ( ! isset($datos[$get]))
+			{
+				$get = 'ip_address';
+			}
+
+			return $datos[$get];
+		}
+
+		/**
+		 * is_empty()
+		 * Validar si $valor está vacío
+		 *
+		 * Si es ARRAY entonces valida que tenga algún elemento
+		 * Si es BOOL entonces retorna FALSO ya que es un valor así sea FALSO
+		 * 
+		 * @param array|bool|string|null $v
+		 * @return bool
+		 */
+		function is_empty($v)
+		{
+			$type = gettype($v);
+
+			if ($type === 'NULL')
+			{
+				return TRUE;
+			}
+			elseif ($type === 'string')
+			{
+				if ($v === '0')
+				{
+					return FALSE;
+				}
+
+				return empty($v);
+			}
+			elseif ($type === 'array')
+			{
+				return count($v) === 0;
+			}
+
+			return FALSE;
+		}
+
+		/**
+		 * def_empty()
+		 * Obtener un valor por defecto en caso se detecte que el primer valor se encuentra vacío
+		 *
+		 * @param mixed
+		 * @param mixed
+		 * @return mixed
+		 */
+		function def_empty($v, $def = NULL)
+		{
+			if ( ! is_empty($v))
+			{
+				return $v;
+			}
+
+			if (is_callable($def))
+			{
+				return $def();
+			}
+
+			return $def;
+		}
+
+		/**
+		 * non_empty()
+		 * Ejecutar una función si detecta que el valor no está vacío
+		 *
+		 * @param mixed
+		 * @param callable
+		 * @return mixed
+		 */
+		function non_empty($v, callable $callback)
+		{
+			if ( ! is_empty($v))
+			{
+				return $callback($v);
+			}
+
+			return $v;
+		}
+
+		/**
+		 * $_CONs
+		 * Variable que almacena todas las dbs conectadas
+		 */
+		protected $_CONs = [];
+
+		/**
+		 * $CON
+		 * Variable que almacena la db primaria o por defecto
+		 */
+		protected $CON;
+		
+		/**
+		 * use_CON()
+		 * Inicializa la conección primaria
+		 *
+		 * @return self
+		 */
+		public function use_CON ()
+		{
+			if ( ! isset($this -> CON))
+			{
+				$db =& $this -> config('db');
+				$db = (array)$db;
+
+				isset($db['host']) or $db['host'] = 'localhost';
+				isset($db['user']) or $db['user'] = 'root';
+				isset($db['pasw']) or $db['pasw'] = NULL;
+				isset($db['name']) or $db['name'] = NULL;
+				isset($db['charset']) or $db['charset'] = 'utf8';
+
+				$this -> CON = $this -> sql_start($db['host'], $db['user'], $db['pasw'], $db['name'], $db['charset']);
+			}
+
+			if ( ! isset($this -> CON))
+			{
+				throw new Exception('No se pudo conectar la base datos');
+			}
+
+			return $this;
+		}
+		
+		public function get_CON ()
+		{
+			return $this -> CON;
+		}
+
+		/**
+		 * $CON_logs
+		 * Variable que almacena la db de logueo
+		 */
+		protected $CON_logs;
+		
+		/**
+		 * use_CON()
+		 * Inicializa la conección primaria
+		 *
+		 * @return self
+		 */
+		protected function use_CON_logs ()
+		{
+			if ( ! isset($this -> CON_logs))
+			{
+				$db =& $this -> config('db_logs');
+				$db = (array)$db;
+
+				isset($db['host']) or $db['host'] = 'localhost';
+				isset($db['user']) or $db['user'] = 'root';
+				isset($db['pasw']) or $db['pasw'] = NULL;
+				isset($db['name']) or $db['name'] = NULL;
+				isset($db['charset']) or $db['charset'] = 'utf8';
+
+				if ( ! empty($db['name']))
+				{
+					$this -> CON_logs = $this -> sql_start($db['host'], $db['user'], $db['pasw'], $db['name'], $db['charset']);
+				}
+			}
+
+			if ( ! isset($this -> CON_logs))
+			{
+				try
+				{
+					$this -> use_CON();
+				}
+				catch (Exception $e)
+				{}
+
+				$this -> CON_logs = $this -> CON;
+			}
+
+			if ( ! isset($this -> CON_logs))
+			{
+				throw new Exception('No se pudo conectar la base datos');
+			}
+
+			return $this;
+		}
+
+		/**
+		 * $MYSQL_history
+		 * QUERY ejecutados y errores producidos
+		 * **Estructura:**
+		 * - QUERY // Query Ejecutado
+		 * - Error // Texto de error detectado
+		 * - Errno // Número de error detectado
+		 */
+		protected $_MYSQL_history = [];
+
+		/**
+		 * cbd()
+		 * Inicia una conección de base datos
+		 *
+		 * @param string
+		 * @param string
+		 * @param string
+		 * @param string
+		 * @param string
+		 * @return bool
+		 */
+		function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
+		{
+			$conection = mysqli_connect($host, $usuario, $password);
+
+			if ( ! $conection)
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => '',
+					'suphp' => 'mysqli_connect("' . $host . '", "' . $usuario . '", "' . str_repeat('*', mb_strlen($password)) . '")',
+					'error' => mysqli_connect_error(), 
+					'errno' => mysqli_connect_errno(),
+					'hstpr' => 'error',
+				];
+				return NULL;
+			}
+
+			$conection->_host = $host;
+			$conection->_usuario = $usuario;
+			$conection->_password = $password;
+
+			$this->_CONs[$conection->thread_id] = $conection;
+
+			if ( ! empty($base_datos) and ! mysqli_select_db($conection, $base_datos))
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => '',
+					'suphp' => 'mysqli_select_db($conection, "' . $base_datos . '")',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'error',
+					'conct' => $conection->thread_id,
+				];
+				return NULL;
+			}
+
+			$conection->_base_datos = $base_datos;
+
+			$this-> _MYSQL_history[] = [
+				'query' => '',
+				'suphp' => 'mysqli_connect("' . $host . '", "' . $usuario . '", "' . str_repeat('*', mb_strlen($password)) . '")',
+				'error' => '', 
+				'errno' => '',
+				'hstpr' => 'success',
+				'conct' => $conection->thread_id,
+			];
+
+			if ( ! mysqli_set_charset($conection, $charset))
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => '',
+					'suphp' => 'mysqli_set_charset($conection, "' . $charset . '")',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'warning',
+					'conct' => $conection->thread_id,
+				];
+			}
+
+			$conection->_charset = $charset;
+
+			$_utc_dtz = new DateTimeZone(date_default_timezone_get());
+			$_utc_dt  = new DateTime('now', $_utc_dtz);
+			$_utc_offset = $_utc_dtz->getOffset($_utc_dt);
+
+			$utc = sprintf( "%s%02d:%02d", ( $_utc_offset >= 0 ) ? '+' : '-', abs( $_utc_offset / 3600 ), abs( $_utc_offset % 3600 ) );
+
+			if ( ! mysqli_query($conection, 'SET time_zone = "' . $utc . '";'))
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => 'SET time_zone = "' . $utc . '";',
+					'suphp' => 'mysqli_query($conection, $query)',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'warning',
+					'conct' => $conection->thread_id,
+				];
+			}
+
+			$conection->_utc = $utc;
+
+			if ( ! mysqli_query($conection, 'SET SESSION group_concat_max_len = 1000000;'))
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => 'SET SESSION group_concat_max_len = 1000000;',
+					'suphp' => 'mysqli_query($conection, $query)',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'warning',
+					'conct' => $conection->thread_id,
+				];
+			}
+
+			return $conection;
+		}
+		
+		/**
+		 * sql_stop()
+		 * Cierra una conección de base datos
+		 *
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_stop (mysqli $conection)
+		{
+			$tid = $conection -> thread_id;
+
+			$return = mysqli_close($conection);
+
+			unset($this->_CONs[$tid]);
+
+			$this-> _MYSQL_history[] = [
+				'query' => '',
+				'suphp' => 'mysqli_close($conection)',
+				'error' => '', 
+				'errno' => '',
+				'hstpr' => 'success',
+				'conct' => $tid,
+			];
+
+			return $return;
+		}
+
+		/**
+		 * sql_stop()
+		 * Cierra una conección de base datos
+		 *
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_stop_all ()
+		{
+			$return = true;
+
+			foreach($this->_CONs as $tid => $conection)
+			{
+				if ($this -> CON and $tid === $this -> CON -> thread_id)
+				{
+					$this -> CON = NULL;
+				}
+
+				if ($this -> CON_logs and $tid === $this -> CON_logs -> thread_id)
+				{
+					$this -> CON_logs = NULL;
+				}
+
+				$_return = $this->sql_stop($conection);
+
+				$_return or $return = false;
+			}
+
+			return $return;
+		}
+		
+		/**
+		 * sql_esc()
+		 * Ejecuta la función `mysqli_real_escape_string`
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return string
+		 */
+		function sql_esc ($valor = '', mysqli $conection = NULL)
+		{
+			is_null($conection) and $conection = $this -> use_CON() -> CON;
+			return mysqli_real_escape_string($conection, $valor);
+		}
+		
+		/**
+		 * sql_qpesc()
+		 * Retorna el parametro correcto para una consulta de base datos
+		 *
+		 * @param string
+		 * @param bool
+		 * @param mysqli
+		 * @return string
+		 */
+		function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
+		{
+			static $_functions_alws = [
+				'CURDATE', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'CURTIME', 'LOCALTIME', 'LOCALTIMESTAMP', 'NOW', 'SYSDATE'
+			];
+			static $_functions = [
+				'ASCII', 'CHAR_LENGTH', 'CHARACTER_LENGTH', 'CONCAT', 'CONCAT_WS', 'FIELD', 'FIND_IN_SET', 'FORMAT', 'INSERT', 'INSTR', 'LCASE', 'LEFT', 'LENGTH', 'LOCATE', 'LOWER', 'LPAD', 'LTRIM', 'MID', 'POSITION', 'REPEAT', 'REPLACE', 'REVERSE', 'RIGHT', 'RPAD', 'RTRIM', 'SPACE', 'STRCMP', 'SUBSTR', 'SUBSTRING', 'SUBSTRING_INDEX', 'TRIM', 'UCASE', 'UPPER', 'ABS', 'ACOS', 'ASIN', 'ATAN', 'ATAN2', 'AVG', 'CEIL', 'CEILING', 'COS', 'COT', 'COUNT', 'DEGREES', 'DIV', 'EXP', 'FLOOR', 'GREATEST', 'LEAST', 'LN', 'LOG', 'LOG10', 'LOG2', 'MAX', 'MIN', 'MOD', 'PI', 'POW', 'POWER', 'RADIANS', 'RAND', 'ROUND', 'SIGN', 'SIN', 'SQRT', 'SUM', 'TAN', 'TRUNCATE', 'ADDDATE', 'ADDTIME', 'CURDATE', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'CURTIME', 'DATE', 'DATEDIFF', 'DATE_ADD', 'DATE_FORMAT', 'DATE_SUB', 'DAY', 'DAYNAME', 'DAYOFMONTH', 'DAYOFWEEK', 'DAYOFYEAR', 'EXTRACT', 'FROM_DAYS', 'HOUR', 'LAST_DAY', 'LOCALTIME', 'LOCALTIMESTAMP', 'MAKEDATE', 'MAKETIME', 'MICROSECOND', 'MINUTE', 'MONTH', 'MONTHNAME', 'NOW', 'PERIOD_ADD', 'PERIOD_DIFF', 'QUARTER', 'SECOND', 'SEC_TO_TIME', 'STR_TO_DATE', 'SUBDATE', 'SUBTIME', 'SYSDATE', 'TIME', 'TIME_FORMAT', 'TIME_TO_SEC', 'TIMEDIFF', 'TIMESTAMP', 'TO_DAYS', 'WEEK', 'WEEKDAY', 'WEEKOFYEAR', 'YEAR', 'YEARWEEK', 'BIN', 'BINARY', 'CASE', 'CAST', 'COALESCE', 'CONNECTION_ID', 'CONV', 'CONVERT', 'CURRENT_USER', 'DATABASE', 'IF', 'IFNULL', 'ISNULL', 'LAST_INSERT_ID', 'NULLIF', 'SESSION_USER', 'SYSTEM_USER', 'USER', 'VERSION'
+			];
+
+			if ($or_null !== FALSE and is_empty($valor))
+			{
+				$or_null = ($or_null === TRUE ? 'NULL' : $or_null);
+				return $or_null;
+			}
+
+			$_regex_funcs_alws = '/^(' . implode('|', $_functions_alws) . ')(\(\))?$/i';
+			$_regex_funcs = '/\b('.implode('|', $_functions).')\b/i';
+
+			if (is_string($valor) and preg_match($_regex_funcs_alws, $valor))  ## Palabras Reservadas No Peligrosas
+			{
+				return $valor;
+			}
+			elseif (is_string($valor) and preg_match($_regex_funcs, $valor) and $f_as_f)  ## Palabras Reservadas
+			{
+				if (is_string($valor) and preg_match('/^\[MF\]\:/i', $valor))
+				{
+					$valor = preg_replace('/^\[MF\]\:/i', '', $valor);
+				}
+				else
+				{
+					return $valor;
+				}
+			}
+			else
+			{
+				if (is_string($valor) and preg_match('/^\[MF\]\:/i', $valor))
+				{
+					$valor = preg_replace('/^\[MF\]\:/i', '', $valor);
+				}
+			}
+
+			if (is_bool($valor))
+			{
+				return $valor ? 'TRUE' : 'FALSE';
+			}
+
+			if (is_numeric($valor) and ! preg_match('/^0/i', (string)$valor))
+			{
+				return $this->sql_esc($valor, $conection);
+			}
+
+			is_array($valor) and $valor = json_encode($valor);
+
+			return '"' . $this->sql_esc($valor, $conection) . '"';
+		}
+
+		/**
+		 * sql()
+		 * Ejecuta una consulta a la Base Datos
+		 *
+		 * @param string
+		 * @param bool
+		 * @param mysqli
+		 * @return mixed
+		 */
+		function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
+		{
+			is_null($conection) and $conection = $this -> use_CON() -> CON;
+
+			$result =  mysqli_query($conection, $query);
+
+			if ( ! $result)
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => $query,
+					'suphp' => 'mysqli_query($conection, $query)',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'error',
+					'conct' => $conection->thread_id,
+				];
+
+				trigger_error('Error en el query: ' . $query, E_USER_WARNING);
+				return FALSE;
+			}
+
+			$return = true;
+
+			if ($is_insert)
+			{
+				$return = mysqli_insert_id($conection);
+			}
+
+			$this-> _MYSQL_history[] = [
+				'query' => $query,
+				'suphp' => 'mysqli_query($conection, $query)',
+				'error' => '', 
+				'errno' => '',
+				'hstpr' => 'success',
+				'conct' => $conection->thread_id,
+				($is_insert ? 'insert_id' : 'return') => $return,
+			];
+
+			return $return;
+		}
+
+		/**
+		 * sql_data()
+		 * Ejecuta una consulta a la Base Datos
+		 *
+		 * @param string
+		 * @param bool
+		 * @param string|array|null
+		 * @param mysqli
+		 * @return mixed
+		 */
+		function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
+		{
+			static $_executeds = [];
+
+			if (is_a($return_first, 'mysqli'))
+			{
+				is_null($conection) and $conection = $return_first;
+				$return_first = FALSE;
+			}
+
+			if (is_a($fields, 'mysqli'))
+			{
+				is_null($conection) and $conection = $fields;
+				$fields = NULL;
+			}
+
+			is_null($conection) and $conection = $this -> use_CON() -> CON;
+
+			isset($_executeds[$conection->thread_id]) or $_executeds[$conection->thread_id] = 0;
+			$_executeds[$conection->thread_id]++;
+
+			if($_executeds[$conection->thread_id] > 1)
+			{
+				@mysqli_next_result($conection);
+			}
+
+			$result =  mysqli_query($conection, $query);
+
+			if ( ! $result)
+			{
+				$this-> _MYSQL_history[] = [
+					'query' => $query,
+					'suphp' => 'mysqli_query($conection, $query)',
+					'error' => mysqli_error($conection), 
+					'errno' => mysqli_errno($conection),
+					'hstpr' => 'error',
+					'conct' => $conection->thread_id,
+				];
+
+				trigger_error('Error en el query: ' . $query, E_USER_WARNING);
+
+				$sql_data_result = MysqlResultData::fromArray([])
+				-> quitar_fields('log');
+			}
+			else
+			{
+				$sql_data_result = new MysqlResultData ($result);
+			}
+
+			if ( ! is_null($fields))
+			{
+				$sql_data_result
+				-> filter_fields($fields);
+			}
+
+			if ($return_first)
+			{
+				return $sql_data_result
+				-> first();
+			}
+
+			return $sql_data_result;
+		}
+
+		/**
+		 * sql_pswd()
+		 * Obtiene el password de un texto
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		function sql_pswd ($valor, mysqli $conection = NULL)
+		{
+			return $this -> sql_data('
+			SELECT PASSWORD(' . $this->sql_qpesc($valor, FALSE, $conection) . ') as `valor`;
+			', TRUE, 'valor', $conection);
+		}
+
+		/**
+		 * sql_trans()
+		 * Procesa transacciones de Base Datos
+		 * 
+		 * WARNING: Si se abre pero no se cierra no se guarda pero igual incrementa AUTOINCREMENT
+		 * WARNING: Se deben cerrar exitosamente la misma cantidad de los que se abren
+		 * WARNING: El primero que cierra con error cierra todos los transactions activos 
+		 *          (serìa innecesario cerrar exitosamente las demas)
+		 *
+		 * @param bool|null
+		 * @param mysqli
+		 * @return bool
+		 */
+		function sql_trans($do = NULL, mysqli $conection = NULL)
+		{
+			static $_trans = []; ## levels de transacciones abiertas
+			static $_auto_commit_setted = [];
+
+			if (is_a($do, 'mysqli'))
+			{
+				is_null($conection) and $conection = $do;
+				$do = NULL;
+			}
+
+			is_null($conection) and $conection = $this -> use_CON() -> CON;
+
+			isset($_trans[$conection->thread_id]) or $_trans[$conection->thread_id] = 0;
+
+			if ($do === 'NUMTRANS')
+			{
+				return $_trans[$conection->thread_id];
+			}
+
+			isset($_auto_commit_setted[$conection->thread_id]) or $_auto_commit_setted[$conection->thread_id] = FALSE;
+
+			if (is_null($do))
+			{
+				## Se está iniciando una transacción
+
+				## Solo si el level es 0 (aún no se ha abierto una transacción), se ejecuta el sql
+				$_trans[$conection->thread_id] === 0 and $this -> sql('START TRANSACTION', FALSE, $conection);
+
+				$_trans[$conection->thread_id]++; ## Incrmentar el level
+
+				if ( ! $_auto_commit_setted[$conection->thread_id])
+				{
+					$this -> sql('SET autocommit = 0') AND $_auto_commit_setted[$conection->thread_id] = TRUE;
+				}
+
+				return TRUE;
+			}
+
+			if ($_trans[$conection->thread_id] === 0)
+			{
+				return FALSE; ## No se ha abierto una transacción
+			}
+
+			if ( ! is_bool($do))
+			{
+				trigger_error('Se está enviando un parametro ' . gettype($do) . ' en vez de un BOOLEAN', E_USER_WARNING);
+				$do = (bool)$do;
+			}
+
+			if ($do)
+			{
+				$_trans[$conection->thread_id]--; ## Reducir el level
+
+				## Solo si el level es 0 (ya se han cerrado todas las conecciones), se ejecuta el sql
+				if ($_trans[$conection->thread_id] === 0)
+				{
+					$this -> sql('COMMIT', FALSE, $conection);
+
+					if ($_auto_commit_setted[$conection->thread_id])
+					{
+						$this -> sql('SET autocommit = 1') AND $_auto_commit_setted[$conection->thread_id] = FALSE;
+					}
+				}
+			}
+			else
+			{
+				$_trans[$conection->thread_id] = 0; ## Finalizar todas los levels abiertos
+
+				$this -> sql('ROLLBACK', FALSE, $conection);
+
+				if ($_auto_commit_setted[$conection->thread_id])
+				{
+					$this -> sql('SET autocommit = 1') AND $_auto_commit_setted[$conection->thread_id] = FALSE;
+				}
+			}
+
+			return TRUE;
 		}
 	}
 }

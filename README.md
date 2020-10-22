@@ -115,7 +115,7 @@ Directorio/Archivo | Funcionalidad
 - [x] Usuario genera la solicitud mediante navegador (eg: http://japp.net/usuario/jrojash)
 - [x] Se inician las variables globales (accesibilidad de carpetas en todo momento)
 - [x] Se registrar el control de errores (no mostrar errores al usuario final, mantenerlo en modo desarrollo)
-    -  [ ] Guardar los errores en la base datos
+    -  [x] Guardar los errores en la base datos
 - [x] Se registra el hook del shutdown (para que desconecte la base datos en caso de haberla sido iniciada y/o limpie el buffer)
 - [x] Se llama al ```/init.php``` del _APPPATH_ (ello para poder añadir mas directorios de aplicación en caso sea necesario)
 - [x] Se lista todos los directorios de aplicación en el orden según dependencia (incluyendo el _APPPATH_).
