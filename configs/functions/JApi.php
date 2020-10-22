@@ -601,3 +601,157 @@ if ( ! function_exists('response_notice'))
 		return exec_app('notice', $message, $code);
 	}
 }
+
+if ( ! function_exists('exit_iftype'))
+{
+	/**
+	 * exit_iftype ()
+	 */
+	function exit_iftype($types, $status = NULL)
+	{
+		return exec_app(__FUNCTION__, $types, $status);
+	}
+}
+
+if ( ! function_exists('exit_ifhtml'))
+{
+	/**
+	 * exit_ifhtml ()
+	 */
+	function exit_ifhtml($status = NULL)
+	{
+		return exec_app(__FUNCTION__, $status);
+	}
+}
+
+if ( ! function_exists('exit_ifjson'))
+{
+	/**
+	 * exit_ifjson ()
+	 */
+	function exit_ifjson($status = NULL)
+	{
+		return exec_app(__FUNCTION__, $status);
+	}
+}
+
+if ( ! function_exists('redirect_iftype'))
+{
+	/**
+	 * redirect_iftype ()
+	 */
+	function redirect_iftype($type, $link)
+	{
+		return exec_app(__FUNCTION__, $type, $link);
+	}
+}
+
+if ( ! function_exists('redirect_ifhtml'))
+{
+	/**
+	 * redirect_ifhtml ()
+	 */
+	function redirect_ifhtml($link)
+	{
+		return exec_app(__FUNCTION__, $link);
+	}
+}
+
+if ( ! function_exists('redirect_ifjson'))
+{
+	/**
+	 * redirect_ifjson ()
+	 */
+	function redirect_ifjson($link)
+	{
+		return exec_app(__FUNCTION__, $link);
+	}
+}
+
+if ( ! function_exists('redirect'))
+{
+	/**
+	 * redirect ()
+	 */
+	function redirect($url, $query = NULL)
+	{
+		return exec_app(__FUNCTION__, $url, $query);
+	}
+}
+
+if ( ! function_exists('addJSON'))
+{
+	/**
+	 * addJSON ()
+	 */
+	function addJSON($key, $val = null)
+	{
+		return exec_app(__FUNCTION__, $key, $val);
+	}
+}
+
+if ( ! function_exists('addHTML'))
+{
+	/**
+	 * addHTML ()
+	 */
+	function addHTML($content)
+	{
+		return exec_app(__FUNCTION__, $content);
+	}
+}
+
+if ( ! function_exists('force_uri'))
+{
+	/**
+	 * force_uri ()
+	 */
+	function force_uri($uri = null)
+	{
+		return exec_app(__FUNCTION__, $uri);
+	}
+}
+
+if ( ! function_exists('register_css'))
+{
+	/**
+	 * register_css ()
+	 */
+	function register_css($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_css'))
+{
+	/**
+	 * load_css ()
+	 */
+	function load_css($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('register_js'))
+{
+	/**
+	 * register_js ()
+	 */
+	function register_js($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_js'))
+{
+	/**
+	 * load_js ()
+	 */
+	function load_js($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
