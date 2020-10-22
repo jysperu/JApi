@@ -756,6 +756,27 @@ if ( ! function_exists('load_js'))
 	}
 }
 
+
+if ( ! function_exists('obj'))
+{
+	/**
+	 * obj ()
+	 */
+	function obj($class, ...$pk)
+	{
+		$parameters = [
+			$class,
+		];
+
+		foreach($pk as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
 if ( ! function_exists('snippet'))
 {
 	/**

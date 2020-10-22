@@ -4276,6 +4276,34 @@ if ( ! class_exists('JApi'))
 		}
 
 
+		function obj ($class, ...$pk)
+		{
+			$class = str_replace('/', '\\', $class);
+			$class = explode('\\', $class);
+			empty($class[0]) and array_shift($class);
+			$class[0] === 'Object' or array_unshift($class, 'Object');
+			$class = array_values($class);
+			$class = implode('\\', $class);
+
+			try
+			{
+				$_class_reflect  = new ReflectionClass($class);
+				$_class_instance = $_class_reflect -> newInstanceArgs($pk);
+			}
+			catch(Exception $e)
+			{
+				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+				{
+					throw $e;
+				}
+
+				$_class_instance = new $class();
+			}
+
+			return $_class_instance;
+		}
+
 		function snippet ($file, $return_content = TRUE, $declared_variables = [])
 		{
 			$directory = dirname($file);
