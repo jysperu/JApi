@@ -268,265 +268,597 @@ if ( ! function_exists('config'))
 
 if ( ! function_exists('url'))
 {
-		/**
-		 * url()
-		 * Obtiene la estructura y datos importantes de la URL
-		 *
-		 * @param	string	$get
-		 * @return	mixed
-		 */
-		function &url($get = 'base')
-		{
-			return exec_app(__FUNCTION__, $get);
-		}
+	/**
+	 * url()
+	 * Obtiene la estructura y datos importantes de la URL
+	 *
+	 * @param	string	$get
+	 * @return	mixed
+	 */
+	function &url($get = 'base')
+	{
+		return exec_app(__FUNCTION__, $get);
+	}
 }
 
 if ( ! function_exists('request'))
 {
-		/**
-		 * request()
-		 * Obtiene los request ($_GET $_POST)
-		 *
-		 * @param	string	$get
-		 * @return	mixed
-		 */
-		function &request($get = 'array', $default = NULL, $put_default_if_empty = TRUE)
-		{
-			return exec_app(__FUNCTION__, $get, $default, $put_default_if_empty);
-		}
+	/**
+	 * request()
+	 * Obtiene los request ($_GET $_POST)
+	 *
+	 * @param	string	$get
+	 * @return	mixed
+	 */
+	function &request($get = 'array', $default = NULL, $put_default_if_empty = TRUE)
+	{
+		return exec_app(__FUNCTION__, $get, $default, $put_default_if_empty);
+	}
 }
 
 if ( ! function_exists('ip_address'))
 {
-		/**
-		 * ip_address()
-		 * Obtiene el IP del cliente
-		 *
-		 * @param string $get
-		 * @return mixed
-		 */
-		function &ip_address ($get = 'ip_address')
-		{
-			return exec_app(__FUNCTION__, $get);
-		}
+	/**
+	 * ip_address()
+	 * Obtiene el IP del cliente
+	 *
+	 * @param string $get
+	 * @return mixed
+	 */
+	function &ip_address ($get = 'ip_address')
+	{
+		return exec_app(__FUNCTION__, $get);
+	}
 }
 
 if ( ! function_exists('is_empty'))
 {
-		/**
-		 * is_empty()
-		 * Validar si $valor está vacío
-		 *
-		 * Si es ARRAY entonces valida que tenga algún elemento
-		 * Si es BOOL entonces retorna FALSO ya que es un valor así sea FALSO
-		 * 
-		 * @param array|bool|string|null $v
-		 * @return bool
-		 */
-		function is_empty($v)
-		{
-			return exec_app(__FUNCTION__, $v);
-		}
+	/**
+	 * is_empty()
+	 * Validar si $valor está vacío
+	 *
+	 * Si es ARRAY entonces valida que tenga algún elemento
+	 * Si es BOOL entonces retorna FALSO ya que es un valor así sea FALSO
+	 * 
+	 * @param array|bool|string|null $v
+	 * @return bool
+	 */
+	function is_empty($v)
+	{
+		return exec_app(__FUNCTION__, $v);
+	}
 }
 
 if ( ! function_exists('def_empty'))
 {
-		/**
-		 * def_empty()
-		 * Obtener un valor por defecto en caso se detecte que el primer valor se encuentra vacío
-		 *
-		 * @param mixed
-		 * @param mixed
-		 * @return mixed
-		 */
-		function def_empty($v, $def = NULL)
-		{
-			return exec_app(__FUNCTION__, $v, $def);
-		}
+	/**
+	 * def_empty()
+	 * Obtener un valor por defecto en caso se detecte que el primer valor se encuentra vacío
+	 *
+	 * @param mixed
+	 * @param mixed
+	 * @return mixed
+	 */
+	function def_empty($v, $def = NULL)
+	{
+		return exec_app(__FUNCTION__, $v, $def);
+	}
 }
 
 if ( ! function_exists('non_empty'))
 {
-		/**
-		 * non_empty()
-		 * Ejecutar una función si detecta que el valor no está vacío
-		 *
-		 * @param mixed
-		 * @param callable
-		 * @return mixed
-		 */
-		function non_empty($v, callable $callback)
-		{
-			return exec_app(__FUNCTION__, $v, $callback);
-		}
+	/**
+	 * non_empty()
+	 * Ejecutar una función si detecta que el valor no está vacío
+	 *
+	 * @param mixed
+	 * @param callable
+	 * @return mixed
+	 */
+	function non_empty($v, callable $callback)
+	{
+		return exec_app(__FUNCTION__, $v, $callback);
+	}
 }
 
 if ( ! function_exists('use_CON'))
 {
-		function use_CON ()
-		{
-			return exec_app(__FUNCTION__);
-		}
+	function use_CON ()
+	{
+		return exec_app(__FUNCTION__);
+	}
 }
 
 if ( ! function_exists('get_CON'))
 {
-		function get_CON ()
-		{
-			return exec_app(__FUNCTION__);
-		}
+	function get_CON ()
+	{
+		return exec_app(__FUNCTION__);
+	}
 }
 
 if ( ! function_exists('sql_start'))
 {
-		/**
-		 * cbd()
-		 * Inicia una conección de base datos
-		 *
-		 * @param string
-		 * @param string
-		 * @param string
-		 * @param string
-		 * @param string
-		 * @return bool
-		 */
-		function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
-		{
-			return exec_app(__FUNCTION__, $host, $usuario, $password, $base_datos, $charset);
-		}
+	/**
+	 * cbd()
+	 * Inicia una conección de base datos
+	 *
+	 * @param string
+	 * @param string
+	 * @param string
+	 * @param string
+	 * @param string
+	 * @return bool
+	 */
+	function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
+	{
+		return exec_app(__FUNCTION__, $host, $usuario, $password, $base_datos, $charset);
+	}
 }
 
 if ( ! function_exists('sql_stop'))
 {
-		/**
-		 * sql_stop()
-		 * Cierra una conección de base datos
-		 *
-		 * @param mysqli
-		 * @return bool
-		 */
-		function sql_stop (mysqli $conection)
-		{
-			return exec_app(__FUNCTION__, $conection);
-		}
+	/**
+	 * sql_stop()
+	 * Cierra una conección de base datos
+	 *
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_stop (mysqli $conection)
+	{
+		return exec_app(__FUNCTION__, $conection);
+	}
 }
 
 if ( ! function_exists('sql_stop_all'))
 {
-		/**
-		 * sql_stop()
-		 * Cierra una conección de base datos
-		 *
-		 * @param mysqli
-		 * @return bool
-		 */
-		function sql_stop_all ()
-		{
-			return exec_app(__FUNCTION__);
-		}
+	/**
+	 * sql_stop()
+	 * Cierra una conección de base datos
+	 *
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_stop_all ()
+	{
+		return exec_app(__FUNCTION__);
+	}
 }
 
 if ( ! function_exists('sql_esc'))
 {
-		/**
-		 * sql_esc()
-		 * Ejecuta la función `mysqli_real_escape_string`
-		 *
-		 * @param string
-		 * @param mysqli
-		 * @return string
-		 */
-		function sql_esc ($valor = '', mysqli $conection = NULL)
-		{
-			return exec_app(__FUNCTION__, $valor, $conection);
-		}
+	/**
+	 * sql_esc()
+	 * Ejecuta la función `mysqli_real_escape_string`
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return string
+	 */
+	function sql_esc ($valor = '', mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $valor, $conection);
+	}
 }
 
 if ( ! function_exists('sql_qpesc'))
 {
-		/**
-		 * sql_qpesc()
-		 * Retorna el parametro correcto para una consulta de base datos
-		 *
-		 * @param string
-		 * @param bool
-		 * @param mysqli
-		 * @return string
-		 */
-		function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
-		{
-			return exec_app(__FUNCTION__, $valor, $or_null, $conection, $f_as_f);
-		}
+	/**
+	 * sql_qpesc()
+	 * Retorna el parametro correcto para una consulta de base datos
+	 *
+	 * @param string
+	 * @param bool
+	 * @param mysqli
+	 * @return string
+	 */
+	function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
+	{
+		return exec_app(__FUNCTION__, $valor, $or_null, $conection, $f_as_f);
+	}
 }
 
 if ( ! function_exists('sql'))
 {
-		/**
-		 * sql()
-		 * Ejecuta una consulta a la Base Datos
-		 *
-		 * @param string
-		 * @param bool
-		 * @param mysqli
-		 * @return mixed
-		 */
-		function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
-		{
-			return exec_app(__FUNCTION__, $query, $is_insert, $conection);
-		}
+	/**
+	 * sql()
+	 * Ejecuta una consulta a la Base Datos
+	 *
+	 * @param string
+	 * @param bool
+	 * @param mysqli
+	 * @return mixed
+	 */
+	function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $query, $is_insert, $conection);
+	}
 }
 
 if ( ! function_exists('sql_data'))
 {
-		/**
-		 * sql_data()
-		 * Ejecuta una consulta a la Base Datos
-		 *
-		 * @param string
-		 * @param bool
-		 * @param string|array|null
-		 * @param mysqli
-		 * @return mixed
-		 */
-		function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
-		{
-			return exec_app(__FUNCTION__, $query, $return_first, $fields, $conection);
-		}
+	/**
+	 * sql_data()
+	 * Ejecuta una consulta a la Base Datos
+	 *
+	 * @param string
+	 * @param bool
+	 * @param string|array|null
+	 * @param mysqli
+	 * @return mixed
+	 */
+	function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $query, $return_first, $fields, $conection);
+	}
 }
 
 if ( ! function_exists('sql_pswd'))
 {
-		/**
-		 * sql_pswd()
-		 * Obtiene el password de un texto
-		 *
-		 * @param string
-		 * @param mysqli
-		 * @return bool
-		 */
-		function sql_pswd ($valor, mysqli $conection = NULL)
-		{
-			return exec_app(__FUNCTION__, $valor, $conection);
-		}
+	/**
+	 * sql_pswd()
+	 * Obtiene el password de un texto
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_pswd ($valor, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $valor, $conection);
+	}
 }
 
 if ( ! function_exists('sql_trans'))
 {
-		/**
-		 * sql_trans()
-		 * Procesa transacciones de Base Datos
-		 * 
-		 * WARNING: Si se abre pero no se cierra no se guarda pero igual incrementa AUTOINCREMENT
-		 * WARNING: Se deben cerrar exitosamente la misma cantidad de los que se abren
-		 * WARNING: El primero que cierra con error cierra todos los transactions activos 
-		 *          (serìa innecesario cerrar exitosamente las demas)
-		 *
-		 * @param bool|null
-		 * @param mysqli
-		 * @return bool
-		 */
-		function sql_trans($do = NULL, mysqli $conection = NULL)
+	/**
+	 * sql_trans()
+	 * Procesa transacciones de Base Datos
+	 * 
+	 * WARNING: Si se abre pero no se cierra no se guarda pero igual incrementa AUTOINCREMENT
+	 * WARNING: Se deben cerrar exitosamente la misma cantidad de los que se abren
+	 * WARNING: El primero que cierra con error cierra todos los transactions activos 
+	 *          (serìa innecesario cerrar exitosamente las demas)
+	 *
+	 * @param bool|null
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_trans($do = NULL, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $do, $conection);
+	}
+}
+
+if ( ! function_exists('map_app_directories'))
+{
+	/**
+	 * map_app_directories ()
+	 * Función que ejecuta una función establecida con todos los directorios de aplicación como parametro
+	 *
+	 * @param $callback Callable Función a ejecutar
+	 * @param $reverse Boolean Indica si la función a ejecutar se hará a la lista invertida
+	 * @return self
+	 */
+	function map_app_directories(callable $callback, $reverse = FALSE)
+	{
+		return exec_app(__FUNCTION__, $callback, $reverse);
+	}
+}
+
+if ( ! function_exists('ResponseAs'))
+{
+	/**
+	 * ResponseAs ()
+	 */
+	function ResponseAs($type, $mime = NULL, $charset = NULL)
+	{
+		return exec_app(__FUNCTION__, $type, $mime, $charset);
+	}
+}
+
+if ( ! function_exists('process_result_message'))
+{
+	/**
+	 * process_result_message ()
+	 */
+	function process_result_message($return_html = false, $clear = TRUE)
+	{
+		return exec_app(__FUNCTION__, $return_html, $clear);
+	}
+}
+
+if ( ! function_exists('response_success'))
+{
+	/**
+	 * response_success ()
+	 */
+	function response_success($message = NULL, $code = NULL)
+	{
+		return exec_app('success', $message, $code);
+	}
+}
+
+if ( ! function_exists('response_error'))
+{
+	/**
+	 * response_error ()
+	 */
+	function response_error($error = NULL, $code = NULL)
+	{
+		return exec_app('error', $error, $code);
+	}
+}
+
+if ( ! function_exists('response_notice'))
+{
+	/**
+	 * response_notice ()
+	 */
+	function response_notice($message = NULL, $code = NULL)
+	{
+		return exec_app('notice', $message, $code);
+	}
+}
+
+if ( ! function_exists('exit_iftype'))
+{
+	/**
+	 * exit_iftype ()
+	 */
+	function exit_iftype($types, $status = NULL)
+	{
+		return exec_app(__FUNCTION__, $types, $status);
+	}
+}
+
+if ( ! function_exists('exit_ifhtml'))
+{
+	/**
+	 * exit_ifhtml ()
+	 */
+	function exit_ifhtml($status = NULL)
+	{
+		return exec_app(__FUNCTION__, $status);
+	}
+}
+
+if ( ! function_exists('exit_ifjson'))
+{
+	/**
+	 * exit_ifjson ()
+	 */
+	function exit_ifjson($status = NULL)
+	{
+		return exec_app(__FUNCTION__, $status);
+	}
+}
+
+if ( ! function_exists('redirect_iftype'))
+{
+	/**
+	 * redirect_iftype ()
+	 */
+	function redirect_iftype($type, $link)
+	{
+		return exec_app(__FUNCTION__, $type, $link);
+	}
+}
+
+if ( ! function_exists('redirect_ifhtml'))
+{
+	/**
+	 * redirect_ifhtml ()
+	 */
+	function redirect_ifhtml($link)
+	{
+		return exec_app(__FUNCTION__, $link);
+	}
+}
+
+if ( ! function_exists('redirect_ifjson'))
+{
+	/**
+	 * redirect_ifjson ()
+	 */
+	function redirect_ifjson($link)
+	{
+		return exec_app(__FUNCTION__, $link);
+	}
+}
+
+if ( ! function_exists('redirect'))
+{
+	/**
+	 * redirect ()
+	 */
+	function redirect($url, $query = NULL)
+	{
+		return exec_app(__FUNCTION__, $url, $query);
+	}
+}
+
+if ( ! function_exists('addJSON'))
+{
+	/**
+	 * addJSON ()
+	 */
+	function addJSON($key, $val = null)
+	{
+		return exec_app(__FUNCTION__, $key, $val);
+	}
+}
+
+if ( ! function_exists('addHTML'))
+{
+	/**
+	 * addHTML ()
+	 */
+	function addHTML($content)
+	{
+		return exec_app(__FUNCTION__, $content);
+	}
+}
+
+if ( ! function_exists('force_uri'))
+{
+	/**
+	 * force_uri ()
+	 */
+	function force_uri($uri = null)
+	{
+		return exec_app(__FUNCTION__, $uri);
+	}
+}
+
+if ( ! function_exists('register_css'))
+{
+	/**
+	 * register_css ()
+	 */
+	function register_css($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_css'))
+{
+	/**
+	 * load_css ()
+	 */
+	function load_css($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_inline_css'))
+{
+	/**
+	 * load_inline_css ()
+	 */
+	function load_inline_css($content, $orden = 80, $position = 'body')
+	{
+		return exec_app(__FUNCTION__, $content, $orden, $position);
+	}
+}
+
+if ( ! function_exists('register_js'))
+{
+	/**
+	 * register_js ()
+	 */
+	function register_js($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_js'))
+{
+	/**
+	 * load_js ()
+	 */
+	function load_js($codigo, $uri = NULL, $arr = [])
+	{
+		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
+	}
+}
+
+if ( ! function_exists('load_inline_js'))
+{
+	/**
+	 * load_inline_js ()
+	 */
+	function load_inline_js($content, $orden = 80, $position = 'body')
+	{
+		return exec_app(__FUNCTION__, $content, $orden, $position);
+	}
+}
+
+if ( ! function_exists('localize_js'))
+{
+	/**
+	 * localize_js ()
+	 */
+	function localize_js($codigo, $content, $when = 'after')
+	{
+		return exec_app(__FUNCTION__, $codigo, $content, $when);
+	}
+}
+
+if ( ! function_exists('translate'))
+{
+	/**
+	 * translate ()
+	 */
+	function translate($frase, $n = NULL, $lang = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n,
+			$lang
+		];
+
+		foreach($sprintf as &$param)
 		{
-			return exec_app(__FUNCTION__, $do, $conection);
+			$parameters[] =& $param;
 		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
+if ( ! function_exists('_t'))
+{
+	/**
+	 * _t ()
+	 */
+	function _t($frase, $n = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n
+		];
+
+		foreach($sprintf as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp('translate', $parameters);
+	}
+}
+
+if ( ! function_exists('obj'))
+{
+	/**
+	 * obj ()
+	 */
+	function obj($class, ...$pk)
+	{
+		$parameters = [
+			$class,
+		];
+
+		foreach($pk as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
+if ( ! function_exists('snippet'))
+{
+	/**
+	 * snippet ()
+	 */
+	function snippet($file, $return_content = TRUE, $declared_variables = [])
+	{
+		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
+	}
 }
