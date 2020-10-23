@@ -222,6 +222,28 @@ if ( ! class_exists('JApi'))
 			 * El orden a recorrer es de mayor a menor para que los directorios prioritariosde puedan sobreescribir los por defecto
 			 */
 			-> map_app_directories ([$this, '_init_load_config'], true)
+			;
+
+			/**
+			 * Procesar URI para validación de idioma
+			 * Se procesa la validación del lenguaje de manera prioritaria
+			 * por si el identificador del idioma esta en el URI y se deba omitir 
+			 * para el procesamiento del mismo
+			 */
+			$_uri_process_lang = true;
+			$_uri_process_lang = $this -> filter_apply ('JApi/uri-process/lang', $_uri_process_lang, $this->URI, $this->IDS);
+
+			if ($_uri_process_lang)
+			{
+				$this -> action_apply ('JApi/uri-process/lang/before');
+
+				/** Obtener el idioma dentro del uri */
+				$this -> _init_uriprocess_lang ();
+
+				$this -> action_apply ('JApi/uri-process/lang/after');
+			}
+
+			$this
 
 			/**
 			 * Procesando todos los /install/install.php
@@ -398,7 +420,7 @@ if ( ! class_exists('JApi'))
 			$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower($class)) . '.php';
 			$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower(str_replace('-', '_', $class))) . '.php';
 
-			$directories = $this->get_app_directories(true);
+			$directories = $this->get_app_directories();
 
 			foreach($directories as $directory)
 			{
@@ -599,25 +621,6 @@ if ( ! class_exists('JApi'))
 			}
 
 			$this -> _headers = [];
-
-			/**
-			 * Procesar URI para validación de idioma
-			 * Se procesa la validación del lenguaje de manera prioritaria
-			 * por si el identificador del idioma esta en el URI y se deba omitir 
-			 * para el procesamiento del mismo
-			 */
-			$_uri_process_lang = true;
-			$_uri_process_lang = $this -> filter_apply ('JApi/uri-process/lang', $_uri_process_lang, $this->URI, $this->IDS);
-
-			if ($_uri_process_lang)
-			{
-				$this -> action_apply ('JApi/uri-process/lang/before');
-
-				/** Obtener el idioma dentro del uri */
-				$this -> _init_uriprocess_lang ();
-
-				$this -> action_apply ('JApi/uri-process/lang/after');
-			}
 
 			/**
 			 * Preparación del URI
@@ -2616,6 +2619,8 @@ if ( ! class_exists('JApi'))
 				$trace = debug_backtrace(false);
 			}
 
+			$trace_original = $trace;
+
 			if (in_array($trace[0]['function'], ['logger']))
 			{
 				array_shift($trace);
@@ -2631,10 +2636,19 @@ if ( ! class_exists('JApi'))
 				array_shift($trace);
 			}
 
+			$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			{
+				array_shift($trace);
+			}
+
 			if (isset($trace[0]))
 			{
 				$filepath === __FILE__ and $line = NULL;
 				$filepath === __FILE__ and $filepath = NULL;
+
+				$filepath === $_japi_funcs_file and $line = NULL;
+				$filepath === $_japi_funcs_file and $filepath = NULL;
 
 				is_null($filepath) and $filepath = $trace[0]['file'];
 				is_null($line) and $line = $trace[0]['line'];
@@ -2642,6 +2656,8 @@ if ( ! class_exists('JApi'))
 				isset($trace[0]['class']) and ! isset($meta['class']) and $meta['class'] = $trace[0]['class'];
 				isset($trace[0]['function']) and ! isset($meta['function']) and $meta['function'] = $trace[0]['function'];
 			}
+
+			$meta['MYSQL_history'] = $this->_MYSQL_history;
 
 			$SER = [];
 			foreach($_SERVER as $x => $y)
@@ -2688,12 +2704,11 @@ if ( ! class_exists('JApi'))
 
 			$meta['cdkdsp'] = isset($_COOKIE['cdkdsp'])  ? $_COOKIE['cdkdsp']  : NULL; // Código de Dispositivo
 
-			$meta['MYSQL_history'] = $this->_MYSQL_history;
-
 			$trace_slim = array_map(function($arr){
 				return $arr['file'] . '#' . $arr['line'];
 			}, $trace);
 			$meta['trace_slim'] = $trace_slim;
+			$meta['trace_original'] = $trace_original;
 
 			try
 			{
@@ -2824,7 +2839,7 @@ if ( ! class_exists('JApi'))
 		{
 			if (is_null($base))
 			{
-				$_app_directories_list = $this->get_app_directories(true);
+				$_app_directories_list = $this->get_app_directories();
 
 				$base = HOMEPATH;
 				foreach($_app_directories_list as $base_dir)
@@ -4273,6 +4288,282 @@ if ( ! class_exists('JApi'))
 			}
 
 			return TRUE;
+		}
+
+		function translate ($frase, $n = NULL, ...$sprintf)
+		{
+			static $langs = [], $_lang = null;
+
+			if ($_lang <> $this->LANG)
+			{
+				$langs = [];
+				$_lang = $this->LANG;
+			}
+
+			if (count($langs) === 0)
+			{
+				$_app_directories_list = $this->get_app_directories(true);
+
+				foreach($_app_directories_list as $base)
+				{
+					if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_lang . '-noerror.php' and file_exists($file))
+					{
+						@include $file;
+					}
+
+					if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_lang . '.php' and file_exists($file))
+					{
+						@include $file;
+					}
+
+					if ($file = $path. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_lang) . '.php' and file_exists($file))
+					{
+						@include $file;
+					}
+
+					$_temp_lang = $_lang;
+					$_temp_lang = explode('-', $_temp_lang, 2);
+					$_temp_lang = $_temp_lang[0];
+
+					if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_temp_lang . '.php' and file_exists($file))
+					{
+						@include $file;
+					}
+
+					if ($file = $path. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_temp_lang) . '.php' and file_exists($file))
+					{
+						@include $file;
+					}
+				}
+			}
+
+			$_sprintf = function($frase, array $params = [])
+			{
+				array_unshift($params, $frase);
+				return call_user_func_array('sprintf', $params);
+			};
+
+			if (is_null($n))
+			{
+				$n = 1;
+			}
+
+			$frase_original = $frase;
+
+			$frase_traduccion = $frase;
+			if (is_array($frase))
+			{
+				$frase = array_values($frase);
+
+				switch(count($frase))
+				{
+					case 2:
+							if($n==1) $frase_traduccion = $frase[0];
+						else          $frase_traduccion = $frase[1];
+						break;
+					case 3:
+							if($n==1) $frase_traduccion = $frase[0];
+						elseif($n==0) $frase_traduccion = $frase[2];
+						else          $frase_traduccion = $frase[1];
+						break;
+					case 4:
+							if($n==1) $frase_traduccion = $frase[0];
+						elseif($n==0) $frase_traduccion = $frase[2];
+						elseif($n <0) $frase_traduccion = $frase[3];
+						else          $frase_traduccion = $frase[1];
+						break;
+					default:
+						$frase_traduccion = $frase[0];
+						break;
+				}
+
+				$frase = $frase[0];
+			}
+
+			if ( ! isset($langs[$frase_traduccion]) and ! isset($langs[$frase]))
+			{
+				if ($this->LANG <> 'ES')
+				{
+					
+					$this->mkdir2('/configs/translates', APPPATH);
+					$_file_dest = APPPATH . '/configs/translates/' . $this->LANG . '-noerror.php';
+
+					file_exists($_file_dest) or 
+					file_put_contents($_file_dest, '<?php' .PHP_EOL. '/** Generado automáticamente el ' . date('d/m/Y H:i:s') . ' */'.PHP_EOL);
+
+					$trace = debug_backtrace(false);
+
+					$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+					while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+					{
+						array_shift($trace);
+					}
+
+					$filename = __FILE__ . '#' . __LINE__;
+					if (isset($trace[0]))
+					{
+						$filename = $trace[0]['file'] . '#' . $trace[0]['line'];
+					}
+
+					$frase_esc = str_replace('\'', '\\\'', $frase);
+
+					$message = '' . PHP_EOL;
+					$message.= '/**' . PHP_EOL;
+					$message.= ' * Traducción por defecto - ' . md5($frase) . PHP_EOL;
+					$message.= ' * ' . PHP_EOL;
+					$message.= ' * ' . $frase . PHP_EOL;
+					$message.= ' * ' . PHP_EOL;
+					$message.= ' * Parámetro N: '. $n . PHP_EOL;
+					$message.= ' * Parámetros SPrintF: '. count($sprintf) . PHP_EOL;
+					if (count($sprintf) > 0)
+					{
+						$message.= ' * Detalle Parámetros SPrintF: ' . PHP_EOL;
+						$message.= ' * ```' . PHP_EOL;
+						$message.= ' * '. implode(PHP_EOL . ' * ', explode("\n", json_encode($sprintf, JSON_PRETTY_PRINT))) . PHP_EOL;
+						$message.= ' * ```' . PHP_EOL;
+					}
+					$message.= ' * Ubicado en '. $filename . PHP_EOL;
+					$message.= ' */' . PHP_EOL;
+					$message.= '$_frase = \'' . $frase_esc . '\';' . PHP_EOL;
+					$message.= 'isset($langs[$_frase]) or $langs[$_frase] = ';
+					
+					if (is_array($frase_original))
+					{
+						$message.= '[' . PHP_EOL;
+						foreach($frase_original as $_temp_frase)
+						{
+							$_temp_frase = str_replace('\'', '\\\'', $_temp_frase);
+							$message.= '    \'' . $_temp_frase . '\',' . PHP_EOL;
+						}
+						$message.= ']';
+					}
+					else
+					{
+						$message.= '$_frase';
+					}
+					$message.= ';' . PHP_EOL;
+
+					file_put_contents($_file_dest, $message, FILE_APPEND);
+				}
+
+				$langs[$frase] = $frase_traduccion;
+			}
+
+			array_unshift($sprintf, $n);
+
+			$traduccion = isset($langs[$frase_traduccion]) ? $langs[$frase_traduccion] : $langs[$frase];
+			$traduccion = (array)$traduccion;
+
+			switch(count($traduccion))
+			{
+				case 2:
+						if($n==1) $traduccion = $traduccion[0];
+					else          $traduccion = $traduccion[1];
+					break;
+				case 3:
+						if($n==1) $traduccion = $traduccion[0];
+					elseif($n==0) $traduccion = $traduccion[2];
+					else          $traduccion = $traduccion[1];
+					break;
+				case 4:
+						if($n==1) $traduccion = $traduccion[0];
+					elseif($n==0) $traduccion = $traduccion[2];
+					elseif($n <0) $traduccion = $traduccion[3];
+					else          $traduccion = $traduccion[1];
+					break;
+				default:
+					$traduccion = $traduccion[0];
+					break;
+			}
+
+			$traduccion = $_sprintf($traduccion, $sprintf);
+			return $traduccion;
+		}
+
+		function obj ($class, ...$pk)
+		{
+			$class = str_replace('/', '\\', $class);
+			$class = explode('\\', $class);
+			empty($class[0]) and array_shift($class);
+			$class[0] === 'Object' or array_unshift($class, 'Object');
+			$class = array_values($class);
+			$class = implode('\\', $class);
+
+			try
+			{
+				$_class_reflect  = new ReflectionClass($class);
+				$_class_instance = $_class_reflect -> newInstanceArgs($pk);
+			}
+			catch(Exception $e)
+			{
+				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+				{
+					throw $e;
+				}
+
+				$_class_instance = new $class();
+			}
+
+			return $_class_instance;
+		}
+
+		function snippet ($file, $return_content = TRUE, $declared_variables = [])
+		{
+			$directory = dirname($file);
+			$file_name = basename($file, '.php') . '.php';
+
+			if ($directory === '.')
+			{
+				$directory = DS;
+			}
+			elseif ($directory !== '')
+			{
+				$directory = strtr($directory, '/\\', DS.DS);
+				$directory = DS . ltrim($directory, DS);
+			}
+
+			$file_view = null;
+
+			$_app_directories_list = $this->get_app_directories();
+			foreach($_app_directories_list as $base)
+			{
+				$file_view = $base . '/snippets' . $directory . DS . $file_name;
+
+				if (file_exists($file_view))
+				{
+					break;
+				}
+
+				$file_view = null;
+			}
+
+			if (is_null($file_view))
+			{
+				trigger_error('Vista `' . $file . '` no encontrado', E_USER_WARNING);
+				return NULL;
+			}
+
+			if (is_array($return_content))
+			{
+				$declared_variables = (array)$declared_variables;
+				$declared_variables = array_merge($return_content, $declared_variables);
+
+				$return_content = TRUE;
+			}
+
+			if ($return_content)
+			{
+				ob_start();
+				extract($declared_variables, EXTR_REFS);
+				include $file_view;
+				$content = ob_get_contents();
+				ob_end_clean();
+
+				return $content;
+			}
+
+			return $file_view;
 		}
 
 		public function exit($status = NULL)
