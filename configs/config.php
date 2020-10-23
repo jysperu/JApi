@@ -39,7 +39,6 @@ $config['lang'] = NULL;
  * USER:	Usuario para conectar en el servidor
  * PASW:	Clave de la conección. (Si es NULO entonces el usuario no requiere de clave)
  * NAME:	Nombre de la base datos autorizado
- * PREF:	Prefijo que se utilizará para la creación de tablas por defecto
  *
  * @global
  */
@@ -50,6 +49,14 @@ $config['bd'] =& $config['db'];
 //$config['db']['user'] = 'root';
 //$config['db']['pasw'] = 'mysql';
 //$config['db']['name'] = 'intranet';
+
+/**
+ * db_logs
+ * Datos de la conección para alojar los errores
+ *
+ * @global
+ */
+$config['db_logs'] = [];
 
 /**
  * www
