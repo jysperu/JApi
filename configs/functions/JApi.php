@@ -734,6 +734,17 @@ if ( ! function_exists('load_css'))
 	}
 }
 
+if ( ! function_exists('load_inline_css'))
+{
+	/**
+	 * load_inline_css ()
+	 */
+	function load_inline_css($content, $orden = 80, $position = 'body')
+	{
+		return exec_app(__FUNCTION__, $content, $orden, $position);
+	}
+}
+
 if ( ! function_exists('register_js'))
 {
 	/**
@@ -756,6 +767,27 @@ if ( ! function_exists('load_js'))
 	}
 }
 
+if ( ! function_exists('load_inline_js'))
+{
+	/**
+	 * load_inline_js ()
+	 */
+	function load_inline_js($content, $orden = 80, $position = 'body')
+	{
+		return exec_app(__FUNCTION__, $content, $orden, $position);
+	}
+}
+
+if ( ! function_exists('localize_js'))
+{
+	/**
+	 * localize_js ()
+	 */
+	function localize_js($codigo, $content, $when = 'after')
+	{
+		return exec_app(__FUNCTION__, $codigo, $content, $when);
+	}
+}
 
 if ( ! function_exists('translate'))
 {

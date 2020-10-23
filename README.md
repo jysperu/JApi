@@ -126,9 +126,14 @@ Directorio/Archivo | Funcionalidad
     - [x] `/responses`.<br>El namespace base debe ser `Response`.
     - [x] `/configs/classes`.
 - [x] Recorrer Directorios de aplicación (incluyendo el _APPPATH_) en modo inversa
+    - [x] Se leen todos los archivos de funciones dentro de la carpeta `/configs/functions`
+    - [x] Se lee el archivo `/vendor/autoload.php`
+    - [x] Se lee el archivo `/configs/config.php`
+    - [x] Se ejecuta el archivo `/app.php`
+
 - [x] Se procesa el uri de la solicitud<br>En caso de ser llamado como comando se ejecuta el primer parametro enviado (eg: /usuario/jrojash)
     - [x] Se busca parametro de idioma
     - [x] Se redefine el uri formateado con los parametros solicitados; caso contrario, se redefine el uri por defecto considerando a los números como IDs 
     - [x] Se ejecuta el PreRequest del Uri
     - [x] Se ejecuta el Request de Uri
-    - [ ] Se llama al response según el tipo de Vista requerida (Html, JSON ó Archivo)
+    - [x] Se llama al response según el tipo de Vista requerida (Html, JSON ó Archivo)
