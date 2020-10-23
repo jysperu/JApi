@@ -757,6 +757,49 @@ if ( ! function_exists('load_js'))
 }
 
 
+if ( ! function_exists('translate'))
+{
+	/**
+	 * translate ()
+	 */
+	function translate($frase, $n = NULL, $lang = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n,
+			$lang
+		];
+
+		foreach($sprintf as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
+if ( ! function_exists('_t'))
+{
+	/**
+	 * _t ()
+	 */
+	function _t($frase, $n = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n
+		];
+
+		foreach($sprintf as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp('translate', $parameters);
+	}
+}
+
 if ( ! function_exists('obj'))
 {
 	/**

@@ -12,14 +12,14 @@ class Error404
 			<div class="col-12 col-sm-8 col-md-6 my-5">
 				<div class="card shadow-sm">
 					<div class="card-body">
-						<h1 class="text-primary">Página No Encontrada</h1>
+						<h1 class="text-primary"><?= _t('Página No Encontrada'); ?></h1>
 						<h5 class="text-muted mt-n2 mb-4">Error 404</h5>
-						<p class="mb-0">La página que buscas no existe o ha sido movido temporalmente.</p>
-						<p>Por favor valide el enlace de acceso o comuniquese con el administrador.</p>
+						<p class="mb-0"><?= _t('La página que buscas no existe o ha sido movido temporalmente.'); ?></p>
+						<p><?= _t('Por favor valide el enlace de acceso o comuniquese con el administrador.'); ?></p>
 						<br>
-						<a href="<?= url(); ?>" class="btn btn-primary btn-lg">Ir al INICIO</a>
+						<a href="<?= url(); ?>" class="btn btn-primary btn-lg"><?= _t('Ir al INICIO', 2, 'asd', 'asaa'); ?></a>
 						&nbsp;&nbsp;|&nbsp;&nbsp;
-						<a href="javascript:history.back()" class="btn btn-secondary btn-sm">Regresar</a>
+						<a href="javascript:history.back()" class="btn btn-secondary btn-sm"><?= _t('Regresar'); ?></a>
 					</div>
 				</div>
 			</div>
