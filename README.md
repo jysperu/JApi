@@ -4,7 +4,7 @@ Tiny PHP Framework
 
 ### Instalación
 
-El framework trabaja con [Url Amigable](https://es.wikipedia.org/wiki/URL_sem%C3%A1ntica) por lo que siempre será requerido hacer la configuración base para que funcione
+El framework trabaja con <a href="https://es.wikipedia.org/wiki/URL_sem%C3%A1ntica" target="_blank">Url Amigable</a> por lo que siempre será requerido hacer la configuración base para que funcione
 
 
 *Si se trabaja con Apache*:
@@ -27,8 +27,8 @@ location / {
 ```
 
 Para una instalación rápida es suficiente copiar la estructura de carpetas de JApp al directorio público <br>
-```/home/username/public_html```<br>
-```C:\xampp\htdocs```<br>
+`/home/username/public_html`<br>
+`C:\xampp\htdocs`<br>
 
 ```php
 <?php // index.php
@@ -62,11 +62,11 @@ Un directorio de aplicación es aquel que contiene todo el código a procesar pa
 
 Se puede alojar mas de 1 directorio de aplicación con lo que permite ejecutar un código modular basado en una estructura de directorios.
 
-Siempre se definirá un ```COREPATH``` y un ```APPPATH``` (*ambos pueden ser la misma ruta*).
+Siempre se definirá un `COREPATH` y un `APPPATH` (*ambos pueden ser la misma ruta*).
 
-Se puede agregar mas directorios de aplicación en el archivo ```/init.php``` la cual solo puede estar dentro de la carpeta ```APPPATH```.
+Se puede agregar mas directorios de aplicación en el archivo `/init.php` la cual solo puede estar dentro de la carpeta `APPPATH`.
 
-El nro de orden de lectura del ```APPPATH``` es **25** y el del ```COREPATH``` es de **75**, lo que significa que primero se procesará siempre la ruta APPPATH.
+El nro de orden de lectura del `APPPATH` es **25** y el del `COREPATH` es de **75**, lo que significa que primero se procesará siempre la ruta APPPATH.
 
 Se pueden añadir mas directorio de aplicación con un orden de lectura menor/mayor a los ya definidos para los directorios base, tambíen es posible cambiar el orden de los existentes incluyendo los directorios APPPATH y COREPATH.
 
@@ -117,7 +117,7 @@ Directorio/Archivo | Funcionalidad
 - [x] Se registrar el control de errores (no mostrar errores al usuario final, mantenerlo en modo desarrollo)
     -  [x] Guardar los errores en la base datos
 - [x] Se registra el hook del shutdown (para que desconecte la base datos en caso de haberla sido iniciada y/o limpie el buffer)
-- [x] Se llama al ```/init.php``` del _APPPATH_ (ello para poder añadir mas directorios de aplicación en caso sea necesario)
+- [x] Se llama al `/init.php` del _APPPATH_ (ello para poder añadir mas directorios de aplicación en caso sea necesario)
 - [x] Se lista todos los directorios de aplicación en el orden según dependencia (incluyendo el _APPPATH_).
 - [x] Se registra el autoload para realizar las busquedas de clases dentro de <br>(_incluyendo en los directorios de aplicación adicionales_):
     - [x] `/objects`.<br>El namespace base debe ser `Object`.
