@@ -1458,7 +1458,7 @@ if ( ! class_exists('JApi'))
 							'attr' => [],
 							'_before' => [],
 							'_after' => [
-								'<script>Using("jquery", "bootstrap");</script>'
+								'Using("jquery", "bootstrap");'
 							],
 							'deps' => [],
 						]
@@ -1669,7 +1669,7 @@ if ( ! class_exists('JApi'))
 		{
 			$lista =& $this->_response_data['html']['assets']['css'];
 
-			if (func_num_args() === 1)
+			if (is_null($uri) and count($arr) === 0)
 			{
 				if ( ! isset($lista[$codigo]))
 				{
@@ -1677,7 +1677,7 @@ if ( ! class_exists('JApi'))
 					$codigo = NULL;
 				}
 			}
-			elseif (func_num_args() === 2 and is_array($uri))
+			elseif (is_array($uri) and count($arr) === 0)
 			{
 				$arr = $uri;
 				
@@ -1725,7 +1725,7 @@ if ( ! class_exists('JApi'))
 		{
 			$lista =& $this->_response_data['html']['assets']['css'];
 
-			if (func_num_args() === 1)
+			if (is_null($uri) and count($arr) === 0)
 			{
 				if ( ! isset($lista[$codigo]))
 				{
@@ -1733,7 +1733,7 @@ if ( ! class_exists('JApi'))
 					$codigo = NULL;
 				}
 			}
-			elseif (func_num_args() === 2 and is_array($uri))
+			elseif (is_array($uri) and count($arr) === 0)
 			{
 				$arr = $uri;
 				
@@ -1790,7 +1790,7 @@ if ( ! class_exists('JApi'))
 		{
 			$lista =& $this->_response_data['html']['assets']['js'];
 
-			if (func_num_args() === 1)
+			if (is_null($uri) and count($arr) === 0)
 			{
 				if ( ! isset($lista[$codigo]))
 				{
@@ -1798,7 +1798,7 @@ if ( ! class_exists('JApi'))
 					$codigo = NULL;
 				}
 			}
-			elseif (func_num_args() === 2 and is_array($uri))
+			elseif (is_array($uri) and count($arr) === 0)
 			{
 				$arr = $uri;
 				
@@ -1848,7 +1848,7 @@ if ( ! class_exists('JApi'))
 		{
 			$lista =& $this->_response_data['html']['assets']['js'];
 
-			if (func_num_args() === 1)
+			if (is_null($uri) and count($arr) === 0)
 			{
 				if ( ! isset($lista[$codigo]))
 				{
@@ -1856,7 +1856,7 @@ if ( ! class_exists('JApi'))
 					$codigo = NULL;
 				}
 			}
-			elseif (func_num_args() === 2 and is_array($uri))
+			elseif (is_array($uri) and count($arr) === 0)
 			{
 				$arr = $uri;
 				
@@ -2343,6 +2343,288 @@ if ( ! class_exists('JApi'))
 
 			$_head_html = $this -> filter_apply('JApi/send-response-html/head', $_head_html);
 
+			$data_assets_css = $this -> _reorder_assets($data['assets']['css']);
+			$data_assets_js = $this -> _reorder_assets($data['assets']['js']);
+
+			$data_assets_css_head_noinline = array_filter($data_assets_css, function($o){
+				return $o['loaded'] and $o['position'] === 'head' and ! $o['inline'];
+			});
+			$data_assets_css_head_inline = array_filter($data_assets_css, function($o){
+				return $o['loaded'] and $o['position'] === 'head' and $o['inline'];
+			});
+			$data_assets_css_body_noinline = array_filter($data_assets_css, function($o){
+				return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
+			});
+			$data_assets_css_body_inline = array_filter($data_assets_css, function($o){
+				return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
+			});
+			$data_assets_js_head_noinline = array_filter($data_assets_js, function($o){
+				return $o['loaded'] and $o['position'] === 'head' and ! $o['inline'];
+			});
+			$data_assets_js_head_inline = array_filter($data_assets_js, function($o){
+				return $o['loaded'] and $o['position'] === 'head' and $o['inline'];
+			});
+			$data_assets_js_body_noinline = array_filter($data_assets_js, function($o){
+				return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
+			});
+			$data_assets_js_body_inline = array_filter($data_assets_js, function($o){
+				return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
+			});
+
+			$parsed = explode('<script>', $_body_html);
+			if (count($parsed) > 1)
+			{
+				$_body_html = array_shift($parsed);
+				foreach($parsed as $_temp)
+				{
+					$_temp = explode('</script>', $_temp, 2);
+					$_body_html.= $_temp[1];
+					$data_assets_js_body_inline[] = [
+						'codigo' => uniqid('body_inline_js_founds_'),
+						'uri' => $_temp[0],
+						'loaded' => true,
+						'version' => null,
+						'inline' => true,
+						'attr' => [],
+						'deps' => [],
+						'position' => 'body',
+						'orden_original' => 99,
+						'orden' => 99,
+					];
+				}
+			}
+
+			$parsed = explode('<style>', $_body_html);
+			if (count($parsed) > 1)
+			{
+				$_body_html = array_shift($parsed);
+				foreach($parsed as $_temp)
+				{
+					$_temp = explode('</style>', $_temp, 2);
+					$_body_html.= $_temp[1];
+					$data_assets_css_body_inline[] = [
+						'codigo' => uniqid('body_inline_css_founds_'),
+						'uri' => $_temp[0],
+						'loaded' => true,
+						'version' => null,
+						'inline' => true,
+						'attr' => [],
+						'deps' => [],
+						'position' => 'body',
+						'orden_original' => 99,
+						'orden' => 99,
+					];
+				}
+			}
+
+			foreach($data_assets_css_head_noinline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'version'   => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'rel' => 'stylesheet',
+					'type' => 'text/css',
+				], (array)$dats['attr']);
+
+				if ( ! empty($dats['uri']))
+				{
+					$attr['href'] = $dats['uri'];
+					if ( ! is_null($dats['version']))
+					{
+						$_has_sign = preg_match('/\?/i', $attr['href']);
+						$attr['href'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+					}
+				}
+				
+				$_head_html .= PHP_EOL . '<link' . $this -> _html_attrs ($attr) . ' />';
+			}
+
+			foreach($data_assets_js_head_noinline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'version'   => NULL,
+					'attr'      => [],
+					'_before'   => [],
+					'_after'   => [],
+				], $dats);
+
+				$attr = array_merge([
+					'type' => 'application/javascript',
+				], (array)$dats['attr']);
+
+				if ( ! empty($dats['uri']))
+				{
+					$attr['src'] = $dats['uri'];
+					if ( ! is_null($dats['version']))
+					{
+						$_has_sign = preg_match('/\?/i', $attr['href']);
+						$attr['src'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+					}
+				}
+
+				foreach($dats['_before'] as $_tmp_script)
+				{
+					function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+					$_head_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+				}
+
+				$_head_html .= PHP_EOL . '<script' . $this -> _html_attrs ($attr) . '></script>';
+
+				foreach($dats['_after'] as $_tmp_script)
+				{
+					function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+					$_head_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+				}
+			}
+
+			foreach($data_assets_css_head_inline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'rel' => 'stylesheet',
+					'type' => 'text/css',
+				], (array)$dats['attr']);
+
+				$content = $dats['uri'];
+				function_exists('css_compressor') and $content = css_compressor($content);
+
+				$_head_html .= PHP_EOL . '<style' . $this -> _html_attrs ($attr) . '>' . $content . '</style>';
+			}
+
+			foreach($data_assets_js_head_inline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'type' => 'application/javascript',
+				], (array)$dats['attr']);
+
+				$content = $dats['uri'];
+				function_exists('js_compressor') and $content = js_compressor($content);
+
+				$_head_html .= PHP_EOL . '<script' . $this -> _html_attrs ($attr) . '>' . $content . '</script>';
+			}
+
+			foreach($data_assets_css_body_noinline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'version'   => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'rel' => 'stylesheet',
+					'type' => 'text/css',
+				], (array)$dats['attr']);
+
+				if ( ! empty($dats['uri']))
+				{
+					$attr['href'] = $dats['uri'];
+					if ( ! is_null($dats['version']))
+					{
+						$_has_sign = preg_match('/\?/i', $attr['href']);
+						$attr['href'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+					}
+				}
+				
+				$_body_html .= PHP_EOL . '<link' . $this -> _html_attrs ($attr) . ' />';
+			}
+
+			foreach($data_assets_js_body_noinline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'version'   => NULL,
+					'attr'      => [],
+					'_before'   => [],
+					'_after'   => [],
+				], $dats);
+
+				$attr = array_merge([
+					'type' => 'application/javascript',
+				], (array)$dats['attr']);
+
+				if ( ! empty($dats['uri']))
+				{
+					$attr['src'] = $dats['uri'];
+					if ( ! is_null($dats['version']))
+					{
+						$_has_sign = preg_match('/\?/i', $attr['href']);
+						$attr['src'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+					}
+				}
+
+				foreach($dats['_before'] as $_tmp_script)
+				{
+					function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+					$_body_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+				}
+
+				$_body_html .= PHP_EOL . '<script' . $this -> _html_attrs ($attr) . '></script>';
+
+				foreach($dats['_after'] as $_tmp_script)
+				{
+					function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+					$_body_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+				}
+			}
+
+			foreach($data_assets_css_body_inline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'rel' => 'stylesheet',
+					'type' => 'text/css',
+				], (array)$dats['attr']);
+
+				$content = $dats['uri'];
+				function_exists('css_compressor') and $content = css_compressor($content);
+
+				$_body_html .= PHP_EOL . '<style' . $this -> _html_attrs ($attr) . '>' . $content . '</style>';
+			}
+
+			foreach($data_assets_js_body_inline as $dats)
+			{
+				$dats = array_merge([
+					'codigo'    => NULL,
+					'uri'       => NULL,
+					'attr'      => [],
+				], $dats);
+
+				$attr = array_merge([
+					'type' => 'application/javascript',
+				], (array)$dats['attr']);
+
+				$content = $dats['uri'];
+				function_exists('js_compressor') and $content = js_compressor($content);
+
+				$_body_html .= PHP_EOL . '<script' . $this -> _html_attrs ($attr) . '>' . $content . '</script>';
+			}
+
 			$_head_tag_after .= PHP_EOL . '</head>' . PHP_EOL;
 			$_body_tag_after .= PHP_EOL . '</body>' . PHP_EOL;
 			$_html_tag_after .= '</html>';
@@ -2362,6 +2644,95 @@ if ( ! class_exists('JApi'))
 
 			echo $result;
 			die();
+		}
+
+		protected function _reorder_assets ($arr)
+		{
+			// Validar Dependencias
+			foreach($arr as &$item)
+			{
+				$position = $item['position'];
+				unset($item['position']);
+				$item['position'] = $position;
+				$item['orden_original'] = $item['orden'];
+				unset($item['orden']);
+
+				if (count($item['deps']) === 0)
+				{
+					$item['orden'] = $item['orden_original'];
+				}
+				unset($item);
+			}
+
+			$validar = true;
+			$validar_c = 10;
+			while($validar and $validar_c > 0)
+			{
+				$validar = false;
+				$validar_c--;
+
+				foreach($arr as &$item)
+				{
+					if (isset($item['orden']))
+					{
+						continue;
+					}
+
+					if (count($item['deps']) === 0)
+					{
+						$item['orden'] = $item['orden_original'];
+						continue;
+					}
+
+					$_orden_settng = true;
+					$_orden_setted = $item['orden_original'];
+					$_position_new = $item['position'];
+					foreach($item['deps'] as $_dep)
+					{
+						if ( ! isset($arr[$_dep]))
+						{
+							// Dependencia invalida
+							continue;
+						}
+
+						if (isset($arr[$_dep]['orden']))
+						{
+							if ($_orden_setted < $arr[$_dep]['orden'])
+							{
+								$_orden_setted = $arr[$_dep]['orden'] + 0.01;
+								if ($arr[$_dep]['position'] === 'body')
+								{
+									$_position_new = 'body';
+								}
+								if ( ! $arr[$_dep]['loaded'])
+								{
+									$item['orden'] = $item['orden_original'];
+									$item['loaded'] = false;
+									continue 2;
+								}
+							}
+							continue;
+						}
+						
+						$validar = true;
+						$_orden_settng = false;
+					}
+
+					if ($_orden_settng)
+					{
+						$item['orden'] = $_orden_setted;
+						$item['position'] = $_position_new;
+						continue;
+					}
+				}
+			}
+
+			usort($arr, function($a, $b){
+				if ($a['orden'] === $b['orden']) return 0;
+				return $a['orden'] < $b['orden'] ? -1 : 1;
+			});
+
+			return $arr;
 		}
 
 		//============= HELPERS =============//
