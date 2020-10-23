@@ -1759,6 +1759,33 @@ if ( ! class_exists('JApi'))
 			return $this;
 		}
 
+		public function load_inline_css ($content, $orden = 80, $position = 'body')
+		{
+			static $codes = [];
+
+			$lista =& $this->_response_data['html']['assets']['css'];
+
+			if ( ! is_numeric($orden))
+			{
+				$position = $orden;
+				$orden = NULL;
+			}
+
+			is_numeric($orden) or $orden = 80;
+			in_array(mb_strtolower($position), ['head', 'body']) or $position = 'body';
+
+			isset($codes[$position . '_' . $orden]) or $codes[$position . '_' . $orden] = uniqid($position . '_' . $orden . '_');
+			$codigo = $codes[$position . '_' . $orden];
+			isset($lista[$codigo]['uri']) and $content = $lista[$codigo]['uri'] . $content;
+
+			$this -> load_css($codigo, $content, [
+				'orden' => $orden,
+				'position' => $position,
+			]);
+			$lista[$codigo]['inline'] = true;
+			return $this;
+		}
+
 		public function register_js ($codigo, $uri = NULL, $arr = [])
 		{
 			$lista =& $this->_response_data['html']['assets']['js'];
@@ -1852,6 +1879,47 @@ if ( ! class_exists('JApi'))
 
 			$this -> register_js($codigo, $uri, $arr);
 			$lista[$codigo]['loaded'] = true;
+			return $this;
+		}
+
+		public function load_inline_js ($content, $orden = 80, $position = 'body')
+		{
+			static $codes = [];
+
+			$lista =& $this->_response_data['html']['assets']['js'];
+
+			if ( ! is_numeric($orden))
+			{
+				$position = $orden;
+				$orden = NULL;
+			}
+
+			is_numeric($orden) or $orden = 80;
+			in_array(mb_strtolower($position), ['head', 'body']) or $position = 'body';
+
+			isset($codes[$position . '_' . $orden]) or $codes[$position . '_' . $orden] = uniqid($position . '_' . $orden . '_');
+			$codigo = $codes[$position . '_' . $orden];
+			isset($lista[$codigo]['uri']) and $content = $lista[$codigo]['uri'] . $content;
+
+			$this -> load_js($codigo, $content, [
+				'orden' => $orden,
+				'position' => $position,
+			]);
+			$lista[$codigo]['inline'] = true;
+			return $this;
+		}
+
+		public function localize_js ($codigo, $content, $when = 'after')
+		{
+			$lista =& $this->_response_data['html']['assets']['js'];
+
+			if ( ! isset($lista[$codigo]))
+			{
+				trigger_error('JS con código `' . $codigo . '` no encontrado');
+				return $this;
+			}
+
+			$lista[$codigo]['_' . $when][] = $content;
 			return $this;
 		}
 
