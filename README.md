@@ -130,6 +130,7 @@ Directorio/Archivo | Funcionalidad
     - [x] Se lee el archivo `/vendor/autoload.php`
     - [x] Se lee el archivo `/configs/config.php`
     - [x] Se ejecuta el archivo `/app.php`
+
 - [x] Se procesa el uri de la solicitud<br>En caso de ser llamado como comando se ejecuta el primer parametro enviado (eg: /usuario/jrojash)
     - [x] Se busca parametro de idioma
     - [x] Se redefine el uri formateado con los parametros solicitados; caso contrario, se redefine el uri por defecto considerando a los números como IDs 
