@@ -5,6 +5,9 @@ class Error404
 {
 	public function index ()
 	{
+		load_js('using.js');
+		localize_js('using.js', 'Using("bootstrap");');
+
 		?>
 <div class="page page-404">
 	<div class="container">
@@ -26,11 +29,6 @@ class Error404
 		</div>
 	</div>
 </div>
-
-<script src="https://assets.jys.pe/using.js/using.full.min.js"></script>
-<script>
-	Using('bootstrap');
-</script>
 		<?php
 	}
 }
