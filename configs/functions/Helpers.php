@@ -2153,3 +2153,195 @@ if ( ! function_exists('transform_size'))
 		return $r;
 	}
 }
+
+if ( ! function_exists('get_image'))
+{
+	/**
+	 * get_image()
+	 * Obtiene la ruta convertida de la imagen
+	 *
+	 * @param string Ruta de la imagen
+	 * @param array  Opciones de la imagen
+	 * @param string Ruta de la imagen por defecto en caso de que no se encuentre la primera imagen
+	 * @return string
+	 */
+	function get_image($src, $opt = [], $def = NULL)
+	{
+		$url = parse_url($src);
+
+		isset($url['scheme']) or $url['scheme']= url('scheme');
+		isset($url['host'])   or $url['host']  = url('host');
+		isset($url['query'])  or $url['query'] = '';
+		isset($url['path'])   or $url['path']  = '';
+
+		$url['path'] = '/' . ltrim($url['path'], '/');
+
+		$src = build_url($url);
+		$externo = ! preg_match('#'.regex(url('host-base')).'#i', $src);
+
+		/**
+		 * DESCARGAR LA IMAGEN SI ES EXTERNO AL SERVER
+		 */
+		if ($externo)
+		{
+			$url = parse_url($src);
+
+			isset($url['query']) or $url['query'] = '';
+			isset($url['fragment']) or $url['fragment'] = '';
+
+			extract($url, EXTR_PREFIX_ALL, 'src');
+
+			$directorio = explode('/', $src_path);
+			count($directorio) and empty($directorio[0]) and array_shift($directorio);
+
+			array_unshift($directorio, $src_host);
+			array_unshift($directorio, 'externo');
+			array_unshift($directorio, '');
+
+			$file_name = array_pop($directorio);
+
+			$file_name = explode('.', $file_name);
+			$file_ext  = count($file_name) > 1 ? ('.' . array_pop($file_name)) : '';
+			$file_name = implode('.', $file_name);
+
+			$directorio = implode(DS, $directorio);
+
+			if ( ! empty($src_query) or ! empty($src_fragment))
+			{
+				$file_name = md5(json_encode([
+					$file_name,
+					$src_query,
+					$src_fragment
+				]));
+			}
+
+			$file_saved = $directorio . DS . $file_name . $file_ext;
+
+			mkdir2(dirname($file_saved), HOMEPATH);
+
+			if ( ! file_exists(HOMEPATH . $file_saved))
+			{
+				try
+				{
+					$contents = file_get_contents($src);
+
+					if (empty($contents))
+					{
+						throw new Exception('Contenido Vacío');
+					}
+				}
+				catch(Exception $e)
+				{
+					if ( ! is_empty($def))
+					{
+						return get_image($def, $opt);
+					}
+					return $src;
+				}
+
+				file_put_contents(HOMEPATH . $file_saved, $contents);
+			}
+
+			$url['scheme'] = url('scheme');
+			$url['host'] = url('host');
+			$url['path'] = strtr($file_saved, '\\/', '//');
+
+			$url['query'] = '';
+			$url['fragment'] = '';
+
+			$src = build_url($url);
+		}
+		unset($externo);
+
+		/**
+		 * PARSEANDO LA SRC
+		 */
+		$url = parse_url($src);
+
+		isset($url['query']) or $url['query'] = '';
+		isset($url['fragment']) or $url['fragment'] = '';
+
+		/**
+		 * EXTRAYENDO LOS DATOS DE LA URL
+		 */
+		extract($url, EXTR_PREFIX_ALL, 'src');
+
+		// Obtener los parametros de la SRC
+		parse_str($src_query, $src_params);
+
+		$directorio = explode('/', $src_path);
+		count($directorio) and empty($directorio[0]) and array_shift($directorio);
+
+		$file_name = array_pop($directorio);
+
+		$file_name = explode('.', $file_name);
+		$file_ext  = count($file_name) > 1 ? ('.' . array_pop($file_name)) : '';
+		$file_name = implode('.', $file_name);
+
+		if (empty($file_name))
+		{
+			// No hay ningun nombre de archivo en la $src
+			return $src;
+		}
+
+		// Eliminar carpetas del slug
+		if (count($directorio) > 0 and $directorio[0] === 'img')
+		{
+			array_shift($directorio);
+		}
+
+		isset($directorio[0]) or array_unshift($directorio, ''); ## Agrega el espacio inicial
+		empty($directorio[0]) or array_unshift($directorio, ''); ## Agrega el espacio inicial
+
+		$directorio = implode(DS, $directorio);
+
+		$opts_in_name = ImgManager :: GetParamsFromName ($file_name);
+
+		if ( ! is_array($opt))
+		{
+			if (is_callable($opt))
+			{
+				$opt = $opt($src, $url, $src_params);
+			}
+
+			if (is_string($opt) or ! is_array($opt))
+			{
+				$opt = (string)$opt;
+				$opt = ['size' => $opt];
+			}
+		}
+	
+		$opt = array_merge([
+			'size'    => NULL,
+			'crop'    => NULL,
+			'offset'  => NULL,
+
+			'quality' => NULL,
+		], $opts_in_name, (array)$opt);
+
+		$real_file = HOMEPATH . $directorio . DS .$file_name . $file_ext;
+		$real_file = strtr($real_file, '/\\', DS.DS);
+
+		$opt_uri = ImgManager :: GetParamsUri($opt, $real_file);
+
+		$the_file = '/img' . $directorio . '/' . $file_name . $opt_uri . $file_ext;
+		$the_file = strtr($the_file, '/\\', '//');
+
+		$the_file_path = HOMEPATH . str_replace('/', DS, $the_file);
+
+		$time = file_exists($real_file) ? filemtime($real_file) : 404;
+		if (file_exists($the_file_path))
+		{
+			$_time = filemtime($the_file_path);
+			if ($time > $_time)
+			{
+				unlink($the_file_path);
+			}
+		}
+
+		$url['path'] = $the_file;
+		$url['query'] = $time;
+
+		return build_url($url);
+	}
+}
