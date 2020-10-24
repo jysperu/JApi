@@ -884,3 +884,25 @@ if ( ! function_exists('getUTC'))
 		return exec_app(__FUNCTION__);
 	}
 }
+
+if ( ! function_exists('response_cache'))
+{
+	/**
+	 * response_cache ()
+	 */
+	function response_cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+	{
+		return exec_app('cache', $days, $for, $rev);
+	}
+}
+
+if ( ! function_exists('response_nocache'))
+{
+	/**
+	 * response_nocache ()
+	 */
+	function response_nocache()
+	{
+		return exec_app('nocache');
+	}
+}
