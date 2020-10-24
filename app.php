@@ -745,27 +745,6 @@ if ( ! class_exists('JApi'))
 		}
 
 		/**
-		 * _init_uriprocess_img()
-		 */
-		protected function _init_uriprocess_img ()
-		{
-			$_uri = explode('/', $this -> URI);
-			empty($_uri[0]) and array_shift($_uri);
-
-			$_uri_img = array_shift($_uri);
-			$_img_slug = 'img';
-			$_img_slug = $this -> filter_apply ('JApi/uri-process/img/slug', $_img_slug);
-
-			if ($_img_slug !== $_uri_img)
-			{
-				return $this;
-			}
-
-			die_array();
-			return $this;
-		}
-
-		/**
 		 * _init_uriprocess_lang()
 		 */
 		protected function _init_uriprocess_lang ()
