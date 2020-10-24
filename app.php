@@ -619,6 +619,10 @@ if ( ! class_exists('JApi'))
 			{
 				$this -> _response_type = 'json';
 			}
+			elseif ($this -> is_command())
+			{
+				$this -> _response_type = 'cli';
+			}
 
 			$this -> _headers = [];
 
