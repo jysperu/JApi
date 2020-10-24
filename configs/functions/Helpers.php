@@ -561,6 +561,14 @@ if ( ! function_exists('js_compressor'))
 
 		try
 		{
+			$temp = (new MatthiasMullie\Minify\JS($content))->minify();
+			$content = $temp;
+		}
+		catch (Exception $e)
+		{}
+
+		try
+		{
 			if ($use_apiminifier)
 			{
 				$temp = url_post('https://javascript-minifier.com/raw', array('input' => (string)$content));
@@ -621,6 +629,14 @@ if ( ! function_exists('css_compressor'))
 				return file_get_contents($cache_file);
 			}
 		}
+
+		try
+		{
+			$temp = (new MatthiasMullie\Minify\CSS($content))->minify();
+			$content = $temp;
+		}
+		catch (Exception $e)
+		{}
 
 		try
 		{
@@ -1705,6 +1721,21 @@ if ( ! function_exists('csvstr'))
 	}
 }
 
+if ( ! function_exists('get_mime'))
+{
+	/**
+	 * get_mime()
+	 * Obtiene la información de una extensión
+	 *
+	 * @return Mixed
+	 */
+	function get_mime ($ext)
+	{
+		return FileMimes::instance() 
+		-> consulta($ext);
+	}
+}
+
 if ( ! function_exists('filemime'))
 {
 	/**
@@ -1926,6 +1957,38 @@ if ( ! function_exists('unlink_directory'))
 
 			return TRUE;
 		}
+	}
+}
+
+if ( ! function_exists('encrypt'))
+{
+	/**
+	 * Encrypt a message
+	 * 
+	 * @param string $message - message to encrypt
+	 * @param string $key - encryption key
+	 * @return string
+	 */
+	function encrypt(string $message, string $key)
+	{
+		return (string) Crypter::instance() 
+		-> encrypt($message, $key);
+	}
+}
+
+if ( ! function_exists('decrypt'))
+{
+	/**
+	 * Decrypt a message
+	 * 
+	 * @param string $encrypted - message encrypted with safeEncrypt()
+	 * @param string $key - encryption key
+	 * @return string
+	 */
+	function decrypt(string $encrypted, string $key)
+	{
+		return (string) Crypter::instance() 
+		-> decrypt($encrypted, $key);
 	}
 }
 
