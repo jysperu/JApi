@@ -239,6 +239,27 @@ if ( ! class_exists('JApi'))
 				exit();
 			}
 
+			/** Comprobar si se cargo WWW o si no se requiere */
+			$WWW = $this -> url('www');
+			$WWW_def = $this -> config('www', ['www' => NULL]);
+
+			if ( ! is_null($WWW_def) and $WWW !== $WWW_def)
+			{
+				$host =& $this -> url('host');
+
+				if ($WWW_def)
+				{
+					$host = 'www.' . $host;
+				}
+				else
+				{
+					$host = preg_replace('/^www\./i', '', $host);
+				}
+
+				$this -> redirect( $this -> build_url( $this -> url('array')));
+				exit();
+			}
+
 			/**
 			 * Procesar URI para validación de idioma
 			 * Se procesa la validación del lenguaje de manera prioritaria
