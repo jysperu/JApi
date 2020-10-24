@@ -520,7 +520,7 @@ class FileMimes implements ArrayAccess
 					$i = 0;
 				}
 				
-				return FT::instance()->consulta($this->extensiones[$i]);
+				return FileMimes::instance()->consulta($this->extensiones[$i]);
 			}
 			
 			public function __invoke($i = 0)
