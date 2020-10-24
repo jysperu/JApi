@@ -470,6 +470,28 @@ if ( ! function_exists('is_mail'))
 		}
 
 		$domain = mb_substr($v, $at_pos + 1);
+		static $temporary_mail_domains = [];
+		if(count($temporary_mail_domains) === 0)
+		{
+			try
+			{
+				if ( ! file_exists(__DIR__ . '/disposables.json'))
+				{
+					trigger_error('Disposables Domains Files Not Exists', E_USER_WARNING);
+					return TRUE;
+				}
+
+				$temporary_mail_domains = json_decode(file_get_contents(__DIR__ . '/disposables.json'), true);
+			}
+			catch(Exception $e)
+			{}
+		}
+
+		if (in_array($domain, $temporary_mail_domains))
+		{
+			//Is a Temporary Mail
+			return FALSE;
+		}
 
 		return TRUE;
 	}
