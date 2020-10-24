@@ -3553,6 +3553,16 @@ if ( ! class_exists('JApi'))
 				isset($_parsed['pass']) and $datos['pass'] = $_parsed['pass'];
 
 				$datos['path'] = isset($_parsed['path']) ? $_parsed['path'] : '/';
+				if ($this -> is_command())
+				{
+					global $argv;
+					array_shift($argv); // Archivo SCRIPT
+					if (count($argv) > 0)
+					{
+						$datos['path'] = array_shift($argv);
+					}
+				}
+
 				empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
 
 				$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
