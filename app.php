@@ -243,6 +243,20 @@ if ( ! class_exists('JApi'))
 				$this -> action_apply ('JApi/uri-process/lang/after');
 			}
 
+			/** Estableciendo los charsets a todo lo que corresponde */
+			$charset = $this->config('charset');
+			$charset = mb_strtoupper($charset);
+			ini_set('default_charset', $charset);
+			ini_set('php.internal_encoding', $charset);
+			@ini_set('mbstring.internal_encoding', $charset);
+			mb_substitute_character('none');
+			@ini_set('iconv.internal_encoding', $charset);
+			define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
+
+			/** Estableciendo el timezone a todo lo que corresponde */
+			$timezone = $this->config('timezone');
+			date_default_timezone_set($timezone);
+
 			$this
 
 			/**
@@ -257,20 +271,6 @@ if ( ! class_exists('JApi'))
 			 */
 			-> map_app_directories ([$this, '_init_load_app'])
 			;
-
-			/** Estableciendo los charsets a todo lo que corresponde */
-			$charset = $this->config('charset');
-			$charset = mb_strtoupper($charset);
-			ini_set('default_charset', $charset);
-			ini_set('php.internal_encoding', $charset);
-			@ini_set('mbstring.internal_encoding', $charset);
-			mb_substitute_character('none');
-			@ini_set('iconv.internal_encoding', $charset);
-			define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
-
-			/** Estableciendo el timezone a todo lo que corresponde */
-			$timezone = $this->variables['timezone'];
-			date_default_timezone_set($timezone);
 
 			/** Iniciando el proceso del uri */
 			$this -> _init_uriprocess();
@@ -1345,6 +1345,26 @@ if ( ! class_exists('JApi'))
 				$parsed_url['query'] = array_merge($parsed_url['query'], $query);
 			}
 
+			$url =  $this -> build_url ($parsed_url);
+
+			while (ob_get_level() > 0)
+			{
+				ob_end_clean();
+			}
+
+			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
+			die();
+		}
+
+		/**
+		 * build_url()
+		 * Construye una URL
+		 *
+		 * @param	array	$parsed_url	Partes de la URL a construir {@see http://www.php.net/manual/en/function.parse-url.php}
+		 * @return	string
+		 */
+		function build_url($parsed_url)
+		{
 			isset($parsed_url['query']) and is_array($parsed_url['query']) and 
 			$parsed_url['query'] = http_build_query($parsed_url['query']);
 
@@ -1372,16 +1392,22 @@ if ( ! class_exists('JApi'))
 
 			$pass     = ($user || $pass) ? "$pass@" : '';
 
-			$url =  $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
-			
+			return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+		}
 
-			while (ob_get_level() > 0)
-			{
-				ob_end_clean();
-			}
+		/**
+		 * getUTC()
+		 * Obtiene el UTC del timezone actual
+		 *
+		 * @return string
+		 */
+		function getUTC()
+		{
+			$_utc_dtz = new DateTimeZone(date_default_timezone_get());
+			$_utc_dt  = new DateTime('now', $_utc_dtz);
+			$_utc_offset = $_utc_dtz->getOffset($_utc_dt);
 
-			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
-			die();
+			return sprintf( "%s%02d:%02d", ( $_utc_offset >= 0 ) ? '+' : '-', abs( $_utc_offset / 3600 ), abs( $_utc_offset % 3600 ) );
 		}
 
 		protected function _getandclear_buffer_content ()
@@ -4325,11 +4351,7 @@ if ( ! class_exists('JApi'))
 
 			$conection->_charset = $charset;
 
-			$_utc_dtz = new DateTimeZone(date_default_timezone_get());
-			$_utc_dt  = new DateTime('now', $_utc_dtz);
-			$_utc_offset = $_utc_dtz->getOffset($_utc_dt);
-
-			$utc = sprintf( "%s%02d:%02d", ( $_utc_offset >= 0 ) ? '+' : '-', abs( $_utc_offset / 3600 ), abs( $_utc_offset % 3600 ) );
+			$utc = $this -> getUTC();
 
 			if ( ! mysqli_query($conection, 'SET time_zone = "' . $utc . '";'))
 			{

@@ -862,3 +862,25 @@ if ( ! function_exists('snippet'))
 		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
 	}
 }
+
+if ( ! function_exists('build_url'))
+{
+	/**
+	 * build_url ()
+	 */
+	function build_url($parsed_url)
+	{
+		return exec_app(__FUNCTION__, $parsed_url);
+	}
+}
+
+if ( ! function_exists('getUTC'))
+{
+	/**
+	 * getUTC ()
+	 */
+	function getUTC()
+	{
+		return exec_app(__FUNCTION__);
+	}
+}
