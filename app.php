@@ -224,6 +224,8 @@ if ( ! class_exists('JApi'))
 			-> map_app_directories ([$this, '_init_load_config'], true)
 			;
 
+			if ( ! $this->is_command()):
+				
 			/**
 			 * Procesar URI para validación de idioma
 			 * Se procesa la validación del lenguaje de manera prioritaria
@@ -242,6 +244,8 @@ if ( ! class_exists('JApi'))
 
 				$this -> action_apply ('JApi/uri-process/lang/after');
 			}
+
+			endif;
 
 			/** Estableciendo los charsets a todo lo que corresponde */
 			$charset = $this->config('charset');
