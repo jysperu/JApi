@@ -224,6 +224,37 @@ if ( ! class_exists('JApi'))
 			-> map_app_directories ([$this, '_init_load_config'], true)
 			;
 
+			$this -> _rqs_method = $this -> url('request_method');
+			$this -> _rqs_uri_inicial = $this -> URI = $this -> url('path');
+
+			if (defined('FORCE_RSP_TYPE'))
+			{
+				$this -> _response_type = FORCE_RSP_TYPE;
+			}
+			elseif (isset($_GET['contentOnly']) or (isset($_GET['_']) and $_GET['_'] === 'co'))
+			{
+				$this -> _response_type = 'body';
+			}
+			elseif (
+				(
+					isset($_SERVER['HTTP_X_REQUESTED_WITH']) and 
+					(
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' or 
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'androidapp' or 
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'iosapp'
+					)
+				) or isset($_GET['json']) or isset($_GET['cron'])
+			)
+			{
+				$this -> _response_type = 'json';
+			}
+			elseif ($this -> is_command())
+			{
+				$this -> _response_type = 'cli';
+			}
+
+			$this -> _headers = [];
+
 			if ( ! $this->is_command()):
 				
 			/** Comprobar si se llego con HTTPS o si no se requiere */
@@ -633,37 +664,6 @@ if ( ! class_exists('JApi'))
 		 */
 		protected function _init_uriprocess ()
 		{
-			$this -> _rqs_method = $this -> url('request_method');
-			$this -> _rqs_uri_inicial = $this -> URI = $this -> url('path');
-
-			if (defined('FORCE_RSP_TYPE'))
-			{
-				$this -> _response_type = FORCE_RSP_TYPE;
-			}
-			elseif (isset($_GET['contentOnly']) or (isset($_GET['_']) and $_GET['_'] === 'co'))
-			{
-				$this -> _response_type = 'body';
-			}
-			elseif (
-				(
-					isset($_SERVER['HTTP_X_REQUESTED_WITH']) and 
-					(
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' or 
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'androidapp' or 
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'iosapp'
-					)
-				) or isset($_GET['json']) or isset($_GET['cron'])
-			)
-			{
-				$this -> _response_type = 'json';
-			}
-			elseif ($this -> is_command())
-			{
-				$this -> _response_type = 'cli';
-			}
-
-			$this -> _headers = [];
-
 			/**
 			 * Preparación del URI
 			 * Principalmente sirve para formatear el URI obteniendo los IDS 
@@ -700,23 +700,10 @@ if ( ! class_exists('JApi'))
 
 				$this -> action_apply ('JApi/uri-process/prerequest/after');
 			}
-			
+
 			if (in_array($this->_response_type, ['file', 'manual']))
 			{
-				/** 
-				 * Se limpia el posible buffer generado 
-				 * Sirve para que el contenido retornado sea exactamente lo que se desea mediante el request o el response
-				 * Se puede cambiar el tipo de respuesta a la solicitud mediante el PreRequest
-				 * El Request ya deberia poder retornar el contenido de la solicitud
-				 */
-				$posible_content = $this->_getandclear_buffer_content();
-
-				if ( ! empty(trim($posible_content)))
-				{
-					trigger_error('Previo contenido detectado en respuestas a la solicitud tipo `' . $this -> _response_type . '`: ' . 
-								  PHP_EOL.PHP_EOL .
-								  $posible_content, E_USER_WARNING);
-				}
+				$this -> set_response_type ($this->_response_type);
 			}
 
 			/**
@@ -755,6 +742,27 @@ if ( ! class_exists('JApi'))
 
 			/** Finaliza el procesamiento del URI */
 			$this -> action_apply ('JApi/uri-process/after', $this->URI, $this->IDS);
+		}
+
+		/**
+		 * _init_uriprocess_img()
+		 */
+		protected function _init_uriprocess_img ()
+		{
+			$_uri = explode('/', $this -> URI);
+			empty($_uri[0]) and array_shift($_uri);
+
+			$_uri_img = array_shift($_uri);
+			$_img_slug = 'img';
+			$_img_slug = $this -> filter_apply ('JApi/uri-process/img/slug', $_img_slug);
+
+			if ($_img_slug !== $_uri_img)
+			{
+				return $this;
+			}
+
+			die_array();
+			return $this;
 		}
 
 		/**
@@ -1143,6 +1151,23 @@ if ( ! class_exists('JApi'))
 		public function set_response_type ($new)
 		{
 			$this->_response_type = mb_strtolower($new);
+
+			if (in_array($this->_response_type, ['file', 'manual']))
+			{
+				/** 
+				 * Se limpia el posible buffer generado 
+				 * Sirve para que el contenido retornado sea exactamente lo que se desea mediante el request o el response
+				 */
+				$posible_content = $this->_getandclear_buffer_content();
+
+				if ( ! empty(trim($posible_content)))
+				{
+					trigger_error('Previo contenido detectado en respuestas a la solicitud tipo `' . $this -> _response_type . '`: ' . 
+								  PHP_EOL.PHP_EOL .
+								  $posible_content, E_USER_WARNING);
+				}
+			}
+
 			return $this;
 		}
 		public function get_response_type ()
@@ -1174,7 +1199,7 @@ if ( ! class_exists('JApi'))
 
 		public function ResponseAs ($type, $mime = NULL, $charset = NULL)
 		{
-			$this->_response_type = mb_strtolower($type);
+			$this->set_response_type (mb_strtolower($type));
 			$this->_response_mime = $mime;
 			$this->_response_charset = $charset;
 			return $this;
@@ -5073,6 +5098,28 @@ if ( ! class_exists('JApi'))
 			}
 
 			return $file_view;
+		}
+
+		public function nocache()
+		{
+			header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
+			header('Pragma: no-cache'); //HTTP 1.0
+			header('Expires: Sat, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+
+			return $this;
+		}
+
+		public function cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+		{
+			$time = 60 * 60 * 24 * $days;
+			$cache_expire_date = gmdate("D, d M Y H:i:s", time() + $time);
+
+			header('User-Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+			header('Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+			header('Pragma: cache'); //HTTP 1.0
+			header('Expires: '.$cache_expire_date.' GMT'); // Date in the future
+
+			return $this;
 		}
 
 		public function exit($status = NULL)
