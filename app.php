@@ -927,7 +927,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
@@ -982,7 +981,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
@@ -1035,7 +1033,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return $this->_init_uriprocess_response_404();
 			}
 
@@ -1083,7 +1080,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
