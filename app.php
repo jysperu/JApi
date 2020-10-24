@@ -226,6 +226,19 @@ if ( ! class_exists('JApi'))
 
 			if ( ! $this->is_command()):
 				
+			/** Comprobar si se llego con HTTPS o si no se requiere */
+			$HTTPS = $this -> url('https');
+			$HTTPS_def = $this -> config('https');
+
+			if ( ! is_null($HTTPS_def) and $HTTPS !== $HTTPS_def)
+			{
+				$scheme =& url('scheme');
+
+				$scheme = $HTTPS_def ? 'https' : 'http';
+				$this -> redirect( $this -> build_url( $this -> url('array')));
+				exit();
+			}
+
 			/**
 			 * Procesar URI para validación de idioma
 			 * Se procesa la validación del lenguaje de manera prioritaria
