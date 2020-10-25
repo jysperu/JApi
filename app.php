@@ -224,6 +224,73 @@ if ( ! class_exists('JApi'))
 			-> map_app_directories ([$this, '_init_load_config'], true)
 			;
 
+			$this -> _rqs_method = $this -> url('request_method');
+			$this -> _rqs_uri_inicial = $this -> URI = $this -> url('path');
+
+			if (defined('FORCE_RSP_TYPE'))
+			{
+				$this -> _response_type = FORCE_RSP_TYPE;
+			}
+			elseif (isset($_GET['contentOnly']) or (isset($_GET['_']) and $_GET['_'] === 'co'))
+			{
+				$this -> _response_type = 'body';
+			}
+			elseif (
+				(
+					isset($_SERVER['HTTP_X_REQUESTED_WITH']) and 
+					(
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' or 
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'androidapp' or 
+						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'iosapp'
+					)
+				) or isset($_GET['json']) or isset($_GET['cron'])
+			)
+			{
+				$this -> _response_type = 'json';
+			}
+			elseif ($this -> is_command())
+			{
+				$this -> _response_type = 'cli';
+			}
+
+			$this -> _headers = [];
+
+			if ( ! $this->is_command()):
+				
+			/** Comprobar si se llego con HTTPS o si no se requiere */
+			$HTTPS = $this -> url('https');
+			$HTTPS_def = $this -> config('https');
+
+			if ( ! is_null($HTTPS_def) and $HTTPS !== $HTTPS_def)
+			{
+				$scheme =& url('scheme');
+
+				$scheme = $HTTPS_def ? 'https' : 'http';
+				$this -> redirect( $this -> build_url( $this -> url('array')));
+				exit();
+			}
+
+			/** Comprobar si se cargo WWW o si no se requiere */
+			$WWW = $this -> url('www');
+			$WWW_def = $this -> config('www', ['www' => NULL]);
+
+			if ( ! is_null($WWW_def) and $WWW !== $WWW_def)
+			{
+				$host =& $this -> url('host');
+
+				if ($WWW_def)
+				{
+					$host = 'www.' . $host;
+				}
+				else
+				{
+					$host = preg_replace('/^www\./i', '', $host);
+				}
+
+				$this -> redirect( $this -> build_url( $this -> url('array')));
+				exit();
+			}
+
 			/**
 			 * Procesar URI para validación de idioma
 			 * Se procesa la validación del lenguaje de manera prioritaria
@@ -243,6 +310,22 @@ if ( ! class_exists('JApi'))
 				$this -> action_apply ('JApi/uri-process/lang/after');
 			}
 
+			endif;
+
+			/** Estableciendo los charsets a todo lo que corresponde */
+			$charset = $this->config('charset');
+			$charset = mb_strtoupper($charset);
+			ini_set('default_charset', $charset);
+			ini_set('php.internal_encoding', $charset);
+			@ini_set('mbstring.internal_encoding', $charset);
+			mb_substitute_character('none');
+			@ini_set('iconv.internal_encoding', $charset);
+			define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
+
+			/** Estableciendo el timezone a todo lo que corresponde */
+			$timezone = $this->config('timezone');
+			date_default_timezone_set($timezone);
+
 			$this
 
 			/**
@@ -257,20 +340,6 @@ if ( ! class_exists('JApi'))
 			 */
 			-> map_app_directories ([$this, '_init_load_app'])
 			;
-
-			/** Estableciendo los charsets a todo lo que corresponde */
-			$charset = $this->config('charset');
-			$charset = mb_strtoupper($charset);
-			ini_set('default_charset', $charset);
-			ini_set('php.internal_encoding', $charset);
-			@ini_set('mbstring.internal_encoding', $charset);
-			mb_substitute_character('none');
-			@ini_set('iconv.internal_encoding', $charset);
-			define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
-
-			/** Estableciendo el timezone a todo lo que corresponde */
-			$timezone = $this->variables['timezone'];
-			date_default_timezone_set($timezone);
 
 			/** Iniciando el proceso del uri */
 			$this -> _init_uriprocess();
@@ -595,33 +664,6 @@ if ( ! class_exists('JApi'))
 		 */
 		protected function _init_uriprocess ()
 		{
-			$this -> _rqs_method = $this -> url('request_method');
-			$this -> _rqs_uri_inicial = $this -> URI = $this -> url('path');
-
-			if (defined('FORCE_RSP_TYPE'))
-			{
-				$this -> _response_type = FORCE_RSP_TYPE;
-			}
-			elseif (isset($_GET['contentOnly']) or (isset($_GET['_']) and $_GET['_'] === 'co'))
-			{
-				$this -> _response_type = 'body';
-			}
-			elseif (
-				(
-					isset($_SERVER['HTTP_X_REQUESTED_WITH']) and 
-					(
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' or 
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'androidapp' or 
-						mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'iosapp'
-					)
-				) or isset($_GET['json']) or isset($_GET['cron'])
-			)
-			{
-				$this -> _response_type = 'json';
-			}
-
-			$this -> _headers = [];
-
 			/**
 			 * Preparación del URI
 			 * Principalmente sirve para formatear el URI obteniendo los IDS 
@@ -658,23 +700,10 @@ if ( ! class_exists('JApi'))
 
 				$this -> action_apply ('JApi/uri-process/prerequest/after');
 			}
-			
+
 			if (in_array($this->_response_type, ['file', 'manual']))
 			{
-				/** 
-				 * Se limpia el posible buffer generado 
-				 * Sirve para que el contenido retornado sea exactamente lo que se desea mediante el request o el response
-				 * Se puede cambiar el tipo de respuesta a la solicitud mediante el PreRequest
-				 * El Request ya deberia poder retornar el contenido de la solicitud
-				 */
-				$posible_content = $this->_getandclear_buffer_content();
-
-				if ( ! empty(trim($posible_content)))
-				{
-					trigger_error('Previo contenido detectado en respuestas a la solicitud tipo `' . $this -> _response_type . '`: ' . 
-								  PHP_EOL.PHP_EOL .
-								  $posible_content, E_USER_WARNING);
-				}
+				$this -> set_response_type ($this->_response_type);
 			}
 
 			/**
@@ -927,7 +956,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
@@ -982,7 +1010,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
@@ -1035,7 +1062,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return $this->_init_uriprocess_response_404();
 			}
 
@@ -1083,7 +1109,6 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
-				trigger_error('Función `' . $_func . '` no encontrada para la clase `' . get_class($_class_instance) . '`', E_USER_WARNING);
 				return;
 			}
 
@@ -1105,6 +1130,23 @@ if ( ! class_exists('JApi'))
 		public function set_response_type ($new)
 		{
 			$this->_response_type = mb_strtolower($new);
+
+			if (in_array($this->_response_type, ['file', 'manual']))
+			{
+				/** 
+				 * Se limpia el posible buffer generado 
+				 * Sirve para que el contenido retornado sea exactamente lo que se desea mediante el request o el response
+				 */
+				$posible_content = $this->_getandclear_buffer_content();
+
+				if ( ! empty(trim($posible_content)))
+				{
+					trigger_error('Previo contenido detectado en respuestas a la solicitud tipo `' . $this -> _response_type . '`: ' . 
+								  PHP_EOL.PHP_EOL .
+								  $posible_content, E_USER_WARNING);
+				}
+			}
+
 			return $this;
 		}
 		public function get_response_type ()
@@ -1136,7 +1178,7 @@ if ( ! class_exists('JApi'))
 
 		public function ResponseAs ($type, $mime = NULL, $charset = NULL)
 		{
-			$this->_response_type = mb_strtolower($type);
+			$this->set_response_type (mb_strtolower($type));
 			$this->_response_mime = $mime;
 			$this->_response_charset = $charset;
 			return $this;
@@ -1345,6 +1387,26 @@ if ( ! class_exists('JApi'))
 				$parsed_url['query'] = array_merge($parsed_url['query'], $query);
 			}
 
+			$url =  $this -> build_url ($parsed_url);
+
+			while (ob_get_level() > 0)
+			{
+				ob_end_clean();
+			}
+
+			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
+			die();
+		}
+
+		/**
+		 * build_url()
+		 * Construye una URL
+		 *
+		 * @param	array	$parsed_url	Partes de la URL a construir {@see http://www.php.net/manual/en/function.parse-url.php}
+		 * @return	string
+		 */
+		function build_url($parsed_url)
+		{
 			isset($parsed_url['query']) and is_array($parsed_url['query']) and 
 			$parsed_url['query'] = http_build_query($parsed_url['query']);
 
@@ -1372,16 +1434,22 @@ if ( ! class_exists('JApi'))
 
 			$pass     = ($user || $pass) ? "$pass@" : '';
 
-			$url =  $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
-			
+			return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+		}
 
-			while (ob_get_level() > 0)
-			{
-				ob_end_clean();
-			}
+		/**
+		 * getUTC()
+		 * Obtiene el UTC del timezone actual
+		 *
+		 * @return string
+		 */
+		function getUTC()
+		{
+			$_utc_dtz = new DateTimeZone(date_default_timezone_get());
+			$_utc_dt  = new DateTime('now', $_utc_dtz);
+			$_utc_offset = $_utc_dtz->getOffset($_utc_dt);
 
-			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
-			die();
+			return sprintf( "%s%02d:%02d", ( $_utc_offset >= 0 ) ? '+' : '-', abs( $_utc_offset / 3600 ), abs( $_utc_offset % 3600 ) );
 		}
 
 		protected function _getandclear_buffer_content ()
@@ -3527,6 +3595,16 @@ if ( ! class_exists('JApi'))
 				isset($_parsed['pass']) and $datos['pass'] = $_parsed['pass'];
 
 				$datos['path'] = isset($_parsed['path']) ? $_parsed['path'] : '/';
+				if ($this -> is_command())
+				{
+					global $argv;
+					array_shift($argv); // Archivo SCRIPT
+					if (count($argv) > 0)
+					{
+						$datos['path'] = array_shift($argv);
+					}
+				}
+
 				empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
 
 				$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
@@ -4325,11 +4403,7 @@ if ( ! class_exists('JApi'))
 
 			$conection->_charset = $charset;
 
-			$_utc_dtz = new DateTimeZone(date_default_timezone_get());
-			$_utc_dt  = new DateTime('now', $_utc_dtz);
-			$_utc_offset = $_utc_dtz->getOffset($_utc_dt);
-
-			$utc = sprintf( "%s%02d:%02d", ( $_utc_offset >= 0 ) ? '+' : '-', abs( $_utc_offset / 3600 ), abs( $_utc_offset % 3600 ) );
+			$utc = $this -> getUTC();
 
 			if ( ! mysqli_query($conection, 'SET time_zone = "' . $utc . '";'))
 			{
@@ -5003,6 +5077,28 @@ if ( ! class_exists('JApi'))
 			}
 
 			return $file_view;
+		}
+
+		public function nocache()
+		{
+			header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
+			header('Pragma: no-cache'); //HTTP 1.0
+			header('Expires: Sat, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+
+			return $this;
+		}
+
+		public function cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+		{
+			$time = 60 * 60 * 24 * $days;
+			$cache_expire_date = gmdate("D, d M Y H:i:s", time() + $time);
+
+			header('User-Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+			header('Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+			header('Pragma: cache'); //HTTP 1.0
+			header('Expires: '.$cache_expire_date.' GMT'); // Date in the future
+
+			return $this;
 		}
 
 		public function exit($status = NULL)

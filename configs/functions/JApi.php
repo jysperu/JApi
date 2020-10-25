@@ -862,3 +862,47 @@ if ( ! function_exists('snippet'))
 		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
 	}
 }
+
+if ( ! function_exists('build_url'))
+{
+	/**
+	 * build_url ()
+	 */
+	function build_url($parsed_url)
+	{
+		return exec_app(__FUNCTION__, $parsed_url);
+	}
+}
+
+if ( ! function_exists('getUTC'))
+{
+	/**
+	 * getUTC ()
+	 */
+	function getUTC()
+	{
+		return exec_app(__FUNCTION__);
+	}
+}
+
+if ( ! function_exists('response_cache'))
+{
+	/**
+	 * response_cache ()
+	 */
+	function response_cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+	{
+		return exec_app('cache', $days, $for, $rev);
+	}
+}
+
+if ( ! function_exists('response_nocache'))
+{
+	/**
+	 * response_nocache ()
+	 */
+	function response_nocache()
+	{
+		return exec_app('nocache');
+	}
+}
