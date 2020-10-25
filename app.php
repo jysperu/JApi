@@ -3226,7 +3226,7 @@ if ( ! class_exists('JApi'))
 					$this -> sql_trans(false, $CON_logs);
 				}
 
-				if ( ! (bool)mysqli_query($CON_logs, 'SELECT * FROM `_logs` LIMIT 0'))
+				if ( ! $this -> sql_et('_logs', $CON_logs))
 				{
 					$_tbldb_created = $this -> sql('
 					CREATE TABLE `_logs` (
@@ -4569,6 +4569,20 @@ if ( ! class_exists('JApi'))
 			is_array($valor) and $valor = json_encode($valor);
 
 			return '"' . $this->sql_esc($valor, $conection) . '"';
+		}
+
+		/**
+		 * sql_et()
+		 * Valida la existencia de una tabla en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		function sql_et(string $tbl, mysqli $conection = NULL)
+		{
+			is_null($conection) and $conection = $this -> use_CON() -> CON;
+			return (bool)mysqli_query($conection, 'SELECT * FROM `' . $tbl . '` LIMIT 0');
 		}
 
 		/**

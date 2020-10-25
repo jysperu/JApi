@@ -459,6 +459,22 @@ if ( ! function_exists('sql_qpesc'))
 	}
 }
 
+if ( ! function_exists('sql_et'))
+{
+	/**
+	 * sql_et()
+	 * Validar la existencia de una tabla en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return string
+	 */
+	function sql_et (string $tbl, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $tbl, $conection);
+	}
+}
+
 if ( ! function_exists('sql'))
 {
 	/**
