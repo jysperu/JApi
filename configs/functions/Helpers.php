@@ -2206,6 +2206,16 @@ if ( ! function_exists('get_image'))
 
 			$directorio = implode(DS, $directorio);
 
+			$_path = config('upload_path');
+			$_path_img = config('upload_path_for_img');
+			$_path_img_extra = config('upload_path_for_img_is_extra');
+
+			is_null($_path_img) or $_path_img = '';
+			$_path = (is_null($_path_img) or $_path_img_extra) ? ($_path . $_path_img) : $_path_img;
+			$_yearmonth = config('upload_yearmonth');
+			$_path = $_path . ($_yearmonth ? (DS . date('Y') . DS . date('m')) : '');
+			$directorio = $_path . $directorio;
+
 			if ( ! empty($src_query) or ! empty($src_fragment))
 			{
 				$file_name = md5(json_encode([

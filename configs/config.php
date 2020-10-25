@@ -79,3 +79,36 @@ $config['www'] = NULL;
  * @global
  */
 $config['https'] = NULL;
+
+/**
+ * upload_path
+ * Directorio desde el HOMEPATH donde se cargará el archivo
+ *
+ * @global
+ */
+$config['upload_path'] = '/uploads';
+
+/**
+ * upload_path_for_img
+ * Directorio desde el HOMEPATH donde se cargará los archivos tipo imagen
+ *
+ * @global
+ */
+$config['upload_path_for_img'] = '/img';
+
+/**
+ * upload_path_for_img_is_extra
+ * Si el dato upload_path_for_img se basara desde el HOMEPATH o se le adicionará al upload_path
+ *
+ * @global
+ */
+$config['upload_path_for_img_is_extra'] = true;
+
+/**
+ * upload_yearmonth
+ * Si se distribuirá las sub carpetas año/mes
+ *
+ * @global
+ */
+$config['upload_yearmonth'] = true;
+

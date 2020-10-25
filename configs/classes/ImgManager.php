@@ -105,12 +105,6 @@ class ImgManager
 				{
 					$opt[$opt_name] = $src_params[$opt_name];
 				}
-
-				if ( ! $externo)
-				{
-					unset($src_params[$opt_name]);
-				}
-				// Si es externo puede que el campo sea necesario
 			}
 		}
 
