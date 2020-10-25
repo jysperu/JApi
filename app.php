@@ -886,6 +886,64 @@ if ( ! class_exists('JApi'))
 					break;
 				}
 
+				$_uri2 = $_uri;
+				$_uri2_lp = array_pop($_uri2);
+
+				if (preg_match('/\./', $_uri2_lp))
+				{
+					$_uri2_lp = explode('.', $_uri2_lp);
+					array_pop($_uri2_lp);
+					$_uri2_lp = implode('.', $_uri2_lp);
+					$_uri2[] = $_uri2_lp;
+
+					$_uri_t = $_uri2;
+					$_class = implode('\\', $_uri_t);
+					if (class_exists($_class))
+					{
+						break;
+					}
+
+					$_uri_t = $_uri2;
+					$_uri_t = array_map(function($o){
+						$o[0] = mb_strtoupper($o);
+						return $o;
+					}, $_uri_t);
+					$_class = implode('\\', $_uri_t);
+					if (class_exists($_class))
+					{
+						break;
+					}
+
+					$_uri_t = $_uri2;
+					$_uri_t = array_map(function($o){
+						$o[0] = mb_strtoupper($o);
+						$o = str_replace(['.', '-'], ['_', '_'], $o);
+						return $o;
+					}, $_uri_t);
+					$_class = implode('\\', $_uri_t);
+					if (class_exists($_class))
+					{
+						break;
+					}
+
+					$_uri_t = $_uri2;
+					$_uri_t = array_map(function($o){
+						$o[0] = mb_strtoupper($o);
+						$o = preg_split('/[\.\-\_]/', $o);
+						$o = array_map(function($p){
+							$p[0] = mb_strtoupper($p);
+							return $p;
+						}, $o);
+						$o = implode('', $o);
+						return $o;
+					}, $_uri_t);
+					$_class = implode('\\', $_uri_t);
+					if (class_exists($_class))
+					{
+						break;
+					}
+				}
+
 				$part = array_pop($_uri);
 				array_unshift($_func_params, $part);
 				$_class = NULL;
