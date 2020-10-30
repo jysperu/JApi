@@ -3271,6 +3271,7 @@ if ( ! class_exists('JApi'))
 			}, $trace);
 			$meta['trace_slim'] = $trace_slim;
 			$meta['trace_original'] = $trace_original;
+			$meta['instant_buffer'] = ob_get_contents();
 
 			try
 			{
