@@ -1447,10 +1447,7 @@ if ( ! class_exists('JApi'))
 
 			$url =  $this -> build_url ($parsed_url);
 
-			while (ob_get_level() > 0)
-			{
-				ob_end_clean();
-			}
+			$this->_getandclear_buffer_content(); // El contenido no será reportado como error
 
 			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
 			die();
