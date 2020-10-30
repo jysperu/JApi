@@ -4075,6 +4075,9 @@ if ( ! class_exists('JApi'))
 
 			if (count($datos) === 0)
 			{
+				$PhpInput = (array)json_decode(file_get_contents('php://input'), true);
+				$_POST = array_merge($_POST, [], $PhpInput, $_POST);
+
 				$datos = array_merge(
 					$_REQUEST,
 					$_POST,
