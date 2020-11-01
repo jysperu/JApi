@@ -848,8 +848,7 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
-					return $o;
+					return ucfirst($o);
 				}, $_uri_t);
 				$_class = implode('\\', $_uri_t);
 				if (class_exists($_class))
@@ -859,7 +858,7 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
+					$o = ucfirst($o);
 					$o = str_replace(['.', '-'], ['_', '_'], $o);
 					return $o;
 				}, $_uri_t);
@@ -871,11 +870,10 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
+					$o = ucfirst($o);
 					$o = preg_split('/[\.\-\_]/', $o);
 					$o = array_map(function($p){
-						$p[0] = mb_strtoupper($p);
-						return $p;
+						return ucfirst($p);
 					}, $o);
 					$o = implode('', $o);
 					return $o;
@@ -905,8 +903,7 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
-						return $o;
+						return ucfirst($o);
 					}, $_uri_t);
 					$_class = implode('\\', $_uri_t);
 					if (class_exists($_class))
@@ -916,7 +913,7 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
+						$o = ucfirst($o);
 						$o = str_replace(['.', '-'], ['_', '_'], $o);
 						return $o;
 					}, $_uri_t);
@@ -928,11 +925,10 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
+						$o = ucfirst($o);
 						$o = preg_split('/[\.\-\_]/', $o);
 						$o = array_map(function($p){
-							$p[0] = mb_strtoupper($p);
-							return $p;
+							return ucfirst($p);
 						}, $o);
 						$o = implode('', $o);
 						return $o;
@@ -3386,6 +3382,15 @@ if ( ! class_exists('JApi'))
 				{
 					chmod($log_file, 0644);
 				}
+
+				static $_count_back = 10;
+				$_count_back--;
+				if ($_count_back <= 0)
+				{
+					file_put_contents($log_file, 'RECURSIVER PREVENTED' . PHP_EOL, FILE_APPEND | LOCK_EX);
+					die();
+				}
+
 				return;
 			}
 		}
@@ -4352,7 +4357,7 @@ if ( ! class_exists('JApi'))
 				isset($db['host']) or $db['host'] = 'localhost';
 				isset($db['user']) or $db['user'] = 'root';
 				isset($db['pasw']) or $db['pasw'] = NULL;
-				isset($db['name']) or $db['name'] = 'test';
+				isset($db['name']) or $db['name'] = NULL;
 				isset($db['charset']) or $db['charset'] = 'utf8';
 
 				if ( ! empty($db['name']))
@@ -4426,6 +4431,15 @@ if ( ! class_exists('JApi'))
 
 			if ( ! empty($base_datos) and ! mysqli_select_db($conection, $base_datos))
 			{
+				$this-> _MYSQL_history[] = [
+					'query' => '',
+					'suphp' => 'mysqli_connect("' . $host . '", "' . $usuario . '", "' . str_repeat('*', mb_strlen($password)) . '")',
+					'error' => '', 
+					'errno' => '',
+					'hstpr' => 'success',
+					'conct' => $conection->thread_id,
+				];
+
 				$this-> _MYSQL_history[] = [
 					'query' => '',
 					'suphp' => 'mysqli_select_db($conection, "' . $base_datos . '")',
