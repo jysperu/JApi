@@ -803,7 +803,7 @@ if ( ! class_exists('JApi'))
 			$_uri_new = [];
 			foreach($_uri as $_uri_part)
 			{
-				if (preg_match('/^[0-9]$/', $_uri_part))
+				if (preg_match('/^[0-9]+$/', $_uri_part))
 				{
 					$this -> IDS[] = $_uri_part;
 				}
