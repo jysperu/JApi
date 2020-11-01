@@ -2177,7 +2177,7 @@ if ( ! function_exists('get_image'))
 		$url['path'] = '/' . ltrim($url['path'], '/');
 
 		$src = build_url($url);
-		$externo = ! preg_match('#'.regex(url('host-base')).'#i', $src);
+		$externo = ! preg_match('#'.regex(url('host-abs')).'#i', $src);
 
 		/**
 		 * DESCARGAR LA IMAGEN SI ES EXTERNO AL SERVER
