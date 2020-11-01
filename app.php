@@ -4311,7 +4311,7 @@ if ( ! class_exists('JApi'))
 				isset($db['host']) or $db['host'] = 'localhost';
 				isset($db['user']) or $db['user'] = 'root';
 				isset($db['pasw']) or $db['pasw'] = NULL;
-				isset($db['name']) or $db['name'] = NULL;
+				isset($db['name']) or $db['name'] = 'test';
 				isset($db['charset']) or $db['charset'] = 'utf8';
 
 				$this -> CON = $this -> sql_start($db['host'], $db['user'], $db['pasw'], $db['name'], $db['charset']);
@@ -4352,7 +4352,7 @@ if ( ! class_exists('JApi'))
 				isset($db['host']) or $db['host'] = 'localhost';
 				isset($db['user']) or $db['user'] = 'root';
 				isset($db['pasw']) or $db['pasw'] = NULL;
-				isset($db['name']) or $db['name'] = NULL;
+				isset($db['name']) or $db['name'] = 'test';
 				isset($db['charset']) or $db['charset'] = 'utf8';
 
 				if ( ! empty($db['name']))
