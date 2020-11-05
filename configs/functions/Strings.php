@@ -286,14 +286,14 @@ if ( ! function_exists('dias'))
 		{
 			foreach ($return as &$dia)
 			{
-				$dia = substr($dia, 0, 3) . '.';
+				$dia = substr(utf8_decode($dia), 0, 3) . '.';
 			}
 		}
 		elseif ($mode == 'min')
 		{
 			foreach ($return as &$dia)
 			{
-				$dia = substr($dia, 0, 3);
+				$dia = substr(utf8_decode($dia), 0, 3);
 			}
 		}
 		
