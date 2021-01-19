@@ -168,7 +168,7 @@ if ( ! class_exists('JApi'))
 			$this -> _init_noerrors ();
 
 			/** Corrigiendo directorio base cuando se ejecuta como comando */
-			$this->is_command() and chdir(COREPATH);
+			$this->is_command() and chdir(APPPATH);
 
 			/** Iniciando el leído del buffer */
 			$this->_ob_level = ob_get_level();
@@ -180,7 +180,8 @@ if ( ! class_exists('JApi'))
 			/** Añadiendo los directorios de aplicaciones base */
 			$this
 			-> add_app_directory(APPPATH , 25) // Orden 25 (será leído al inicio, a menos que se ponga otro directorio con menor orden)
-			-> add_app_directory(COREPATH, 75) // Orden 75 (será leido al final, a menos que se ponga otro directorio con mayor orden)
+			-> add_app_directory(COREPATH, 50) // Orden 50 (será leido al medio, a menos que se ponga otro directorio con mayor orden)
+			-> add_app_directory(JAPIPATH, 75) // Orden 75 (será leido al final, a menos que se ponga otro directorio con mayor orden)
 			;
 
 			/**
@@ -191,6 +192,9 @@ if ( ! class_exists('JApi'))
 			 * - Añadir Hooks (add_action, add_filter)
 			 * **Recordar Que:** Aún no se han cargado hasta este punto solo la clase y controlado los errores
 			 */
+			file_exists (COREPATH . '/init.php') and 
+			require_once COREPATH . '/init.php';
+
 			file_exists (APPPATH . '/init.php') and 
 			require_once APPPATH . '/init.php';
 
@@ -353,11 +357,18 @@ if ( ! class_exists('JApi'))
 			// HOMEPATH ya esta declarado
 
 			/**
-			 * COREPATH
+			 * JAPIPATH
 			 * Directorio del JApi
 			 * @global
 			 */
-			defined('COREPATH') or define('COREPATH', __DIR__);
+			defined('JAPIPATH') or define('JAPIPATH', __DIR__);
+
+			/**
+			 * COREPATH
+			 * Directorio de los archivos del núcleo de la aplicación
+			 * @global
+			 */
+			defined('COREPATH') or define('COREPATH', JAPIPATH);
 
 			/**
 			 * APPPATH
@@ -3194,7 +3205,7 @@ if ( ! class_exists('JApi'))
 				array_shift($trace);
 			}
 
-			$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
 			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
 			{
 				array_shift($trace);
@@ -4993,7 +5004,7 @@ if ( ! class_exists('JApi'))
 
 					$trace = debug_backtrace(false);
 
-					$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+					$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
 					while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
 					{
 						array_shift($trace);
