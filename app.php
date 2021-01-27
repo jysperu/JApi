@@ -483,6 +483,7 @@ if ( ! class_exists('JApi'))
 
 			if (count($class_parts) > 1 and in_array($class_parts[0], [
 				'Object',
+				'Objeto',
 				'PreRequest',
 				'Request',
 				'Response'
@@ -2497,6 +2498,8 @@ if ( ! class_exists('JApi'))
 			$data_assets_js_body_noinline = array_filter($data_assets_js, function($o){
 				return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
 			});
+
+
 			$data_assets_js_body_inline = array_filter($data_assets_js, function($o){
 				return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
 			});
@@ -3227,6 +3230,7 @@ if ( ! class_exists('JApi'))
 			}
 
 			$meta['MYSQL_history'] = $this->_MYSQL_history;
+			$meta['MYSQL_history'] = array_reverse($meta['MYSQL_history']);
 
 			$SER = [];
 			foreach($_SERVER as $x => $y)
@@ -3377,17 +3381,26 @@ if ( ! class_exists('JApi'))
 				$log_file = $_log_path . DS . $_log_file;
 				$log_file_exists = file_exists($log_file);
 
-				$msg_file = json_encode([
-					'message'	 => $message, 
-					'severity'	 => $severity, 
-					'code'		 => $code, 
-					'filepath'	 => $filepath, 
-					'line'		 => $line, 
-					'trace'		 => $trace, 
-					'meta'		 => $meta,
-				]);
+				$msg_file = '';
+				$msg_file.= $severity . ' (' . $code . ') en ' . $filepath . '#' . $line . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
+				$msg_file.= $message . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
+				$msg_file.= implode(PHP_EOL, $meta['trace_slim']) . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
 
-				file_put_contents($log_file, $msg_file . PHP_EOL, FILE_APPEND | LOCK_EX);
+				while(count($meta['MYSQL_history']) > 5)
+				{
+					array_pop($meta['MYSQL_history']);
+				}
+				unset($meta['server'], $meta['trace_slim'], $meta['trace_original']);
+				isset($meta['url']) and $meta['url'] = $meta['url']['full-wq'];
+				isset($meta['ip_address']) and $meta['ip_address'] = $meta['ip_address']['ip_address'];
+
+				$msg_file.= json_encode($meta, JSON_PRETTY_PRINT) . PHP_EOL;
+				$msg_file.= '***' . PHP_EOL;
+
+				file_put_contents($log_file, $msg_file . PHP_EOL . PHP_EOL . PHP_EOL, FILE_APPEND | LOCK_EX);
 
 				if ( ! $log_file_exists)
 				{
@@ -4343,7 +4356,7 @@ if ( ! class_exists('JApi'))
 		
 		public function get_CON ()
 		{
-			return $this -> CON;
+			return $this -> use_CON() -> CON;
 		}
 
 		/**
@@ -4351,7 +4364,7 @@ if ( ! class_exists('JApi'))
 		 * Variable que almacena la db de logueo
 		 */
 		protected $CON_logs;
-		
+
 		/**
 		 * use_CON()
 		 * Inicializa la conección primaria
@@ -4395,6 +4408,11 @@ if ( ! class_exists('JApi'))
 			}
 
 			return $this;
+		}
+		
+		public function get_CON_logs ()
+		{
+			return $this -> use_CON_logs() -> CON_logs;
 		}
 
 		/**
@@ -4680,6 +4698,12 @@ if ( ! class_exists('JApi'))
 		 */
 		function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
 		{
+			if (is_a($is_insert, 'mysqli'))
+			{
+				$conection = $is_insert;
+				$is_insert = false;
+			}
+
 			is_null($conection) and $conection = $this -> use_CON() -> CON;
 
 			$result =  mysqli_query($conection, $query);
@@ -5091,7 +5115,7 @@ if ( ! class_exists('JApi'))
 			return $traduccion;
 		}
 
-		function obj ($class, ...$pk)
+		function obj_old ($class, ...$pk)
 		{
 			$class = str_replace('/', '\\', $class);
 			$class = explode('\\', $class);
@@ -5099,6 +5123,43 @@ if ( ! class_exists('JApi'))
 			$class[0] === 'Object' or array_unshift($class, 'Object');
 			$class = array_values($class);
 			$class = implode('\\', $class);
+
+			try
+			{
+				$_class_reflect  = new ReflectionClass($class);
+				$_class_instance = $_class_reflect -> newInstanceArgs($pk);
+			}
+			catch(Exception $e)
+			{
+				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+				{
+					throw $e;
+				}
+
+				$_class_instance = new $class();
+			}
+
+			return $_class_instance;
+		}
+
+		function obj ($class, ...$pk)
+		{
+			$class_original = $class;
+
+			$class = str_replace('/', '\\', $class);
+			$class = explode('\\', $class);
+			empty($class[0]) and array_shift($class);
+			$class[0] === 'Objeto' or array_unshift($class, 'Objeto');
+			$class = array_values($class);
+			$class = implode('\\', $class);
+
+			if ( ! class_exists($class))
+			{
+				// Old - Object
+				array_unshift($pk, $class_original);
+				return call_user_func_array([$this, 'obj_old'], $pk);
+			}
 
 			try
 			{
