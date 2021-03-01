@@ -3692,6 +3692,11 @@ if ( ! class_exists('JApi'))
 
 				empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
 
+				if (mb_strlen($datos['path']) > 1)
+				{
+					$datos['path'] = rtrim($datos['path'], '/');
+				}
+
 				$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
 				$datos['fragment'] = isset($_parsed['fragment']) ? $_parsed['fragment'] : '';
 
