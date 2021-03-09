@@ -876,7 +876,6 @@ abstract class ObjTbl extends JArray
 	 * Permite corregir atributos direntes al tipo correcto
      */
 	protected function _repair_data_type ($indice = NULL, $valor = NULL)
-
 	{
 		// Alojando las columnas
 		$columns = self::columns();
