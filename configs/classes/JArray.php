@@ -56,7 +56,7 @@ class JArray extends ArrayObject
         	return $this->__get($index);
         }
 		
-		trigger_error('Call to undefined method ' . get_called_class() . '::' . $name . '()', E_USER_ERROR);
+		throw new Exception('Call to undefined method ' . get_called_class() . '::' . $name . '()');
 		
         return $this;
     }

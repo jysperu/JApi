@@ -1786,7 +1786,7 @@ if ( ! function_exists('download'))
 	 * @param	bool	whether to try and send the actual file MIME type
 	 * @return	void
 	 */
-	function download($filename = '', $data = null, $set_mime = FALSE)
+	function download($filename = '', $data = null, $set_mime = FALSE, $unlink = false)
 	{
 		if ($filename === '' OR $data === '')
 		{
@@ -1806,6 +1806,7 @@ if ( ! function_exists('download'))
 		else
 		{
 			$filesize = strlen($data);
+			$unlink = false;
 		}
 
 		// Set the default MIME type to send
@@ -1864,9 +1865,15 @@ if ( ! function_exists('download'))
 		while ( ! feof($fp) && ($data = fread($fp, 1048576)) !== FALSE)
 		{
 			echo $data;
+			flush();
 		}
 
 		fclose($fp);
+
+		if ($unlink)
+		{
+			unlink($filepath);
+		}
 		exit;
 	}
 }
@@ -2177,7 +2184,7 @@ if ( ! function_exists('get_image'))
 		$url['path'] = '/' . ltrim($url['path'], '/');
 
 		$src = build_url($url);
-		$externo = ! preg_match('#'.regex(url('host-base')).'#i', $src);
+		$externo = ! preg_match('#'.regex(url('host-abs')).'#i', $src);
 
 		/**
 		 * DESCARGAR LA IMAGEN SI ES EXTERNO AL SERVER

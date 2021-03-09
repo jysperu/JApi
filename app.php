@@ -168,7 +168,7 @@ if ( ! class_exists('JApi'))
 			$this -> _init_noerrors ();
 
 			/** Corrigiendo directorio base cuando se ejecuta como comando */
-			$this->is_command() and chdir(COREPATH);
+			$this->is_command() and chdir(APPPATH);
 
 			/** Iniciando el leído del buffer */
 			$this->_ob_level = ob_get_level();
@@ -180,7 +180,8 @@ if ( ! class_exists('JApi'))
 			/** Añadiendo los directorios de aplicaciones base */
 			$this
 			-> add_app_directory(APPPATH , 25) // Orden 25 (será leído al inicio, a menos que se ponga otro directorio con menor orden)
-			-> add_app_directory(COREPATH, 75) // Orden 75 (será leido al final, a menos que se ponga otro directorio con mayor orden)
+			-> add_app_directory(COREPATH, 50) // Orden 50 (será leido al medio, a menos que se ponga otro directorio con mayor orden)
+			-> add_app_directory(JAPIPATH, 75) // Orden 75 (será leido al final, a menos que se ponga otro directorio con mayor orden)
 			;
 
 			/**
@@ -191,6 +192,9 @@ if ( ! class_exists('JApi'))
 			 * - Añadir Hooks (add_action, add_filter)
 			 * **Recordar Que:** Aún no se han cargado hasta este punto solo la clase y controlado los errores
 			 */
+			file_exists (COREPATH . '/init.php') and 
+			require_once COREPATH . '/init.php';
+
 			file_exists (APPPATH . '/init.php') and 
 			require_once APPPATH . '/init.php';
 
@@ -353,11 +357,18 @@ if ( ! class_exists('JApi'))
 			// HOMEPATH ya esta declarado
 
 			/**
-			 * COREPATH
+			 * JAPIPATH
 			 * Directorio del JApi
 			 * @global
 			 */
-			defined('COREPATH') or define('COREPATH', __DIR__);
+			defined('JAPIPATH') or define('JAPIPATH', __DIR__);
+
+			/**
+			 * COREPATH
+			 * Directorio de los archivos del núcleo de la aplicación
+			 * @global
+			 */
+			defined('COREPATH') or define('COREPATH', JAPIPATH);
 
 			/**
 			 * APPPATH
@@ -472,6 +483,7 @@ if ( ! class_exists('JApi'))
 
 			if (count($class_parts) > 1 and in_array($class_parts[0], [
 				'Object',
+				'Objeto',
 				'PreRequest',
 				'Request',
 				'Response'
@@ -803,7 +815,7 @@ if ( ! class_exists('JApi'))
 			$_uri_new = [];
 			foreach($_uri as $_uri_part)
 			{
-				if (preg_match('/^[0-9]$/', $_uri_part))
+				if (preg_match('/^[0-9]+$/', $_uri_part))
 				{
 					$this -> IDS[] = $_uri_part;
 				}
@@ -848,8 +860,7 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
-					return $o;
+					return ucfirst($o);
 				}, $_uri_t);
 				$_class = implode('\\', $_uri_t);
 				if (class_exists($_class))
@@ -859,7 +870,7 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
+					$o = ucfirst($o);
 					$o = str_replace(['.', '-'], ['_', '_'], $o);
 					return $o;
 				}, $_uri_t);
@@ -871,11 +882,10 @@ if ( ! class_exists('JApi'))
 
 				$_uri_t = $_uri;
 				$_uri_t = array_map(function($o){
-					$o[0] = mb_strtoupper($o);
+					$o = ucfirst($o);
 					$o = preg_split('/[\.\-\_]/', $o);
 					$o = array_map(function($p){
-						$p[0] = mb_strtoupper($p);
-						return $p;
+						return ucfirst($p);
 					}, $o);
 					$o = implode('', $o);
 					return $o;
@@ -905,8 +915,7 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
-						return $o;
+						return ucfirst($o);
 					}, $_uri_t);
 					$_class = implode('\\', $_uri_t);
 					if (class_exists($_class))
@@ -916,7 +925,7 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
+						$o = ucfirst($o);
 						$o = str_replace(['.', '-'], ['_', '_'], $o);
 						return $o;
 					}, $_uri_t);
@@ -928,11 +937,10 @@ if ( ! class_exists('JApi'))
 
 					$_uri_t = $_uri2;
 					$_uri_t = array_map(function($o){
-						$o[0] = mb_strtoupper($o);
+						$o = ucfirst($o);
 						$o = preg_split('/[\.\-\_]/', $o);
 						$o = array_map(function($p){
-							$p[0] = mb_strtoupper($p);
-							return $p;
+							return ucfirst($p);
 						}, $o);
 						$o = implode('', $o);
 						return $o;
@@ -1447,10 +1455,7 @@ if ( ! class_exists('JApi'))
 
 			$url =  $this -> build_url ($parsed_url);
 
-			while (ob_get_level() > 0)
-			{
-				ob_end_clean();
-			}
+			$this->_getandclear_buffer_content(); // El contenido no será reportado como error
 
 			header('Location: ' . $url) OR die('<script>location.replace("' . $url . '");</script>');
 			die();
@@ -2493,6 +2498,8 @@ if ( ! class_exists('JApi'))
 			$data_assets_js_body_noinline = array_filter($data_assets_js, function($o){
 				return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
 			});
+
+
 			$data_assets_js_body_inline = array_filter($data_assets_js, function($o){
 				return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
 			});
@@ -3201,7 +3208,7 @@ if ( ! class_exists('JApi'))
 				array_shift($trace);
 			}
 
-			$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
 			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
 			{
 				array_shift($trace);
@@ -3223,6 +3230,7 @@ if ( ! class_exists('JApi'))
 			}
 
 			$meta['MYSQL_history'] = $this->_MYSQL_history;
+			$meta['MYSQL_history'] = array_reverse($meta['MYSQL_history']);
 
 			$SER = [];
 			foreach($_SERVER as $x => $y)
@@ -3274,6 +3282,7 @@ if ( ! class_exists('JApi'))
 			}, $trace);
 			$meta['trace_slim'] = $trace_slim;
 			$meta['trace_original'] = $trace_original;
+			$meta['instant_buffer'] = ob_get_contents();
 
 			try
 			{
@@ -3372,22 +3381,40 @@ if ( ! class_exists('JApi'))
 				$log_file = $_log_path . DS . $_log_file;
 				$log_file_exists = file_exists($log_file);
 
-				$msg_file = json_encode([
-					'message'	 => $message, 
-					'severity'	 => $severity, 
-					'code'		 => $code, 
-					'filepath'	 => $filepath, 
-					'line'		 => $line, 
-					'trace'		 => $trace, 
-					'meta'		 => $meta,
-				]);
+				$msg_file = '';
+				$msg_file.= $severity . ' (' . $code . ') en ' . $filepath . '#' . $line . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
+				$msg_file.= $message . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
+				$msg_file.= implode(PHP_EOL, $meta['trace_slim']) . PHP_EOL;
+				$msg_file.= '---' . PHP_EOL;
 
-				file_put_contents($log_file, $msg_file . PHP_EOL, FILE_APPEND | LOCK_EX);
+				while(count($meta['MYSQL_history']) > 5)
+				{
+					array_pop($meta['MYSQL_history']);
+				}
+				unset($meta['server'], $meta['trace_slim'], $meta['trace_original']);
+				isset($meta['url']) and $meta['url'] = $meta['url']['full-wq'];
+				isset($meta['ip_address']) and $meta['ip_address'] = $meta['ip_address']['ip_address'];
+
+				$msg_file.= json_encode($meta, JSON_PRETTY_PRINT) . PHP_EOL;
+				$msg_file.= '***' . PHP_EOL;
+
+				file_put_contents($log_file, $msg_file . PHP_EOL . PHP_EOL . PHP_EOL, FILE_APPEND | LOCK_EX);
 
 				if ( ! $log_file_exists)
 				{
 					chmod($log_file, 0644);
 				}
+
+				static $_count_back = 10;
+				$_count_back--;
+				if ($_count_back <= 0)
+				{
+					file_put_contents($log_file, 'RECURSIVER PREVENTED' . PHP_EOL, FILE_APPEND | LOCK_EX);
+					die();
+				}
+
 				return;
 			}
 		}
@@ -3664,6 +3691,11 @@ if ( ! class_exists('JApi'))
 				}
 
 				empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
+
+				if (mb_strlen($datos['path']) > 1)
+				{
+					$datos['path'] = rtrim($datos['path'], '/');
+				}
 
 				$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
 				$datos['fragment'] = isset($_parsed['fragment']) ? $_parsed['fragment'] : '';
@@ -4077,6 +4109,9 @@ if ( ! class_exists('JApi'))
 
 			if (count($datos) === 0)
 			{
+				$PhpInput = (array)json_decode(file_get_contents('php://input'), true);
+				$_POST = array_merge($_POST, [], $PhpInput, $_POST);
+
 				$datos = array_merge(
 					$_REQUEST,
 					$_POST,
@@ -4310,7 +4345,7 @@ if ( ! class_exists('JApi'))
 				isset($db['host']) or $db['host'] = 'localhost';
 				isset($db['user']) or $db['user'] = 'root';
 				isset($db['pasw']) or $db['pasw'] = NULL;
-				isset($db['name']) or $db['name'] = NULL;
+				isset($db['name']) or $db['name'] = 'test';
 				isset($db['charset']) or $db['charset'] = 'utf8';
 
 				$this -> CON = $this -> sql_start($db['host'], $db['user'], $db['pasw'], $db['name'], $db['charset']);
@@ -4326,7 +4361,7 @@ if ( ! class_exists('JApi'))
 		
 		public function get_CON ()
 		{
-			return $this -> CON;
+			return $this -> use_CON() -> CON;
 		}
 
 		/**
@@ -4334,7 +4369,7 @@ if ( ! class_exists('JApi'))
 		 * Variable que almacena la db de logueo
 		 */
 		protected $CON_logs;
-		
+
 		/**
 		 * use_CON()
 		 * Inicializa la conección primaria
@@ -4378,6 +4413,11 @@ if ( ! class_exists('JApi'))
 			}
 
 			return $this;
+		}
+		
+		public function get_CON_logs ()
+		{
+			return $this -> use_CON_logs() -> CON_logs;
 		}
 
 		/**
@@ -4425,6 +4465,15 @@ if ( ! class_exists('JApi'))
 
 			if ( ! empty($base_datos) and ! mysqli_select_db($conection, $base_datos))
 			{
+				$this-> _MYSQL_history[] = [
+					'query' => '',
+					'suphp' => 'mysqli_connect("' . $host . '", "' . $usuario . '", "' . str_repeat('*', mb_strlen($password)) . '")',
+					'error' => '', 
+					'errno' => '',
+					'hstpr' => 'success',
+					'conct' => $conection->thread_id,
+				];
+
 				$this-> _MYSQL_history[] = [
 					'query' => '',
 					'suphp' => 'mysqli_select_db($conection, "' . $base_datos . '")',
@@ -4654,6 +4703,12 @@ if ( ! class_exists('JApi'))
 		 */
 		function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
 		{
+			if (is_a($is_insert, 'mysqli'))
+			{
+				$conection = $is_insert;
+				$is_insert = false;
+			}
+
 			is_null($conection) and $conection = $this -> use_CON() -> CON;
 
 			$result =  mysqli_query($conection, $query);
@@ -4978,7 +5033,7 @@ if ( ! class_exists('JApi'))
 
 					$trace = debug_backtrace(false);
 
-					$_japi_funcs_file = COREPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+					$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
 					while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
 					{
 						array_shift($trace);
@@ -5065,7 +5120,7 @@ if ( ! class_exists('JApi'))
 			return $traduccion;
 		}
 
-		function obj ($class, ...$pk)
+		function obj_old ($class, ...$pk)
 		{
 			$class = str_replace('/', '\\', $class);
 			$class = explode('\\', $class);
@@ -5073,6 +5128,43 @@ if ( ! class_exists('JApi'))
 			$class[0] === 'Object' or array_unshift($class, 'Object');
 			$class = array_values($class);
 			$class = implode('\\', $class);
+
+			try
+			{
+				$_class_reflect  = new ReflectionClass($class);
+				$_class_instance = $_class_reflect -> newInstanceArgs($pk);
+			}
+			catch(Exception $e)
+			{
+				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+				{
+					throw $e;
+				}
+
+				$_class_instance = new $class();
+			}
+
+			return $_class_instance;
+		}
+
+		function obj ($class, ...$pk)
+		{
+			$class_original = $class;
+
+			$class = str_replace('/', '\\', $class);
+			$class = explode('\\', $class);
+			empty($class[0]) and array_shift($class);
+			$class[0] === 'Objeto' or array_unshift($class, 'Objeto');
+			$class = array_values($class);
+			$class = implode('\\', $class);
+
+			if ( ! class_exists($class))
+			{
+				// Old - Object
+				array_unshift($pk, $class_original);
+				return call_user_func_array([$this, 'obj_old'], $pk);
+			}
 
 			try
 			{

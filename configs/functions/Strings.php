@@ -270,7 +270,7 @@ if ( ! function_exists('dias'))
 	 */
 	function dias($mode = NULL, $n = NULL)
 	{
-		$return = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sabado'];
+		$return = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 		
 		if (is_null($mode))
 		{
@@ -295,6 +295,10 @@ if ( ! function_exists('dias'))
 			{
 				$dia = substr($dia, 0, 3);
 			}
+		}
+		else
+		{
+			$return[3] = _t('Miércoles');
 		}
 		
 		unset($dia);

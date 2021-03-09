@@ -4,10 +4,7 @@
  * Manipulador de Objetos Tbl de la db 
  */
 
-class ObjTbl_SubLista extends ArrayObject
-{}
-
-abstract class ObjTbl extends JArray
+abstract class ObjetoBase extends JArray
 {
 	/**
      * Constantes
@@ -876,6 +873,7 @@ abstract class ObjTbl extends JArray
 	 * Permite corregir atributos direntes al tipo correcto
      */
 	protected function _repair_data_type ($indice = NULL, $valor = NULL)
+
 	{
 		// Alojando las columnas
 		$columns = self::columns();
@@ -1202,7 +1200,7 @@ abstract class ObjTbl extends JArray
 		{
 			$rx = $_rx['rx'];
 			$data = $_rx['data'];
-			$class = 'Object\\' . $rx['clase'];
+			$class = 'Objeto\\' . $rx['clase'];
 
 			foreach($data as $reg)
 			{
@@ -1469,7 +1467,7 @@ abstract class ObjTbl extends JArray
 		{
 			$rx = $_rx['rx'];
 			$data = $_rx['data'];
-			$class = 'Object\\' . $rx['clase'];
+			$class = 'Objeto\\' . $rx['clase'];
 
 			foreach($data as $reg)
 			{
@@ -1792,7 +1790,7 @@ abstract class ObjTbl extends JArray
 				$return = $obj;
 				break;
 			case 'rxs_hijo':
-				$class = 'Object\\' . $_founded_obj['clase'];
+				$class = 'Objeto\\' . $_founded_obj['clase'];
 
 				$query = '';
 				$query.= 'SELECT *' . PHP_EOL;

@@ -7,7 +7,7 @@ class Img
 {
 	public function __construct ()
 	{
-		$filename = ImgManager::GetLocalProcessed(APP()->get_URI(), 'img');
+ 		$filename = ImgManager::GetLocalProcessed(APP()->get_rqs_uri_inicial(), 'img');
 
 		if (is_null($filename) or ! file_exists($filename))
 		{

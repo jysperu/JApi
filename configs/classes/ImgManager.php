@@ -126,7 +126,7 @@ class ImgManager
 		$file_size = [1, 1];
 		try
 		{
-			is_null($real_file) or $file_size = getimagesize($real_file);
+			! is_null($real_file) and file_exists($real_file) and $file_size = getimagesize($real_file);
 		}
 		catch(Exception $e)
 		{}
@@ -162,12 +162,16 @@ class ImgManager
 
 		if ((int)$size[0] === 0)
 		{
+			$file_size_1 = $file_size[1];
+			$file_size_1 === 0 and $file_size_1 = 1;
 			$size[0] = $file_size[0] * $size[1] / $file_size[1];
 		}
 
 		if ((int)$size[1] === 0)
 		{
-			$size[1] = $file_size[1] * $size[0] / $file_size[0];
+			$file_size_0 = $file_size[0];
+			$file_size_0 === 0 and $file_size_0 = 1;
+			$size[1] = $file_size[1] * $size[0] / $file_size_0;
 		}
 
 		if (preg_match('#^(\*{0,1})([0-9\.]+)\%$#', $size[0], $matches))
