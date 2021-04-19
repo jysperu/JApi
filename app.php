@@ -4443,7 +4443,7 @@ if ( ! class_exists('JApi'))
 		 * @param string
 		 * @return bool
 		 */
-		function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
+		public function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
 		{
 			$conection = mysqli_connect($host, $usuario, $password);
 
@@ -4609,7 +4609,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return string
 		 */
-		function sql_esc ($valor = '', mysqli $conection = NULL)
+		public function sql_esc ($valor = '', mysqli $conection = NULL)
 		{
 			is_null($conection) and $conection = $this -> use_CON() -> CON;
 			return mysqli_real_escape_string($conection, $valor);
@@ -4624,7 +4624,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return string
 		 */
-		function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
+		public function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
 		{
 			static $_functions_alws = [
 				'CURDATE', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'CURTIME', 'LOCALTIME', 'LOCALTIMESTAMP', 'NOW', 'SYSDATE'
@@ -4688,7 +4688,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return bool
 		 */
-		function sql_et(string $tbl, mysqli $conection = NULL)
+		public function sql_et(string $tbl, mysqli $conection = NULL)
 		{
 			is_null($conection) and $conection = $this -> use_CON() -> CON;
 			return (bool)mysqli_query($conection, 'SELECT * FROM `' . $tbl . '` LIMIT 0');
@@ -4703,7 +4703,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
-		function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
+		public function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
 		{
 			if (is_a($is_insert, 'mysqli'))
 			{
@@ -4760,7 +4760,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
-		function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
+		public function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
 		{
 			static $_executeds = [];
 
@@ -4832,7 +4832,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return bool
 		 */
-		function sql_pswd ($valor, mysqli $conection = NULL)
+		public function sql_pswd ($valor, mysqli $conection = NULL)
 		{
 			return $this -> sql_data('
 			SELECT PASSWORD(' . $this->sql_qpesc($valor, FALSE, $conection) . ') as `valor`;
@@ -4852,7 +4852,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return bool
 		 */
-		function sql_trans($do = NULL, mysqli $conection = NULL)
+		public function sql_trans($do = NULL, mysqli $conection = NULL)
 		{
 			static $_trans = []; ## levels de transacciones abiertas
 			static $_auto_commit_setted = [];
@@ -4930,6 +4930,62 @@ if ( ! class_exists('JApi'))
 			}
 
 			return TRUE;
+		}
+
+		/**
+		 * sql_efk()
+		 *
+		 * @param bool|null
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_efk($constraint, mysqli $conection = NULL)
+		{
+			is_null($conection) and $conection = $this->use_CON()->get_CON();
+			static $data = [], $_consultados = [];
+
+			if (in_array($constraint, $_consultados)) 
+			{
+				unset($data[$conection->_base_datos]);
+				$_consultados = [];
+			}
+			$_consultados[] = $constraint;
+
+			isset($data[$conection->_base_datos]) or 
+			$data[$conection->_base_datos] = (array)sql_data('
+SELECT CONSTRAINT_NAME
+FROM   information_schema.table_constraints
+WHERE  CONSTRAINT_SCHEMA = ' . qp_esc($conection->_base_datos) . ' AND
+	   CONSTRAINT_TYPE = "FOREIGN KEY"
+			', false, 'CONSTRAINT_NAME', $conection);
+
+			return in_array($constraint, $data[$conection->_base_datos]);
+		}
+
+		/**
+		 * sql_euk()
+		 *
+		 * @param bool|null
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_euk($constraint, $table, mysqli $conection = NULL)
+		{
+			is_null($conection) and $conection = APP()->use_CON()->get_CON();
+			static $data = [];
+
+			isset($data[$conection->_base_datos]) or $data[$conection->_base_datos] = [];
+
+			isset($data[$conection->_base_datos][$table]) or 
+			$data[$conection->_base_datos][$table] = (array)sql_data('
+SELECT CONSTRAINT_NAME
+FROM   information_schema.table_constraints
+WHERE  TABLE_SCHEMA = ' . qp_esc($conection->_base_datos) . ' AND
+	   TABLE_NAME = ' . qp_esc($table) . ' AND
+	   CONSTRAINT_TYPE = "UNIQUE"
+			', false, 'CONSTRAINT_NAME', $conection);
+
+			return in_array($constraint, $data[$conection->_base_datos][$table]);
 		}
 
 		function translate ($frase, $n = NULL, ...$sprintf)
