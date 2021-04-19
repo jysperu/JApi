@@ -547,6 +547,36 @@ if ( ! function_exists('sql_trans'))
 	}
 }
 
+if ( ! function_exists('sql_efk'))
+{
+	/**
+	 * sql_efk()
+	 *
+	 * @param bool|null
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_efk ($constraint, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $constraint, $conection);
+	}
+}
+
+if ( ! function_exists('sql_euk'))
+{
+	/**
+	 * sql_euk()
+	 *
+	 * @param bool|null
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_euk ($constraint, $table, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $constraint, $table, $conection);
+	}
+}
+
 if ( ! function_exists('map_app_directories'))
 {
 	/**
