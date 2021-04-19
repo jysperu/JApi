@@ -581,7 +581,9 @@ if ( ! class_exists('JApi'))
 			$this->action_apply('JApi/install/start', $dir, $_install_file);
 
 			@include_once ($_install_file);
-			unlink($_install_file); // los borra para que no se vuelvan a ejecutar
+
+			$_installed_file = $dir . '/install/installed.php';
+			rename($_install_file, $_installed_file);
 
 			$this->action_apply('JApi/install/end', $dir, $_install_file);
 		}
