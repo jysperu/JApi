@@ -2469,7 +2469,7 @@ if ( ! class_exists('JApi'))
 					$force_uri .= '?' . http_build_query($_GET);
 				}
 			}
-			$force_uri = $this -> url('base') . $this -> url('srvpublic_path') . $force_uri;
+			$force_uri = $this -> url('base') . $force_uri;
 			$_head_html .= 'history.replaceState([], "", "' . $force_uri . '");';
 
 			$_head_html .= '</script>' . PHP_EOL;
