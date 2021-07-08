@@ -4713,7 +4713,12 @@ if ( ! class_exists('JApi'))
 		{
 			$trace = debug_backtrace(false);
 			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			$_japi_objects_file = JAPIPATH . DS . 'configs' . DS . 'classes' . DS . 'ObjetoBase.php';
+			while(count($trace) > 0 and (
+				(isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
+//				   (isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file, $_japi_objects_file])) 
+				or  ! isset($trace[0]['file'])
+			))
 			{
 				array_shift($trace);
 			}
@@ -4801,7 +4806,12 @@ if ( ! class_exists('JApi'))
 
 			$trace = debug_backtrace(false);
 			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			$_japi_objects_file = JAPIPATH . DS . 'configs' . DS . 'classes' . DS . 'ObjetoBase.php';
+			while(count($trace) > 0 and (
+				(isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
+//				   (isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file, $_japi_objects_file])) 
+				or  ! isset($trace[0]['file'])
+			))
 			{
 				array_shift($trace);
 			}
