@@ -4709,6 +4709,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
+
 		public function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL, $modulo = null)
 		{
 			$trace = debug_backtrace(false);
@@ -4800,6 +4801,7 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
+
 		public function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL, $modulo = null)
 		{
 			static $_executeds = [];
