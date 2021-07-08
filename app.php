@@ -198,6 +198,8 @@ if ( ! class_exists('JApi'))
 			file_exists (APPPATH . '/init.php') and 
 			require_once APPPATH . '/init.php';
 
+			$this -> action_apply('JApi/InitLoaded');
+
 			/** Definiendo el handler para cuando finalice el request ya sea con o sin response */
 			register_shutdown_function([$this, '_handler_shutdown']);
 
@@ -207,26 +209,25 @@ if ( ! class_exists('JApi'))
 			/** Iniciando autoload */
 			spl_autoload_register([$this, '_init_autoload']);
 
-			$this
-
 			/**
 			 * Cargando todos los archivos de funciones
 			 * El orden a recorrer es de menor a mayor para que los directorios prioritarios puedan crear primero las funciones actualizadas
 			 */
-			-> map_app_directories ([$this, '_init_load_functions'])
+			$this -> map_app_directories ([$this, '_init_load_functions']);
+			$this -> action_apply('JApi/FunctionsLoaded');
 
 			/**
 			 * Cargando el autoload de la carpeta vendor
 			 * El orden a recorrer es de menor a mayor para que los directoreios prioritarios puedan cargar sus librerías actualizadas
 			 */
-			-> map_app_directories ([$this, '_init_load_vendor'])
+			$this -> map_app_directories ([$this, '_init_load_vendor']);
 
 			/**
 			 * Cargando la configuración de la aplicación
 			 * El orden a recorrer es de mayor a menor para que los directorios prioritariosde puedan sobreescribir los por defecto
 			 */
-			-> map_app_directories ([$this, '_init_load_config'], true)
-			;
+			$this -> map_app_directories ([$this, '_init_load_config'], true);
+			$this -> action_apply('JApi/ConfigLoaded');
 
 			$this -> _rqs_method = $this -> url('request_method');
 			$this -> _rqs_uri_inicial = $this -> URI = $this -> url('path');
@@ -330,20 +331,23 @@ if ( ! class_exists('JApi'))
 			$timezone = $this->config('timezone');
 			date_default_timezone_set($timezone);
 
-			$this
+			$this -> action_apply('JApi/PreparingInstall');
+
+			
 
 			/**
 			 * Procesando todos los /install/install.php
 			 * El orden a recorrer es de menor a mayor para que los directorios prioritarios puedan instalar sus requerimientos primero
 			 */
-			-> map_app_directories ([$this, '_init_install'])
+			$this -> map_app_directories ([$this, '_init_install']);
+			$this -> action_apply('JApi/Installed');
 
 			/**
 			 * Procesando todos los app.php
 			 * El orden a recorrer es de menor a mayor para que los directorios prioritarios puedan procesar sus requerimientos primero
 			 */
-			-> map_app_directories ([$this, '_init_load_app'])
-			;
+			$this -> map_app_directories ([$this, '_init_load_app']);
+			$this -> action_apply('JApi/APPLoaded');
 
 			/** Iniciando el proceso del uri */
 			$this -> _init_uriprocess();
@@ -4713,20 +4717,30 @@ if ( ! class_exists('JApi'))
 
 			is_null($conection) and $conection = $this -> use_CON() -> CON;
 
+			$_consulta_inicio = microtime(true);
 			$result =  mysqli_query($conection, $query);
+			$_consulta_fin = microtime(true);
 
 			if ( ! $result)
 			{
-				$this-> _MYSQL_history[] = [
+				$_ERRNO = mysqli_errno($conection);
+				$_ERROR = mysqli_error($conection);
+
+				$_stat = [
 					'query' => $query,
 					'suphp' => 'mysqli_query($conection, $query)',
-					'error' => mysqli_error($conection), 
-					'errno' => mysqli_errno($conection),
+					'error' => $_ERROR, 
+					'errno' => $_ERRNO,
 					'hstpr' => 'error',
+					'start' => $_consulta_inicio,
+					'endin' => $_consulta_fin,
 					'conct' => $conection->thread_id,
+					'funct' => 'sql',
 				];
+				$this-> _MYSQL_history[] = $_stat;
 
-				trigger_error('Error en el query: ' . $query, E_USER_WARNING);
+				$this -> action_apply('SQL/Stat', $_stat);
+				trigger_error('Error en el query: ' . PHP_EOL . $query . PHP_EOL . $_ERRNO . ': ' . $_ERROR, E_USER_WARNING);
 				return FALSE;
 			}
 
@@ -4737,16 +4751,22 @@ if ( ! class_exists('JApi'))
 				$return = mysqli_insert_id($conection);
 			}
 
-			$this-> _MYSQL_history[] = [
+			$_stat = [
 				'query' => $query,
 				'suphp' => 'mysqli_query($conection, $query)',
 				'error' => '', 
 				'errno' => '',
 				'hstpr' => 'success',
+				'start' => $_consulta_inicio,
+				'endin' => $_consulta_fin,
 				'conct' => $conection->thread_id,
+				'funct' => 'sql',
+				'afrow' => $conection->affected_rows,
 				($is_insert ? 'insert_id' : 'return') => $return,
 			];
+			$this-> _MYSQL_history[] = $_stat;
 
+			$this -> action_apply('SQL/Stat', $_stat);
 			return $return;
 		}
 
@@ -4786,26 +4806,51 @@ if ( ! class_exists('JApi'))
 				@mysqli_next_result($conection);
 			}
 
+			$_consulta_inicio = microtime(true);
 			$result =  mysqli_query($conection, $query);
+			$_consulta_fin = microtime(true);
 
 			if ( ! $result)
 			{
-				$this-> _MYSQL_history[] = [
+				$_ERRNO = mysqli_errno($conection);
+				$_ERROR = mysqli_error($conection);
+
+				$_stat = [
 					'query' => $query,
 					'suphp' => 'mysqli_query($conection, $query)',
-					'error' => mysqli_error($conection), 
-					'errno' => mysqli_errno($conection),
+					'error' => $_ERROR, 
+					'errno' => $_ERRNO,
 					'hstpr' => 'error',
+					'start' => $_consulta_inicio,
+					'endin' => $_consulta_fin,
 					'conct' => $conection->thread_id,
+					'funct' => 'sql_data',
 				];
+				$this-> _MYSQL_history[] = $_stat;
 
-				trigger_error('Error en el query: ' . $query, E_USER_WARNING);
+				$this -> action_apply('SQL/Stat', $_stat);
+				trigger_error('Error en el query: ' . PHP_EOL . $query . PHP_EOL . $_ERRNO . ': ' . $_ERROR, E_USER_WARNING);
 
 				$sql_data_result = MysqlResultData::fromArray([])
 				-> quitar_fields('log');
 			}
 			else
 			{
+				$_stat = [
+					'query' => $query,
+					'suphp' => 'mysqli_query($conection, $query)',
+					'error' => '', 
+					'errno' => '',
+					'hstpr' => 'success',
+					'start' => $_consulta_inicio,
+					'endin' => $_consulta_fin,
+					'conct' => $conection->thread_id,
+					'funct' => 'sql_data',
+					'total' => $conection->num_rows,
+				];
+				$this-> _MYSQL_history[] = $_stat;
+
+				$this -> action_apply('SQL/Stat', $_stat);
 				$sql_data_result = new MysqlResultData ($result);
 			}
 
