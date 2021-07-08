@@ -4585,6 +4585,8 @@ if ( ! class_exists('JApi'))
 		{
 			$return = true;
 
+
+
 			foreach($this->_CONs as $tid => $conection)
 			{
 				if ($this -> CON and $tid === $this -> CON -> thread_id)
@@ -4707,8 +4709,17 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
-		public function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
+		public function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL, $modulo = null)
 		{
+			$trace = debug_backtrace(false);
+			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			{
+				array_shift($trace);
+			}
+			$trace = array_shift($trace);
+			is_null($trace) or $trace = $trace['file'] . '#' . $trace['line'];
+
 			if (is_a($is_insert, 'mysqli'))
 			{
 				$conection = $is_insert;
@@ -4736,10 +4747,12 @@ if ( ! class_exists('JApi'))
 					'endin' => $_consulta_fin,
 					'conct' => $conection->thread_id,
 					'funct' => 'sql',
+					'filen' => $trace,
+					'modul' => $modulo,
 				];
-				$this-> _MYSQL_history[] = $_stat;
+//				$this-> _MYSQL_history[] = $_stat;
 
-				$this -> action_apply('SQL/Stat', $_stat);
+				$this -> action_apply('SQL/Stat', $_stat, $conection);
 				trigger_error('Error en el query: ' . PHP_EOL . $query . PHP_EOL . $_ERRNO . ': ' . $_ERROR, E_USER_WARNING);
 				return FALSE;
 			}
@@ -4763,10 +4776,12 @@ if ( ! class_exists('JApi'))
 				'funct' => 'sql',
 				'afrow' => $conection->affected_rows,
 				($is_insert ? 'insert_id' : 'return') => $return,
+				'filen' => $trace,
+				'modul' => $modulo,
 			];
-			$this-> _MYSQL_history[] = $_stat;
+//			$this-> _MYSQL_history[] = $_stat;
 
-			$this -> action_apply('SQL/Stat', $_stat);
+			$this -> action_apply('SQL/Stat', $_stat, $conection);
 			return $return;
 		}
 
@@ -4780,9 +4795,18 @@ if ( ! class_exists('JApi'))
 		 * @param mysqli
 		 * @return mixed
 		 */
-		public function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
+		public function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL, $modulo = null)
 		{
 			static $_executeds = [];
+
+			$trace = debug_backtrace(false);
+			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
+			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			{
+				array_shift($trace);
+			}
+			$trace = array_shift($trace);
+			is_null($trace) or $trace = $trace['file'] . '#' . $trace['line'];
 
 			if (is_a($return_first, 'mysqli'))
 			{
@@ -4825,10 +4849,12 @@ if ( ! class_exists('JApi'))
 					'endin' => $_consulta_fin,
 					'conct' => $conection->thread_id,
 					'funct' => 'sql_data',
+					'filen' => $trace,
+					'modul' => $modulo,
 				];
-				$this-> _MYSQL_history[] = $_stat;
+//				$this-> _MYSQL_history[] = $_stat;
 
-				$this -> action_apply('SQL/Stat', $_stat);
+				$this -> action_apply('SQL/Stat', $_stat, $conection);
 				trigger_error('Error en el query: ' . PHP_EOL . $query . PHP_EOL . $_ERRNO . ': ' . $_ERROR, E_USER_WARNING);
 
 				$sql_data_result = MysqlResultData::fromArray([])
@@ -4847,10 +4873,12 @@ if ( ! class_exists('JApi'))
 					'conct' => $conection->thread_id,
 					'funct' => 'sql_data',
 					'total' => $conection->num_rows,
+					'filen' => $trace,
+					'modul' => $modulo,
 				];
-				$this-> _MYSQL_history[] = $_stat;
+//				$this-> _MYSQL_history[] = $_stat;
 
-				$this -> action_apply('SQL/Stat', $_stat);
+				$this -> action_apply('SQL/Stat', $_stat, $conection);
 				$sql_data_result = new MysqlResultData ($result);
 			}
 
@@ -5126,6 +5154,7 @@ WHERE  TABLE_SCHEMA = ' . qp_esc($conection->_base_datos) . ' AND
 			if ( ! isset($langs[$frase_traduccion]) and ! isset($langs[$frase]))
 			{
 				if ($this->LANG <> 'ES')
+
 				{
 					
 					$this->mkdir2('/configs/translates', APPPATH);
