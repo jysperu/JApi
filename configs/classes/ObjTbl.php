@@ -1688,6 +1688,182 @@ abstract class ObjTbl extends JArray
 	}
 
     /**
+     * delete_wr
+	 * Permite hacer una consulta DELETE a la DB omitiendo la validación de los hijos enviados
+     */
+	public function delete_wr ($_omitir_hijos = [], &$_sync = [], &$_changes = [], $_op_level = 1)
+	{
+		if ( ! $this->_found)
+		{
+			$this->_errors[] = '[' . self::gcc() . '](' . __FUNCTION__ . ') El objeto no existe aún';
+			return true;
+		}
+
+		sql_trans();
+		$_tabla_key = $this->_uid();
+
+		// validar los rx_hijos con on_delete = 'NO ACTION' or 'RESTRICT'
+		$rxs_hijo = self::rxs_hijo();
+		foreach($rxs_hijo as $rx)
+		{
+			if ( ! in_array($rx['on_delete'], ['NO ACTION', 'RESTRICT']))
+			{
+				continue;
+			}
+
+			$field = $rx['field'];
+			if (in_array($field, $_omitir_hijos) or in_array($rx['clase'], $_omitir_hijos))
+			{
+				continue;
+			}
+
+			$data = $this->offsetGet($field);
+			if (count($data) > 0)
+			{
+				sql_trans(false);
+				$this->_errors[] = 'No se puede eliminar el registro `' . self::gcc() . '` ' . 
+								   'hasta que se eliminen los registros `' . $rx['clase'] . '`';
+				return false;
+				break;
+			}
+		}
+
+		$query = '';
+		$query.= 'DELETE FROM `' . self::tblname() . '` ' . PHP_EOL;
+		$query.= 'WHERE TRUE' . PHP_EOL;
+
+		$this->_where_sql($query);
+
+		$query.= 'LIMIT 1' . PHP_EOL;
+
+		$query = filter_apply ('ObjTbl::Delete', $query, self::gcc(), $this);
+
+		$_delete_data_before = $this->__toArray();
+
+		$rxs_hijo_changeds = [];
+		$rxs_hijo_deleteds = [];
+		$rxs_hijo = self::rxs_hijo();
+		foreach($rxs_hijo as $rx)
+		{
+			if ( ! in_array($rx['on_delete'], ['CASCADE', 'SET NULL']))
+			{
+				continue;
+			}
+
+			$field = $rx['field'];
+			if (in_array($field, $_omitir_hijos) or in_array($rx['clase'], $_omitir_hijos))
+			{
+				continue;
+			}
+
+			$data = $this->offsetGet($field);
+			$vnulo = $rx['on_delete'] === 'SET NULL';
+
+			foreach($data as $reg_o)
+			{
+				if ($vnulo)
+				{
+					foreach($rx['columnas'] as $_padre => $_hijo)
+					{
+						$reg_o[$_hijo] = NULL;
+					}
+					$rxs_hijo_changeds[] = $reg_o;
+				}
+				else
+				{
+					$rxs_hijo_deleteds[] = $reg_o;
+				}
+			}
+		}
+
+		sql('SET FOREIGN_KEY_CHECKS=0;');
+		$_exec = @sql($query);
+		sql('SET FOREIGN_KEY_CHECKS=1;');
+		
+		if ( ! $_exec)
+		{
+			sql_trans(false);
+			$this->_errors[] = 'No se pudo eliminar el registro `' . self::gcc() . '`';
+			return false;
+		}
+
+		$this->select($_sync);
+
+		$_changes[] = [
+//			'fecha_hora' => time(),
+			'accion' => 'delete',
+			'clase' => self::gcc(),
+			'tabla' => self::tblname(),
+			'tabla_key' => $_tabla_key,
+			'anterior' => $_delete_data_before,
+			'nuevo' => [],
+		];
+
+		// Actualizar los RX_hijos cuyos campos han sido actualizados
+		foreach($rxs_hijo_changeds as $reg_o)
+		{
+			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
+			if ( ! $_exec)
+			{
+				$_errors = $reg_o->get_errors();
+				foreach($_errors as $_error)
+				{
+					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+				}
+				return false;
+			}
+		}
+
+		// Actualizar los RX_hijos cuyos campos han sido actualizados
+		foreach($rxs_hijo_deleteds as $reg_o)
+		{
+			$_exec = $reg_o->delete($_sync, $_changes, ($_op_level + 1));
+			if ( ! $_exec)
+			{
+				$_errors = $reg_o->get_errors();
+				foreach($_errors as $_error)
+				{
+					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+				}
+				return false;
+			}
+		}
+
+		// Actualizar los RX_PADRES que requieren actualización
+		$rxs_padre = self::rxs_padre();
+		foreach($rxs_padre as $rx)
+		{
+			if ( ! $rx['fus'])
+			{
+				continue;
+			}
+
+			$field = $rx['field'];
+			$reg_o = $this[$field];
+
+			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
+			if ( ! $_exec)
+			{
+				$_errors = $reg_o->get_errors();
+				foreach($_errors as $_error)
+				{
+					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+				}
+				return false;
+			}
+		}
+
+		sql_trans(true);
+
+		if ($_op_level === 1)
+		{
+			action_apply('ObjTbl::Changes', $_changes, self::gcc(), $this);
+		}
+
+		return TRUE;
+	}
+
+    /**
      * reset
 	 * Permite deshacer cualquier cambio realizado hasta el último select realizado
 	 * Esto permite que previo a hacer un update o delete, la información regrese a como era el ultimo select
