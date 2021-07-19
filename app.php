@@ -498,7 +498,22 @@ if ( ! class_exists('JApi'))
 		 */
 		protected function _init_autoload ($class)
 		{
-			static $_bs = '\\';
+			static $_bs = '\\', $_pres = [];
+
+			if (count($_pres) === 0)
+			{
+				$_pres = [
+					'Object',
+					'Objeto',
+					'ObjRoute',
+					'ReRoute',
+					'AlwRoute',
+					'PreRequest',
+					'Request',
+					'Response'
+				];
+				$_pres = $this -> filter_apply('AutoLoad/Pres', $_pres);
+			}
 
 			$_class_required = $class;
 			$class = trim($class, $_bs);
@@ -506,13 +521,7 @@ if ( ! class_exists('JApi'))
 			$class_parts = explode($_bs, $class);
 			$class_dir_base = '/configs/classes';
 
-			if (count($class_parts) > 1 and in_array($class_parts[0], [
-				'Object',
-				'Objeto',
-				'PreRequest',
-				'Request',
-				'Response'
-			]))
+			if (count($class_parts) > 1 and in_array($class_parts[0], $_pres))
 			{
 				$class_dir_base = array_shift($class_parts);
 				$class_dir_base = mb_strtolower($class_dir_base);
