@@ -5391,7 +5391,6 @@ if ( ! class_exists('JApi'))
 
 			$_app_directories_list = $this->get_app_directories();
 			foreach($_app_directories_list as $base)
-
 			{
 				$file_view = $base . '/snippets' . $directory . DS . $file_name;
 
