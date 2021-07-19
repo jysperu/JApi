@@ -459,22 +459,6 @@ if ( ! function_exists('sql_qpesc'))
 	}
 }
 
-if ( ! function_exists('sql_et'))
-{
-	/**
-	 * sql_et()
-	 * Validar la existencia de una tabla en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return string
-	 */
-	function sql_et (string $tbl, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $tbl, $conection);
-	}
-}
-
 if ( ! function_exists('sql'))
 {
 	/**
@@ -547,16 +531,66 @@ if ( ! function_exists('sql_trans'))
 	}
 }
 
+if ( ! function_exists('sql_et'))
+{
+	/**
+	 * sql_et()
+	 * Validar la existencia de una tabla en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return string
+	 */
+	function sql_et (string $tabla, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $tabla, $conection);
+	}
+}
+
+if ( ! function_exists('sql_etc'))
+{
+	/**
+	 * sql_etc()
+	 * Valida la existencia de un campo dentro de una tabla de la db
+	 *
+	 * @param string
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_etc (string $campo, string $tabla, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $campo, $tabla, $conection);
+	}
+}
+
+if ( ! function_exists('sql_ev'))
+{
+	/**
+	 * sql_ev()
+	 * Valida la existencia de una vista en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return string
+	 */
+	function sql_ev (string $tabla, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $tabla, $conection);
+	}
+}
+
 if ( ! function_exists('sql_efk'))
 {
 	/**
 	 * sql_efk()
+	 * Valida la existencia de una relación foránea
 	 *
 	 * @param bool|null
 	 * @param mysqli
 	 * @return bool
 	 */
-	function sql_efk ($constraint, mysqli $conection = NULL)
+	function sql_efk (string $constraint, mysqli $conection = NULL)
 	{
 		return exec_app(__FUNCTION__, $constraint, $conection);
 	}
@@ -566,14 +600,80 @@ if ( ! function_exists('sql_euk'))
 {
 	/**
 	 * sql_euk()
+	 * Valida la existencia de una constante única dentro de una tabla
 	 *
-	 * @param bool|null
+	 * @param string
+	 * @param string
 	 * @param mysqli
 	 * @return bool
 	 */
-	function sql_euk ($constraint, $table, mysqli $conection = NULL)
+	function sql_euk (string $constraint, string $tabla, mysqli $conection = NULL)
 	{
-		return exec_app(__FUNCTION__, $constraint, $table, $conection);
+		return exec_app(__FUNCTION__, $constraint, $tabla, $conection);
+	}
+}
+
+if ( ! function_exists('sql_ee'))
+{
+	/**
+	 * sql_ee()
+	 * Valida la existencia de una evento en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_ee(string $evento, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $evento, $conection);
+	}
+}
+
+if ( ! function_exists('sql_ef'))
+{
+	/**
+	 * sql_ef()
+	 * Valida la existencia de una función en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_ef(string $funcion, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $funcion, $conection);
+	}
+}
+
+if ( ! function_exists('sql_ep'))
+{
+	/**
+	 * sql_ep()
+	 * Valida la existencia de un procedimiento en la db
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_ep(string $proceso, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $proceso, $conection);
+	}
+}
+
+if ( ! function_exists('sql_ed'))
+{
+	/**
+	 * sql_ed()
+	 * Valida la existencia de una disparador (trigger)
+	 *
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_ed(string $disparador, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $disparador, $conection);
 	}
 }
 

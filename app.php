@@ -701,62 +701,7 @@ if ( ! class_exists('JApi'))
 			$this -> action_apply ('JApi/uri-process/auth', $this->URI, $this->IDS);
 			$this -> action_apply ('JApi/uri-process/authenticate', $this->URI, $this->IDS);
 
-			/**
-			 * Inicio del procesamiento **PreRequest** del URI
-			 * El pre-request sirve para validar temas de autorización de alguna pantalla 
-			 * o la administración de un objeto
-			 */
-			$_uri_process_prerequest = true;
-			$_uri_process_prerequest = $this -> filter_apply ('JApi/uri-process/prerequest', $_uri_process_prerequest, $this->URI, $this->IDS);
-
-			if ($_uri_process_prerequest)
-			{
-				$this -> action_apply ('JApi/uri-process/prerequest/before');
-
-				/** Obtiene el prerequest, valida que no requiera logueo y lo intenta procesar */
-				$this -> _init_uriprocess_prerequest ();
-
-				$this -> action_apply ('JApi/uri-process/prerequest/after');
-			}
-
-			if (in_array($this->_response_type, ['file', 'manual']))
-			{
-				$this -> set_response_type ($this->_response_type);
-			}
-
-			/**
-			 * Inicio del procesamiento **Request** del URI
-			 * El request sirve para realizar procedimientos previo a la respuesta
-			 */
-			$_uri_process_request = true;
-			$_uri_process_request = $this -> filter_apply ('JApi/uri-process/request', $_uri_process_request, $this->URI, $this->IDS);
-
-			if ($_uri_process_request)
-			{
-				$this -> action_apply ('JApi/uri-process/request/before');
-
-				/** Obtiene el request, valida que no requiera logueo y lo intenta procesar */
-				$this -> _init_uriprocess_request ();
-
-				$this -> action_apply ('JApi/uri-process/request/after');
-			}
-
-			/**
-			 * Inicio del procesamiento **Response** del URI
-			 * El response sirve para entregar la información (contenido json, html u otro) a la solicitud
-			 */
-			$_uri_process_response = true;
-			$_uri_process_response = $this -> filter_apply ('JApi/uri-process/response', $_uri_process_response, $this->URI, $this->IDS);
-
-			if ($_uri_process_response)
-			{
-				$this -> action_apply ('JApi/uri-process/response/before');
-
-				/** Obtiene el response, valida que no requiera logueo y lo intenta procesar */
-				$this -> _init_uriprocess_response ();
-
-				$this -> action_apply ('JApi/uri-process/response/after');
-			}
+			$this -> _init_uriprocess_callback_all ();
 
 			/** Finaliza el procesamiento del URI */
 			$this -> action_apply ('JApi/uri-process/after', $this->URI, $this->IDS);
@@ -966,8 +911,8 @@ if ( ! class_exists('JApi'))
 			$_func = array_shift($_func_params);
 			count($_func_params) > 0 and array_pop($_func_params);
 
-			$this -> filter_apply('JApi/uri-process/get-class', $_class, $_func, $_func_params);
-			$this -> filter_apply('JApi/uri-process/get-class/' . $for, $_class, $_func, $_func_params);
+			$_class = $this -> filter_apply('JApi/uri-process/get-class', $_class, $_func, $_func_params);
+			$_class = $this -> filter_apply('JApi/uri-process/get-class/' . $for, $_class, $_func, $_func_params);
 
 			if (is_null($_class))
 			{
@@ -981,16 +926,93 @@ if ( ! class_exists('JApi'))
 			];
 		}
 
-		protected $_uriprocess_prerequest_result = false;
+		/**
+		 * UriProcess($class)
+		 * Permite reejecutar algún procesamiento de manera manual externo a la app.php
+		 */
+		public function UriProcess ($class)
+		{
+			if ($class === 'All')
+			{
+				return $this->_init_uriprocess_callback_all();
+			}
+
+			return $this->_init_uriprocess_callback($class);
+		}
+
+		protected $_uriprocess_results = [
+			'ReRoute'    => false,
+			'ObjRoute'   => false,
+			'PreRequest' => false,
+			'Request'    => false,
+			'Response'   => false,
+		];
 
 		/**
-		 * _init_uriprocess_prerequest()
+		 * _init_uriprocess_callback_all()
 		 */
-		protected function _init_uriprocess_prerequest ()
+		protected function _init_uriprocess_callback_all ()
 		{
-			list($_class, $_func, $_func_params) = $this -> _obtaing_class_and_func ('PreRequest');
+			
+			/**
+			 * Inicio del procesamiento **ReRoute** del URI
+			 * El re-route sirve para redirigir las uris de la solicitud
+			 */
+			$this -> _init_uriprocess_callback ('ReRoute');
 
-			if (is_null($_class)) return;
+			/**
+			 * Inicio del procesamiento **ObjRoute** del URI
+			 * El obj-route sirve para validar los objetos parametrizados en las uris
+			 */
+			$this -> _init_uriprocess_callback ('ObjRoute');
+
+			/**
+			 * Inicio del procesamiento **PreRequest** del URI
+			 * El pre-request sirve para validar temas de autorización de alguna pantalla 
+			 * o la administración de un objeto
+			 */
+			$this -> _init_uriprocess_callback ('PreRequest');
+
+			$this -> action_apply ('JApi/uri-process/validations');
+
+			if (in_array($this->_response_type, ['file', 'manual']))
+			{
+				$this -> set_response_type ($this->_response_type);
+			}
+
+			/**
+			 * Inicio del procesamiento **Request** del URI
+			 * El request sirve para realizar procedimientos previo a la respuesta
+			 */
+			$this -> _init_uriprocess_callback ('Request');
+
+			/**
+			 * Inicio del procesamiento **Response** del URI
+			 * El response sirve para entregar la información (contenido json, html u otro) a la solicitud
+			 */
+			$this -> _init_uriprocess_callback ('Response');
+		}
+
+		/**
+		 * _init_uriprocess_callback()
+		 */
+		protected function _init_uriprocess_callback ($Process)
+		{
+			$_uri_process = true;
+			$_uri_process = $this -> filter_apply ('JApi/uri-process/' . $Process               , $_uri_process, $this->URI, $this->IDS);
+			$_uri_process = $this -> filter_apply ('JApi/uri-process/' . mb_strtolower($Process), $_uri_process, $this->URI, $this->IDS);
+
+			if ( ! $_uri_process) return;
+
+			$this -> action_apply ('JApi/uri-process/' . $Process .                '/before');
+			$this -> action_apply ('JApi/uri-process/' . mb_strtolower($Process) . '/before');
+
+			list($_class, $_func, $_func_params) = $this -> _obtaing_class_and_func ($Process);
+			if (is_null($_class))
+			{
+				$Process === 'Response' and $this->_init_uriprocess_response_404();
+				return;
+			}
 
 			try
 			{
@@ -1028,117 +1050,15 @@ if ( ! class_exists('JApi'))
 
 			if ( ! is_callable([$_class_instance, $_func]))
 			{
+				$Process === 'Response' and $this->_init_uriprocess_response_404();
 				return;
 			}
 
 			call_user_func_array([$_class_instance, $_func], $_func_params);
-			$this->_uriprocess_prerequest_result = true;
-		}
+			$this->_uriprocess_results[$Process] = true;
 
-		protected $_uriprocess_request_result = false;
-
-		/**
-		 * _init_uriprocess_request()
-		 */
-		protected function _init_uriprocess_request ()
-		{
-			list($_class, $_func, $_func_params) = $this -> _obtaing_class_and_func ('Request');
-
-			if (is_null($_class)) return;
-
-			try
-			{
-				$_class_reflect  = new ReflectionClass($_class);
-				$_class_instance = $_class_reflect -> newInstanceArgs($this->IDS);
-			}
-			catch(Exception $e)
-			{
-				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
-				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
-				{
-					throw $e;
-				}
-
-				$_class_instance = new $_class();
-			}
-
-			foreach([mb_strtoupper($this -> _rqs_method) . '_', ''] as $x)
-			{
-				foreach([mb_strtoupper($this -> _response_type) . '_', ''] as $y)
-				{
-					if ($_func_tmp = $x . $y . $_func and is_callable([$_class_instance, $_func_tmp]))
-					{
-						$_func = $_func_tmp;
-						break 2;
-					}
-
-					if ($_func_tmp = $y . $x . $_func and is_callable([$_class_instance, $_func_tmp]))
-					{
-						$_func = $_func_tmp;
-						break 2;
-					}
-				}
-			}
-
-			if ( ! is_callable([$_class_instance, $_func]))
-			{
-				return;
-			}
-
-			call_user_func_array([$_class_instance, $_func], $_func_params);
-			$this->_uriprocess_request_result = true;
-		}
-
-		/**
-		 * _init_uriprocess_response()
-		 */
-		protected function _init_uriprocess_response ()
-		{
-			list($_class, $_func, $_func_params) = $this -> _obtaing_class_and_func ('Response');
-
-			if (is_null($_class)) return $this->_init_uriprocess_response_404();
-
-			try
-			{
-				$_class_reflect  = new ReflectionClass($_class);
-				$_class_instance = $_class_reflect -> newInstanceArgs($this->IDS);
-			}
-			catch(Exception $e)
-			{
-				// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
-				if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
-				{
-					throw $e;
-				}
-
-				$_class_instance = new $_class();
-			}
-
-			foreach([mb_strtoupper($this -> _rqs_method) . '_', ''] as $x)
-			{
-				foreach([mb_strtoupper($this -> _response_type) . '_', ''] as $y)
-				{
-					if ($_func_tmp = $x . $y . $_func and is_callable([$_class_instance, $_func_tmp]))
-					{
-						$_func = $_func_tmp;
-						break 2;
-					}
-
-					if ($_func_tmp = $y . $x . $_func and is_callable([$_class_instance, $_func_tmp]))
-					{
-						$_func = $_func_tmp;
-						break 2;
-					}
-				}
-			}
-
-			if ( ! is_callable([$_class_instance, $_func]))
-			{
-				return $this->_init_uriprocess_response_404();
-			}
-
-			call_user_func_array([$_class_instance, $_func], $_func_params);
-			$this->_uriprocess_request_result = true;
+			$this -> action_apply ('JApi/uri-process/' . $Process               );
+			$this -> action_apply ('JApi/uri-process/' . mb_strtolower($Process));
 		}
 
 		/**
@@ -4687,20 +4607,6 @@ if ( ! class_exists('JApi'))
 		}
 
 		/**
-		 * sql_et()
-		 * Valida la existencia de una tabla en la db
-		 *
-		 * @param string
-		 * @param mysqli
-		 * @return bool
-		 */
-		public function sql_et(string $tbl, mysqli $conection = NULL)
-		{
-			is_null($conection) and $conection = $this -> use_CON() -> CON;
-			return (bool)mysqli_query($conection, 'SELECT * FROM `' . $tbl . '` LIMIT 0');
-		}
-
-		/**
 		 * sql()
 		 * Ejecuta una consulta a la Base Datos
 		 *
@@ -4964,13 +4870,13 @@ if ( ! class_exists('JApi'))
 				## Se está iniciando una transacción
 
 				## Solo si el level es 0 (aún no se ha abierto una transacción), se ejecuta el sql
-				$_trans[$conection->thread_id] === 0 and $this -> sql('START TRANSACTION', FALSE, $conection);
+				$_trans[$conection->thread_id] === 0 and mysqli_begin_transaction($conection);
 
 				$_trans[$conection->thread_id]++; ## Incrmentar el level
 
 				if ( ! $_auto_commit_setted[$conection->thread_id])
 				{
-					$this -> sql('SET autocommit = 0') AND $_auto_commit_setted[$conection->thread_id] = TRUE;
+					mysqli_autocommit($conection, false) AND $_auto_commit_setted[$conection->thread_id] = TRUE;
 				}
 
 				return TRUE;
@@ -4994,11 +4900,11 @@ if ( ! class_exists('JApi'))
 				## Solo si el level es 0 (ya se han cerrado todas las conecciones), se ejecuta el sql
 				if ($_trans[$conection->thread_id] === 0)
 				{
-					$this -> sql('COMMIT', FALSE, $conection);
+					mysqli_commit($conection);
 
 					if ($_auto_commit_setted[$conection->thread_id])
 					{
-						$this -> sql('SET autocommit = 1') AND $_auto_commit_setted[$conection->thread_id] = FALSE;
+						mysqli_autocommit($conection, true) AND $_auto_commit_setted[$conection->thread_id] = FALSE;
 					}
 				}
 			}
@@ -5006,71 +4912,202 @@ if ( ! class_exists('JApi'))
 			{
 				$_trans[$conection->thread_id] = 0; ## Finalizar todas los levels abiertos
 
-				$this -> sql('ROLLBACK', FALSE, $conection);
+				mysqli_rollback($conection);
 
 				if ($_auto_commit_setted[$conection->thread_id])
 				{
-					$this -> sql('SET autocommit = 1') AND $_auto_commit_setted[$conection->thread_id] = FALSE;
+					mysqli_autocommit($conection, true) AND $_auto_commit_setted[$conection->thread_id] = FALSE;
 				}
 			}
 
 			return TRUE;
 		}
 
-		/**
-		 * sql_efk()
-		 *
-		 * @param bool|null
-		 * @param mysqli
-		 * @return bool
-		 */
-		public function sql_efk($constraint, mysqli $conection = NULL)
-		{
-			is_null($conection) and $conection = $this->use_CON()->get_CON();
-			static $data = [], $_consultados = [];
+		/** Validaciones de Base Datos */
 
-			if (in_array($constraint, $_consultados)) 
+		protected function sql_e_global (string $buscado, string $_is_key, mysqli $conection = null)
+		{
+			static $_data = [], $_consultados = [];
+			is_null($conection) and $conection = $this -> use_CON() -> get_CON();
+
+			isset($_data[$_is_key]) or $_data[$_is_key] = [];
+			isset($_consultados[$_is_key]) or $_consultados[$_is_key] = [];
+			isset($_consultados[$_is_key][$conection->_base_datos]) or $_consultados[$_is_key][$conection->_base_datos] = [];
+
+			$data =& $_data[$_is_key];
+			$consultados =& $_consultados[$_is_key][$conection->_base_datos];
+
+			if (in_array($buscado, $_consultados)) 
 			{
 				unset($data[$conection->_base_datos]);
 				$_consultados = [];
 			}
-			$_consultados[] = $constraint;
+			$_consultados[] = $buscado;
+
+			list($_is_CAMPO, $_is_TABLA, $_is_CAMPO_SHEMA, $_is_WHERE) = explode('|', $_is_key . '|||||', 5);
 
 			isset($data[$conection->_base_datos]) or 
-			$data[$conection->_base_datos] = (array)sql_data('
-SELECT CONSTRAINT_NAME
-FROM   information_schema.table_constraints
-WHERE  CONSTRAINT_SCHEMA = ' . qp_esc($conection->_base_datos) . ' AND
-	   CONSTRAINT_TYPE = "FOREIGN KEY"
-			', false, 'CONSTRAINT_NAME', $conection);
+			$data[$conection->_base_datos] = (array) sql_data('
+			SELECT ' . $_is_CAMPO . '
+			FROM   information_schema.'. $_is_TABLA . '
+			WHERE  ' . $_is_CAMPO_SHEMA . ' = ' . $this->sql_qpesc($conection->_base_datos) . $_is_WHERE . '
+			', false, $_is_CAMPO, $conection);
 
-			return in_array($constraint, $data[$conection->_base_datos]);
+			return in_array($buscado, $data[$conection->_base_datos]);
+		}
+
+		protected function sql_e_tabla (string $tabla, string $buscado, string $_is_key, mysqli $conection = null)
+		{
+			static $_data = [], $_consultados = [];
+			is_null($conection) and $conection = $this -> use_CON() -> get_CON();
+
+			isset($_data[$_is_key]) or $_data[$_is_key] = [];
+			isset($_consultados[$_is_key]) or $_consultados[$_is_key] = [];
+
+			isset($_data[$_is_key][$conection->_base_datos]) or $_data[$_is_key][$conection->_base_datos] = [];
+			isset($_consultados[$_is_key][$conection->_base_datos]) or $_consultados[$_is_key][$conection->_base_datos] = [];
+			isset($_consultados[$_is_key][$conection->_base_datos][$tabla]) or $_consultados[$_is_key][$conection->_base_datos][$tabla] = [];
+
+			$data =& $_data[$_is_key][$conection->_base_datos];
+			$consultados =& $_consultados[$_is_key][$conection->_base_datos][$tabla];
+
+			if (in_array($buscado, $_consultados)) 
+			{
+				unset($data[$tabla]);
+				$_consultados = [];
+			}
+			$_consultados[] = $buscado;
+
+			list($_is_CAMPO, $_is_TABLA, $_is_WHERE) = explode('|', $_is_key . '|||||', 5);
+
+			isset($data[$tabla]) or 
+			$data[$tabla] = (array) sql_data('
+			SELECT ' . $_is_CAMPO . '
+			FROM   information_schema.'. $_is_TABLA . '
+			WHERE  TABLE_SCHEMA = ' . $this->sql_qpesc($conection->_base_datos) . ' AND 
+				   TABLE_NAME   = ' . $this->sql_qpesc($tabla) . $_is_WHERE . '
+			', false, $_is_CAMPO, $conection);
+
+			return in_array($buscado, $data[$tabla]);
+		}
+
+		/**
+		 * sql_et()
+		 * Valida la existencia de una tabla en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_et(string $tabla, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($tabla, 'TABLE_NAME|TABLES|TABLE_SCHEMA', $conection);
+		}
+
+		/**
+		 * sql_etc()
+		 * Valida la existencia de un campo dentro de una tabla de la db
+		 *
+		 * @param string
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_etc(string $campo, string $tabla, mysqli $conection = NULL)
+		{
+			return $this->sql_e_tabla($tabla, $campo, 'COLUMN_NAME|COLUMNS', $conection);
+		}
+
+		/**
+		 * sql_ev()
+		 * Valida la existencia de una vista en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_ev(string $tabla, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($tabla, 'TABLE_NAME|TABLES|TABLE_SCHEMA', $conection);
+		}
+
+		/**
+		 * sql_efk()
+		 * Valida la existencia de una relación foránea
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_efk(string $constraint, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($tabla, 'CONSTRAINT_NAME|TABLE_CONSTRAINTS|CONSTRAINT_SCHEMA| AND CONSTRAINT_TYPE = "FOREIGN KEY"', $conection);
 		}
 
 		/**
 		 * sql_euk()
+		 * Valida la existencia de una constante única dentro de una tabla
 		 *
-		 * @param bool|null
+		 * @param string
+		 * @param string
 		 * @param mysqli
 		 * @return bool
 		 */
-		public function sql_euk($constraint, $table, mysqli $conection = NULL)
+		public function sql_euk(string $constraint, string $tabla, mysqli $conection = NULL)
 		{
-			is_null($conection) and $conection = APP()->use_CON()->get_CON();
-			static $data = [];
+			return $this->sql_e_tabla($tabla, $constraint, 'CONSTRAINT_NAME|TABLE_CONSTRAINTS| AND CONSTRAINT_TYPE = "UNIQUE"', $conection);
+		}
 
-			isset($data[$conection->_base_datos]) or $data[$conection->_base_datos] = [];
+		/**
+		 * sql_ee()
+		 * Valida la existencia de una evento en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_ee(string $evento, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($evento, 'EVENT_NAME|EVENTS|EVENT_SCHEMA', $conection);
+		}
 
-			isset($data[$conection->_base_datos][$table]) or 
-			$data[$conection->_base_datos][$table] = (array)sql_data('
-SELECT CONSTRAINT_NAME
-FROM   information_schema.table_constraints
-WHERE  TABLE_SCHEMA = ' . qp_esc($conection->_base_datos) . ' AND
-	   TABLE_NAME = ' . qp_esc($table) . ' AND
-	   CONSTRAINT_TYPE = "UNIQUE"
-			', false, 'CONSTRAINT_NAME', $conection);
+		/**
+		 * sql_ef()
+		 * Valida la existencia de una función en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_ef(string $funcion, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($funcion, 'ROUTINE_NAME|ROUTINES|ROUTINE_SCHEMA| AND ROUTINE_TYPE = "FUNCTION"', $conection);
+		}
 
-			return in_array($constraint, $data[$conection->_base_datos][$table]);
+		/**
+		 * sql_ep()
+		 * Valida la existencia de un procedimiento en la db
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_ep(string $proceso, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($proceso, 'ROUTINE_NAME|ROUTINES|ROUTINE_SCHEMA| AND ROUTINE_TYPE = "PROCEDURE"', $conection);
+		}
+
+		/**
+		 * sql_ed()
+		 * Valida la existencia de una disparador (trigger)
+		 *
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_ed(string $disparador, mysqli $conection = NULL)
+		{
+			return $this->sql_e_global($disparador, 'TRIGGER_NAME|TRIGGERS|TRIGGER_SCHEMA', $conection);
 		}
 
 		function translate ($frase, $n = NULL, ...$sprintf)
