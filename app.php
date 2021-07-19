@@ -617,7 +617,7 @@ if ( ! class_exists('JApi'))
 			@include_once ($_install_file);
 
 			$_installed_file = $dir . '/install/installed.php';
-			rename($_install_file, $_installed_file);
+			@rename($_install_file, $_installed_file);
 
 			$this->action_apply('JApi/install/end', $dir, $_install_file);
 		}
@@ -2641,6 +2641,7 @@ if ( ! class_exists('JApi'))
 				{
 					function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
 					$_body_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+
 				}
 
 				$_body_html .= PHP_EOL . '<script' . $this -> _html_attrs ($attr) . '></script>';
@@ -5046,7 +5047,7 @@ if ( ! class_exists('JApi'))
 		 */
 		public function sql_efk(string $constraint, mysqli $conection = NULL)
 		{
-			return $this->sql_e_global($tabla, 'CONSTRAINT_NAME|TABLE_CONSTRAINTS|CONSTRAINT_SCHEMA| AND CONSTRAINT_TYPE = "FOREIGN KEY"', $conection);
+			return $this->sql_e_global($constraint, 'CONSTRAINT_NAME|TABLE_CONSTRAINTS|CONSTRAINT_SCHEMA| AND CONSTRAINT_TYPE = "FOREIGN KEY"', $conection);
 		}
 
 		/**
@@ -5390,6 +5391,7 @@ if ( ! class_exists('JApi'))
 
 			$_app_directories_list = $this->get_app_directories();
 			foreach($_app_directories_list as $base)
+
 			{
 				$file_view = $base . '/snippets' . $directory . DS . $file_name;
 
