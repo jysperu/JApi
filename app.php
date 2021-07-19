@@ -348,9 +348,30 @@ if ( ! class_exists('JApi'))
 			 */
 			$this -> map_app_directories ([$this, '_init_load_app']);
 			$this -> action_apply('JApi/APPLoaded');
+/**
+			 * Preparación del URI
+			 * Principalmente sirve para formatear el URI obteniendo los IDS 
+			 * de objetos pasados por url
+			 */
+			$this -> _init_uriprocess_prepare();
+
+			/** Inicio el procesamiento del URI */
+			$this -> action_apply ('JApi/uri-process/before', $this->URI, $this->IDS);
+
+			/**
+			 * Procesar acciones de validacion de autenticación
+			 * Aquí se puede cambiar el URI en caso de no estar logueado dependiendo de la URI
+			 * Pueden existir URIs que se permitan sin logueo
+			 */
+			$this -> action_apply ('JApi/uri-process/login', $this->URI, $this->IDS);
+			$this -> action_apply ('JApi/uri-process/auth', $this->URI, $this->IDS);
+			$this -> action_apply ('JApi/uri-process/authenticate', $this->URI, $this->IDS);
 
 			/** Iniciando el proceso del uri */
-			$this -> _init_uriprocess();
+			$this -> _init_uriprocess ();
+
+			/** Finaliza el procesamiento del URI */
+			$this -> action_apply ('JApi/uri-process/after', $this->URI, $this->IDS);
 		}
 
 		/**
@@ -683,28 +704,48 @@ if ( ! class_exists('JApi'))
 		protected function _init_uriprocess ()
 		{
 			/**
-			 * Preparación del URI
-			 * Principalmente sirve para formatear el URI obteniendo los IDS 
-			 * de objetos pasados por url
+			 * Inicio del procesamiento **ObjRoute** del URI
+			 * El obj-route sirve para validar los objetos parametrizados en las uris
 			 */
-			$this -> _init_uriprocess_prepare();
-
-			/** Inicio el procesamiento del URI */
-			$this -> action_apply ('JApi/uri-process/before', $this->URI, $this->IDS);
+			$this -> _init_uriprocess_callback ('ObjRoute');
 
 			/**
-			 * Procesar acciones de validacion de autenticación
-			 * Aquí se puede cambiar el URI en caso de no estar logueado dependiendo de la URI
-			 * Pueden existir URIs que se permitan sin logueo
+			 * Inicio del procesamiento **ReRoute** del URI
+			 * El re-route sirve para redirigir las uris de la solicitud
 			 */
-			$this -> action_apply ('JApi/uri-process/login', $this->URI, $this->IDS);
-			$this -> action_apply ('JApi/uri-process/auth', $this->URI, $this->IDS);
-			$this -> action_apply ('JApi/uri-process/authenticate', $this->URI, $this->IDS);
+			$this -> _init_uriprocess_callback ('ReRoute');
 
-			$this -> _init_uriprocess_callback_all ();
+			/**
+			 * Inicio del procesamiento **AlwRoute** del URI
+			 * El alw-route sirve para validar los permisos del usuario para poder visualizar el uri correspondiente
+			 */
+			$this -> _init_uriprocess_callback ('AlwRoute');
 
-			/** Finaliza el procesamiento del URI */
-			$this -> action_apply ('JApi/uri-process/after', $this->URI, $this->IDS);
+			/**
+			 * Inicio del procesamiento **PreRequest** del URI
+			 * El pre-request sirve para validar temas de autorización de alguna pantalla 
+			 * o la administración de un objeto
+			 */
+			$this -> _init_uriprocess_callback ('PreRequest');
+
+			$this -> action_apply ('JApi/uri-process/validations');
+
+			if (in_array($this->_response_type, ['file', 'manual']))
+			{
+				$this -> set_response_type ($this->_response_type);
+			}
+
+			/**
+			 * Inicio del procesamiento **Request** del URI
+			 * El request sirve para realizar procedimientos previo a la respuesta
+			 */
+			$this -> _init_uriprocess_callback ('Request');
+
+			/**
+			 * Inicio del procesamiento **Response** del URI
+			 * El response sirve para entregar la información (contenido json, html u otro) a la solicitud
+			 */
+			$this -> _init_uriprocess_callback ('Response');
 		}
 
 		/**
@@ -934,7 +975,7 @@ if ( ! class_exists('JApi'))
 		{
 			if ($class === 'All')
 			{
-				return $this->_init_uriprocess_callback_all();
+				return $this->_init_uriprocess();
 			}
 
 			return $this->_init_uriprocess_callback($class);
@@ -947,51 +988,6 @@ if ( ! class_exists('JApi'))
 			'Request'    => false,
 			'Response'   => false,
 		];
-
-		/**
-		 * _init_uriprocess_callback_all()
-		 */
-		protected function _init_uriprocess_callback_all ()
-		{
-			
-			/**
-			 * Inicio del procesamiento **ReRoute** del URI
-			 * El re-route sirve para redirigir las uris de la solicitud
-			 */
-			$this -> _init_uriprocess_callback ('ReRoute');
-
-			/**
-			 * Inicio del procesamiento **ObjRoute** del URI
-			 * El obj-route sirve para validar los objetos parametrizados en las uris
-			 */
-			$this -> _init_uriprocess_callback ('ObjRoute');
-
-			/**
-			 * Inicio del procesamiento **PreRequest** del URI
-			 * El pre-request sirve para validar temas de autorización de alguna pantalla 
-			 * o la administración de un objeto
-			 */
-			$this -> _init_uriprocess_callback ('PreRequest');
-
-			$this -> action_apply ('JApi/uri-process/validations');
-
-			if (in_array($this->_response_type, ['file', 'manual']))
-			{
-				$this -> set_response_type ($this->_response_type);
-			}
-
-			/**
-			 * Inicio del procesamiento **Request** del URI
-			 * El request sirve para realizar procedimientos previo a la respuesta
-			 */
-			$this -> _init_uriprocess_callback ('Request');
-
-			/**
-			 * Inicio del procesamiento **Response** del URI
-			 * El response sirve para entregar la información (contenido json, html u otro) a la solicitud
-			 */
-			$this -> _init_uriprocess_callback ('Response');
-		}
 
 		/**
 		 * _init_uriprocess_callback()
