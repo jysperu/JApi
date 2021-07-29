@@ -1019,15 +1019,24 @@ abstract class ObjetoBase extends JArray
 	}
 
     /**
+     * valid
+	 * Permite validar que todos los campos requeridos esten llenos
+     */
+	public function valid ()
+	{
+		return $this->verify('validar', 1);
+	}
+
+    /**
      * verify
 	 * Permite validar que todos los campos requeridos esten llenos
      */
-	public function verify ()
+	protected function verify ($from = null, $_op_level = 1)
 	{
 		// Validar No vacíos
 		$not_valids = [];
 		$columns = self::columns();
-		
+
 		$columns_ne = array_keys(array_filter($columns, function($o){
 			return $o['ne'];
 		}));
@@ -1038,13 +1047,15 @@ abstract class ObjetoBase extends JArray
 				$not_valids[] = $column;
 			}
 		}
-		
+
 		if (count($not_valids) > 0)
 		{
-			$this->_errors[] = grouping($not_valids, [
+			$_error = grouping($not_valids, [
 				'prefix' => ['El campo ', 'Los campos '],
 				'suffix' => [' es requerido', ' son requeridos'],
 			]);
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
@@ -1083,7 +1094,9 @@ abstract class ObjetoBase extends JArray
 			
 			if ( ! $obj_padre->found())
 			{
-				$this->_errors[] = 'No existe objeto `'.$rx['clase'].'`'.$pkn.' ('.$rx['field'].') #ForeignKeyError';
+				$_error = 'No existe objeto `'.$rx['clase'].'`'.$pkn.' ('.$rx['field'].') #FKE';
+				$this->_errors[] = 'Se produjo un error al ' . $from .  ' el registro.';
+				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 				return false;
 			}
 		}
@@ -1099,16 +1112,19 @@ abstract class ObjetoBase extends JArray
 	{
 		if ($this->_found and ! $forced)
 		{
-			$this->_errors[] = '[' . self::gcc() . '](' . __FUNCTION__ . ') El objeto ya existe';
+			$_error = 'El objeto a ingresar ya existe en la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
 		sql_trans();
 
-		$_valid = $this->verify();
+		$_valid = $this->verify('insertar', $_op_level);
 		if ( ! $_valid)
 		{
 			sql_trans(false);
+			// ya se envió el trigger_error en el verify
 			return false;
 		}
 
@@ -1159,7 +1175,10 @@ abstract class ObjetoBase extends JArray
 		if ( ! $_exec)
 		{
 			sql_trans(false);
-			$this->_errors[] = 'No se pudo ingresar el registro `' . self::gcc() . '`';
+
+			$_error = 'Se produjo un error al ingresar el registro en la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
@@ -1228,7 +1247,7 @@ abstract class ObjetoBase extends JArray
 					$_errors = $reg_o->get_errors();
 					foreach($_errors as $_error)
 					{
-						$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+						$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 					}
 					return false;
 				}
@@ -1262,16 +1281,19 @@ abstract class ObjetoBase extends JArray
 	{
 		if ( ! $this->_found)
 		{
-			$this->_errors[] = '[' . self::gcc() . '](' . __FUNCTION__ . ') El objeto no existe aún';
+			$_error = 'El objeto a actualizar aún no existe en la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
 		sql_trans();
 
-		$_valid = $this->verify();
+		$_valid = $this->verify('actualizar', $_op_level);
 		if ( ! $_valid)
 		{
 			sql_trans(false);
+			// ya se envió el trigger_error en el verify
 			return false;
 		}
 
@@ -1316,6 +1338,7 @@ abstract class ObjetoBase extends JArray
 		{
 			sql_trans(true);
 			$this->_errors[] = 'No se han realizado cambios';
+			// no es necesario un trigger
 			return true;
 		}
 
@@ -1334,7 +1357,10 @@ abstract class ObjetoBase extends JArray
 				if (isset($_update_data[$_padre]))
 				{
 					sql_trans(false);
-					$this->_errors[] = 'No se puede actualizar el campo `' . $_padre . '`';
+
+					$_error = 'No se puede actualizar el campo `' . $_padre . '`';
+					$this->_errors[] = $_error;
+					@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 					return false;
 					break 2;
 				}
@@ -1393,7 +1419,10 @@ abstract class ObjetoBase extends JArray
 		if ( ! $_exec)
 		{
 			sql_trans(false);
-			$this->_errors[] = 'No se pudo actualizar el registro `' . self::gcc() . '`';
+
+			$_error = 'Se produjo un error al actualizar el registro de la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
@@ -1433,7 +1462,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1457,7 +1486,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1495,7 +1524,7 @@ abstract class ObjetoBase extends JArray
 					$_errors = $reg_o->get_errors();
 					foreach($_errors as $_error)
 					{
-						$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+						$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 					}
 					return false;
 				}
@@ -1529,7 +1558,8 @@ abstract class ObjetoBase extends JArray
 	{
 		if ( ! $this->_found)
 		{
-			$this->_errors[] = '[' . self::gcc() . '](' . __FUNCTION__ . ') El objeto no existe aún';
+			$this->_errors[] = 'El objeto no existe aún en la base datos';
+			// no es necesario enviar un trigger_error
 			return true;
 		}
 
@@ -1550,8 +1580,10 @@ abstract class ObjetoBase extends JArray
 			if (count($data) > 0)
 			{
 				sql_trans(false);
-				$this->_errors[] = 'No se puede eliminar el registro `' . self::gcc() . '` ' . 
-								   'hasta que se eliminen los registros `' . $rx['clase'] . '`';
+
+				$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
+				$this->_errors[] = 'Se produjo un error al eliminar el registro de la base datos';
+				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 				return false;
 				break;
 			}
@@ -1605,7 +1637,10 @@ abstract class ObjetoBase extends JArray
 		if ( ! $_exec)
 		{
 			sql_trans(false);
-			$this->_errors[] = 'No se pudo eliminar el registro `' . self::gcc() . '`';
+
+			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
@@ -1630,7 +1665,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1645,7 +1680,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1669,7 +1704,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1693,7 +1728,7 @@ abstract class ObjetoBase extends JArray
 	{
 		if ( ! $this->_found)
 		{
-			$this->_errors[] = '[' . self::gcc() . '](' . __FUNCTION__ . ') El objeto no existe aún';
+			$this->_errors[] = 'El objeto no existe aún en la base datos';
 			return true;
 		}
 
@@ -1719,8 +1754,10 @@ abstract class ObjetoBase extends JArray
 			if (count($data) > 0)
 			{
 				sql_trans(false);
-				$this->_errors[] = 'No se puede eliminar el registro `' . self::gcc() . '` ' . 
-								   'hasta que se eliminen los registros `' . $rx['clase'] . '`';
+
+				$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
+				$this->_errors[] = 'Se produjo un error al eliminar el registro de la base datos';
+				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 				return false;
 				break;
 			}
@@ -1781,7 +1818,10 @@ abstract class ObjetoBase extends JArray
 		if ( ! $_exec)
 		{
 			sql_trans(false);
-			$this->_errors[] = 'No se pudo eliminar el registro `' . self::gcc() . '`';
+
+			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
+			$this->_errors[] = $_error;
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
@@ -1806,7 +1846,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1821,7 +1861,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
@@ -1845,7 +1885,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . '] ' . $_error;
+					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
 			}
