@@ -613,6 +613,23 @@ if ( ! function_exists('sql_euk'))
 	}
 }
 
+if ( ! function_exists('sql_eix'))
+{
+	/**
+	 * sql_eix()
+	 * Valida la existencia de un indice
+	 *
+	 * @param string
+	 * @param string
+	 * @param mysqli
+	 * @return bool
+	 */
+	function sql_eix (string $constraint, string $tabla, mysqli $conection = NULL)
+	{
+		return exec_app(__FUNCTION__, $constraint, $tabla, $conection);
+	}
+}
+
 if ( ! function_exists('sql_ee'))
 {
 	/**
