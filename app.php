@@ -3140,9 +3140,9 @@ if ( ! class_exists('JApi'))
 				array_shift($trace);
 			}
 
-			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-			while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+			while(count($trace) > 0 and isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
 			{
+				// excluir si el error proviene de un archivo dentro de la carpeta JAPI para identificar desde donde proviene el error
 				array_shift($trace);
 			}
 
