@@ -3140,7 +3140,7 @@ if ( ! class_exists('JApi'))
 				array_shift($trace);
 			}
 
-			while(count($trace) > 0 and isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
+			while(count($trace) > 0 and ((isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or ! isset($trace[0]['file'])))
 			{
 				// excluir si el error proviene de un archivo dentro de la carpeta JAPI para identificar desde donde proviene el error
 				array_shift($trace);
@@ -3148,14 +3148,11 @@ if ( ! class_exists('JApi'))
 
 			if (isset($trace[0]))
 			{
-				$filepath === __FILE__ and $line = NULL;
-				$filepath === __FILE__ and $filepath = NULL;
-
-				$filepath === $_japi_funcs_file and $line = NULL;
-				$filepath === $_japi_funcs_file and $filepath = NULL;
-
-				is_null($filepath) and $filepath = $trace[0]['file'];
-				is_null($line) and $line = $trace[0]['line'];
+				if (str_replace(JAPIPATH, '', $filepath) <> $filepath)
+				{
+					$line = $trace[0]['line'];
+					$filepath = $trace[0]['file'];
+				}
 
 				isset($trace[0]['class']) and ! isset($meta['class']) and $meta['class'] = $trace[0]['class'];
 				isset($trace[0]['function']) and ! isset($meta['function']) and $meta['function'] = $trace[0]['function'];
@@ -4625,14 +4622,9 @@ if ( ! class_exists('JApi'))
 		public function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL, $modulo = null)
 		{
 			$trace = debug_backtrace(false);
-			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-			$_japi_objects_file = JAPIPATH . DS . 'configs' . DS . 'classes' . DS . 'ObjetoBase.php';
-			while(count($trace) > 0 and (
-				(isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
-//				   (isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file, $_japi_objects_file])) 
-				or  ! isset($trace[0]['file'])
-			))
+			while(count($trace) > 0 and ((isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or ! isset($trace[0]['file'])))
 			{
+				// excluir si el error proviene de un archivo dentro de la carpeta JAPI para identificar desde donde proviene el error
 				array_shift($trace);
 			}
 			$trace = array_shift($trace);
@@ -4719,14 +4711,9 @@ if ( ! class_exists('JApi'))
 			static $_executeds = [];
 
 			$trace = debug_backtrace(false);
-			$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-			$_japi_objects_file = JAPIPATH . DS . 'configs' . DS . 'classes' . DS . 'ObjetoBase.php';
-			while(count($trace) > 0 and (
-				(isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file'])
-//				   (isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file, $_japi_objects_file])) 
-				or  ! isset($trace[0]['file'])
-			))
+			while(count($trace) > 0 and ((isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or ! isset($trace[0]['file'])))
 			{
+				// excluir si el error proviene de un archivo dentro de la carpeta JAPI para identificar desde donde proviene el error
 				array_shift($trace);
 			}
 			$trace = array_shift($trace);
@@ -5234,9 +5221,9 @@ if ( ! class_exists('JApi'))
 
 					$trace = debug_backtrace(false);
 
-					$_japi_funcs_file = JAPIPATH . DS . 'configs' . DS . 'functions' . DS . 'JApi.php';
-					while(count($trace) > 0 and isset($trace[0]['file']) and in_array($trace[0]['file'], [__FILE__, $_japi_funcs_file]))
+					while(count($trace) > 0 and ((isset($trace[0]['file']) and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or ! isset($trace[0]['file'])))
 					{
+						// excluir si el error proviene de un archivo dentro de la carpeta JAPI para identificar desde donde proviene el error
 						array_shift($trace);
 					}
 
