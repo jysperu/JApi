@@ -5065,6 +5065,20 @@ if ( ! class_exists('JApi'))
 		}
 
 		/**
+		 * sql_eix()
+		 * Valida la existencia de un indice
+		 *
+		 * @param string
+		 * @param string
+		 * @param mysqli
+		 * @return bool
+		 */
+		public function sql_eix(string $constraint, string $tabla, mysqli $conection = NULL)
+		{
+			return $this->sql_e_tabla($tabla, $constraint, 'INDEX_NAME|STATISTICS', $conection);
+		}
+
+		/**
 		 * sql_ee()
 		 * Valida la existencia de una evento en la db
 		 *
