@@ -144,7 +144,7 @@ if ( ! class_exists('JApi'))
 		 * @param $reverse Boolean Indica si la función a ejecutar se hará a la lista invertida
 		 * @return self
 		 */
-		public function map_app_directories (callable $callback, $reverse = FALSE)
+		public function map_app_directories ($callback, $reverse = FALSE)
 		{
 			$_app_directories_list = $this->get_app_directories($reverse);
 			array_map($callback, $_app_directories_list);
