@@ -89,6 +89,13 @@ abstract class ObjetoBase extends JArray
      */
     protected static $_columns = [];
 	
+	public static function add_column($_column)
+	{
+		$that = self::gcc();
+		$that::$_columns[] = $_column;
+		return;
+	}
+	
 	public static function columns_real()
 	{
 		$that = self::gcc();
