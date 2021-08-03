@@ -10,10 +10,10 @@ defined('HOMEPATH') or exit('Archivo no se puede llamar directamente');
 //---------------------------------------------
 // Funciones PregMatch
 //---------------------------------------------
-if ( ! function_exists('match'))
+if ( ! function_exists('_match'))
 {
 	/**
-	 * match()
+	 * _match()
 	 * Ejecuta de manera ordenada la función preg_match
 	 *
 	 * @param string Valor a validar el REGEXP
@@ -22,7 +22,7 @@ if ( ! function_exists('match'))
 	 * @param string Las banderas de la función
 	 * @return int
 	 */
-	function match ($v, $regex, $delimiter = '/', $flags = '')
+	function _match ($v, $regex, $delimiter = '/', $flags = '')
 	{
 		$delimiter = (string)$delimiter;
 		
@@ -54,7 +54,7 @@ if ( ! function_exists('is_version'))
 		static $_regex = '^([0-9]+)(\.[0-9]+){0,}$';
 		static $_regex2= '^([0-9]+)(\.[0-9]+){1,}$';
 		
-		return $force_point ? match($v, $_regex2) : match($v, $_regex);
+		return $force_point ? _match($v, $_regex2) : _match($v, $_regex);
 	}
 }
 
@@ -71,7 +71,7 @@ if ( ! function_exists('has_letter'))
 	{
 		static $_regex = '[a-zA-Z]';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -88,7 +88,7 @@ if ( ! function_exists('only_letters'))
 	{
 		static $_regex = '^[a-zA-Z]+$';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -105,7 +105,7 @@ if ( ! function_exists('has_number'))
 	{
 		static $_regex = '[0-9]';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -122,7 +122,7 @@ if ( ! function_exists('only_numbers'))
 	{
 		static $_regex = '^[0-9]+$';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -155,7 +155,7 @@ if ( ! function_exists('has_space'))
 	{
 		static $_regex = '[ ]';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -172,7 +172,7 @@ if ( ! function_exists('has_point'))
 	{
 		static $_regex = '[\.]';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -189,7 +189,7 @@ if ( ! function_exists('only_letters_spaces'))
 	{
 		static $_regex = '^[a-zA-Z ]+$';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -206,7 +206,7 @@ if ( ! function_exists('only_numbers_points'))
 	{
 		static $_regex = '^[0-9\.]+$';
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -222,7 +222,7 @@ if ( ! function_exists('is_ascii'))
 	function is_ascii($v)
 	{
 		static $_regex = '[^\x00-\x7F]';
-		return ! match($v, $_regex, '/', 'S');
+		return ! _match($v, $_regex, '/', 'S');
 	}
 }
 
@@ -244,7 +244,7 @@ if ( ! function_exists('is_date'))
 			return FALSE;
 		}
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -266,7 +266,7 @@ if ( ! function_exists('is_time'))
 			return FALSE;
 		}
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
@@ -289,7 +289,7 @@ if ( ! function_exists('is_datetime'))
 			return FALSE;
 		}
 		
-		return match($v, $_regex);
+		return _match($v, $_regex);
 	}
 }
 
