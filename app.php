@@ -4783,7 +4783,7 @@ if ( ! class_exists('JApi'))
 					'endin' => $_consulta_fin,
 					'conct' => $conection->thread_id,
 					'funct' => 'sql_data',
-					'total' => $conection->num_rows,
+					'total' => $result->num_rows,
 					'filen' => $trace,
 					'modul' => $modulo,
 				];
