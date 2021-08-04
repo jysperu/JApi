@@ -2632,7 +2632,7 @@ if ( ! class_exists('JApi'))
 					$attr['src'] = $dats['uri'];
 					if ( ! is_null($dats['version']))
 					{
-						$_has_sign = preg_match('/\?/i', $attr['href']);
+						$_has_sign = preg_match('/\?/i', $attr['src']);
 						$attr['src'] .= ($_has_sign ? '&' : '?') . $dats['version'];
 					}
 				}
@@ -5143,7 +5143,7 @@ if ( ! class_exists('JApi'))
 						@include $file;
 					}
 
-					if ($file = $path. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_lang) . '.php' and file_exists($file))
+					if ($file = $base. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_lang) . '.php' and file_exists($file))
 					{
 						@include $file;
 					}
@@ -5157,7 +5157,7 @@ if ( ! class_exists('JApi'))
 						@include $file;
 					}
 
-					if ($file = $path. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_temp_lang) . '.php' and file_exists($file))
+					if ($file = $base. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_temp_lang) . '.php' and file_exists($file))
 					{
 						@include $file;
 					}
