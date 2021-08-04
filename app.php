@@ -3118,6 +3118,13 @@ if ( ! class_exists('JApi'))
 
 			is_null($message) and $message = '[NULL]';
 
+			if (in_array($message, [
+				'Trying to access array offset on value of type null',
+			]))
+			{
+				return;
+			}
+
 			if (is_null($trace))
 			{
 				$trace = debug_backtrace(false);
@@ -3206,9 +3213,13 @@ if ( ! class_exists('JApi'))
 
 			$meta['cdkdsp'] = isset($_COOKIE['cdkdsp'])  ? $_COOKIE['cdkdsp']  : NULL; // Código de Dispositivo
 
+			$trace_slim = $trace;
+			$trace_slim = array_filter($trace_slim, function($arr){
+				return isset($arr['file']) and isset($arr['line']);
+			});
 			$trace_slim = array_map(function($arr){
 				return $arr['file'] . '#' . $arr['line'];
-			}, $trace);
+			}, $trace_slim);
 			$meta['trace_slim'] = $trace_slim;
 			$meta['trace_original'] = $trace_original;
 			$meta['instant_buffer'] = ob_get_contents();
