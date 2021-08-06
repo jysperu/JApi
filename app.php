@@ -5292,6 +5292,7 @@ if ( ! class_exists('JApi'))
 
 			$traduccion = isset($langs[$frase_traduccion]) ? $langs[$frase_traduccion] : $langs[$frase];
 			$traduccion = (array)$traduccion;
+			$traduccion = array_values($traduccion);
 
 			switch(count($traduccion))
 			{
