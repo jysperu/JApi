@@ -5311,6 +5311,7 @@ if ( ! class_exists('JApi'))
 					else          $traduccion = $traduccion[1];
 					break;
 				default:
+					isset($traduccion[0]) or $traduccion[0] = '';
 					$traduccion = $traduccion[0];
 					break;
 			}
