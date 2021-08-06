@@ -6,7 +6,10 @@
 
 defined('HOMEPATH') or exit('Archivo no se puede llamar directamente');
 
-if (function_exists('APP')) return APP(); // previene no ser leido doble vez
+if (function_exists('APP'))
+{
+	return APP(); // previene no ser leido doble vez
+}
 
 if ( ! class_exists('JApi'))
 {
