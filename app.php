@@ -3294,7 +3294,7 @@ if ( ! class_exists('JApi'))
 					' . $this -> sql_qpesc($trace    , TRUE, $CON_logs) . ', 
 					' . $this -> sql_qpesc($meta     , TRUE, $CON_logs) . '
 				)
-				ON DUPLICATE KEY UPDATE `cantidad` = `cantidad` +1
+				ON DUPLICATE KEY UPDATE `cantidad` = `cantidad` +1, estado = "Registrado"
 				';
 
 				$saved = $this -> sql($query, TRUE, $CON_logs);
