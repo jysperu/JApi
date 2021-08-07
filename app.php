@@ -4123,7 +4123,7 @@ if ( ! class_exists('JApi'))
 
 				extract($datos, EXTR_REFS);
 
-				$ip_address = $_SERVER['REMOTE_ADDR'];
+				$ip_address = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
 
 				$spoof = NULL;
 				foreach(['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'HTTP_X_CLIENT_IP', 'HTTP_X_CLUSTER_CLIENT_IP'] as $ind)
