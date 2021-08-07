@@ -3606,6 +3606,8 @@ if ( ! class_exists('JApi'))
 				}
 
 				isset($_SERVER['REQUEST_SCHEME']) or $_SERVER['REQUEST_SCHEME'] = 'http' . ($datos['https'] ? 's' : '');
+				isset($_SERVER['SERVER_PORT']) or $_SERVER['SERVER_PORT'] = $this -> is_command() ? 0 : 80;
+				isset($_SERVER['REQUEST_URI']) or $_SERVER['REQUEST_URI'] = '';
 
 				$_parsed = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . ':' . $_SERVER['SERVER_PORT'] . $_SERVER['REQUEST_URI'];
 				$_parsed = parse_url($_parsed);
