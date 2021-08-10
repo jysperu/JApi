@@ -1375,6 +1375,11 @@ if ( ! class_exists('JApi'))
 			isset($parsed_url['scheme']) or $parsed_url['scheme'] = $this->url('scheme');
 			if ( ! isset($parsed_url['host']))
 			{
+				if ( ! isset($parsed_url['path']))
+				{
+					$parsed_url['path'] = $url;
+				}
+
 				$parsed_url['host'] = $this->url('host');
 				$parsed_url['path'] = $this->url('srvpublic_path') . '/' . ltrim($parsed_url['path'], '/');
 			}
