@@ -2384,7 +2384,6 @@ if ( ! class_exists('JApi'))
 			empty($_head_favicon) or $_head_html .= $_head_favicon . PHP_EOL;
 
 			$_head_html .= '<base href="' . $this -> url('base') . '" />' . PHP_EOL;
-			$_head_html .= '<script>';
 
 			$_head_html_script = '';
 
@@ -2408,8 +2407,12 @@ if ( ! class_exists('JApi'))
 
 			$_head_html_script = $this -> filter_apply('JApi/send-response-html/head/script', $_head_html_script);
 
-			$_head_html .= $_head_html_script . PHP_EOL;
-			$_head_html .= '</script>' . PHP_EOL;
+			if ( ! empty($_head_html_script))
+			{
+				$_head_html .= '<script>';
+				$_head_html .= $_head_html_script . PHP_EOL;
+				$_head_html .= '</script>' . PHP_EOL;
+			}
 
 			$_head_html = $this -> filter_apply('JApi/send-response-html/head', $_head_html);
 
