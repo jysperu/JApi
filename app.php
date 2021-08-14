@@ -1375,11 +1375,6 @@ if ( ! class_exists('JApi'))
 			isset($parsed_url['scheme']) or $parsed_url['scheme'] = $this->url('scheme');
 			if ( ! isset($parsed_url['host']))
 			{
-				if ( ! isset($parsed_url['path']))
-				{
-					$parsed_url['path'] = $url;
-				}
-
 				$parsed_url['host'] = $this->url('host');
 				$parsed_url['path'] = $this->url('srvpublic_path') . '/' . ltrim($parsed_url['path'], '/');
 			}
@@ -2391,12 +2386,14 @@ if ( ! class_exists('JApi'))
 			$_head_html .= '<base href="' . $this -> url('base') . '" />' . PHP_EOL;
 			$_head_html .= '<script>';
 
-			/** Añadir el script location.base en $_head_html */
-			$_head_html .= 'location.base="' . $this -> url('base') . '";';
-			$_head_html .= 'location.full="' . $this -> url('full') . '";';
-			$_head_html .= 'location.cookie="' . $this -> url('cookie-base') . '";';
+			$_head_html_script = '';
 
-			/** Añadir el script force_uri en $_head_html */
+			/** Añadir el script location.base en $_head_html_script */
+			$_head_html_script .= 'location.base="' . $this -> url('base') . '";';
+			$_head_html_script .= 'location.full="' . $this -> url('full') . '";';
+			$_head_html_script .= 'location.cookie="' . $this -> url('cookie-base') . '";';
+
+			/** Añadir el script force_uri en $_head_html_script */
 			$force_uri = $data['force_uri'];
 			if (is_null($force_uri))
 			{
@@ -2407,8 +2404,11 @@ if ( ! class_exists('JApi'))
 				}
 			}
 			$force_uri = $this -> url('base') . $force_uri;
-			$_head_html .= 'history.replaceState([], "", "' . $force_uri . '");';
+			$_head_html_script .= 'history.replaceState([], "", "' . $force_uri . '");';
 
+			$_head_html_script = $this -> filter_apply('JApi/send-response-html/head/script', $_head_html_script);
+
+			$_head_html .= $_head_html_script . PHP_EOL;
 			$_head_html .= '</script>' . PHP_EOL;
 
 			$_head_html = $this -> filter_apply('JApi/send-response-html/head', $_head_html);
@@ -4223,6 +4223,7 @@ if ( ! class_exists('JApi'))
 			{
 				return count($v) === 0;
 			}
+
 
 			return FALSE;
 		}
