@@ -1,172 +1,530 @@
 <?php
 /**
- * /JApi/configs/functions/JApi.php
- * funciones simplificadas de la app por defecto
- * eg: APP()->action_add() equivale a action_add()
+ * Archivo de funciones principal
  * @filesource
  */
 
 defined('HOMEPATH') or exit('Archivo no se puede llamar directamente');
 
-if ( ! function_exists('exec_app'))
+defined('ISCOMMAND') or define('ISCOMMAND', false);
+defined('JAPIPATH')  or define('JAPIPATH', __DIR__);
+defined('cdkdsp')    or define('cdkdsp', 'cdkdsp');
+
+if ( ! function_exists('APP')) exit('Función `APP()` es requerida');
+
+//=================================================================================//
+//==== Helpers                                                                =====//
+//=================================================================================//
+
+if ( ! function_exists('print_array'))
 {
 	/**
-	 * exec_app()
+	 * print_array()
+	 * Muestra los contenidos enviados en el parametro para mostrarlos en HTML
 	 *
-	 * @param String $function Función a ejecutar
-	 * @param Mixed $parameters
-	 * @return Mixed
+	 * @param	...array
+	 * @return	void
 	 */
-	function &exec_app ($function, &...$parameters)
+	function print_array(...$array)
 	{
-		$_func = [APP(), $function];
-		if (count($parameters) === 0)
+		$r = '';
+
+		$trace = debug_backtrace(false);
+		while(count($trace) > 0 and isset($trace[0]['file']) and $trace[0]['file'] === __FILE__)
 		{
-			return call_user_func($_func);
+			array_shift($trace);
 		}
-		return call_user_func_array($_func, $parameters);
-	}
-}
 
-if ( ! function_exists('exec_app_nkp'))
-{
-	/**
-	 * exec_app_nkp()
-	 *
-	 * @param String $function Función a ejecutar
-	 * @param Mixed $parameters
-	 * @return Mixed
-	 */
-	function &exec_app_nkp ($function, &$parameters = [])
-	{
-		$_func = [APP(), $function];
-		if (count($parameters) === 0)
+		$file_line = '';
+		isset($trace[0]) and 
+		$file_line = '<small style="color: #ccc;display: block;margin: 0;">' . $trace[0]['file'] . ' #' . $trace[0]['line'] . '</small><br>';
+
+		if (count($array) === 0)
 		{
-			return call_user_func($_func);
+			$r.= '<small style="color: #888">[SIN PARAMETROS]</small>';
 		}
-		return call_user_func_array($_func, $parameters);
+		else
+		foreach ($array as $ind => $_arr)
+		{
+			if (is_null($_arr))
+			{
+				$_arr = '<small style="color: #888">[NULO]</small>';
+			}
+			elseif (is_string($_arr) and empty($_arr))
+			{
+				$_arr = '<small style="color: #888">[VACÍO]</small>';
+			}
+			elseif (is_bool($_arr))
+			{
+				$_arr = '<small style="color: #888">['.($_arr?'TRUE':'FALSE').']</small>';
+			}
+			elseif (is_array($_arr) and function_exists('array_html'))
+			{
+				$_arr = array_html($_arr);
+			}
+			else
+			{
+				$_arr = htmlentities(print_r($_arr, true));
+			}
+
+			$r.= ($ind > 0 ? '<hr style="border: none;border-top: dashed #ebebeb .5px;margin: 12px 0;">' : '') . $_arr;
+		}
+
+		echo '<pre class="dipa">' . 
+				'<style>.dipa{' . 
+					'display:block;text-align:left;color:#444;background:#fff;position:relative;z-index:99999999999;' . 
+					'margin:5px 5px 15px;padding:0 10px 10px;border:solid 1px #ebebeb;box-shadow:4px 4px 4px rgba(235,235,235,.5)' . 
+				'}</style>' . 
+				$file_line . 
+				$r . 
+			 '</pre>' . 
+			 PHP_EOL;
 	}
 }
 
-if ( ! function_exists('filter_add'))
+if ( ! function_exists('print_r2'))
 {
 	/**
-	 * filter_add()
-	 * Agrega funciones programadas para filtrar variables
-	 *
-	 * @param String $key Hook
-	 * @param Callable $function Función a ejecutar
-	 * @param Integer $priority Prioridad (Orden) a ejecutar la función cuando es llamado el Hook
-	 * @return Boolean
+	 * print_r2()
+	 * @see print_array
 	 */
-	function filter_add ($key, $function, $priority = 50)
+	function print_r2(...$array)
 	{
-		return exec_app(__FUNCTION__, $key, $function, $priority);
+		return call_user_func_array('print_array', $array);
 	}
 }
 
-if ( ! function_exists('non_filtered'))
+if ( ! function_exists('die_array'))
 {
 	/**
-	 * non_filtered()
-	 * Agrega funciones programadas para filtrar variables
-	 * por defecto cuando no se hayan asignado alguno
+	 * die_array()
+	 * Muestra los contenidos enviados en el parametro para mostrarlos en HTML y finaliza los segmentos
 	 *
-	 * @param String $key Hook
-	 * @param Callable $function Función a ejecutar
-	 * @param Integer $priority Prioridad (Orden) a ejecutar la función cuando es llamado el Hook
-	 * @return Boolean
+	 * @param	...array
+	 * @return	void
 	 */
-	function non_filtered ($key, $function, $priority = 50)
+	function die_array(...$array)
 	{
-		return exec_app(__FUNCTION__, $key, $function, $priority);
+		call_user_func_array('print_array', $array);
+		die();
 	}
 }
 
-if ( ! function_exists('filter_apply'))
+if ( ! function_exists('mkdir2'))
 {
 	/**
-	 * filter_apply()
-	 * Ejecuta funciones para validar o cambiar una variable
+	 * mkdir2()
+	 * Crea los directorios faltantes desde la carpeta $base
 	 *
-	 * @param String $key Hook
-	 * @param Mixed	&...$params Parametros a enviar en las funciones del Hook (Referenced)
-	 * @return Mixed $params[0] || NULL
+	 * @param	string 	$folder folder
+	 * @param	string 	$base	base a considerar
+	 * @return 	string 	ruta del folder creado
 	 */
-	function filter_apply ($key, &...$params)
+	function mkdir2 ($folder, $base = NULL)
 	{
-		$parameters = [
-			$key,
+		if (is_null($base))
+		{
+			$_app_directories_list = APP()->get_app_directories();
+
+			$base = HOMEPATH;
+			foreach($_app_directories_list as $base_dir)
+			{
+				if ($temp = str_replace($base_dir, '', $folder) and $temp <> $folder)
+				{
+					$base = $base_dir;
+					break;
+				}
+			}
+		}
+
+		$_chars = ['/','.','*','+','?','|','(',')','[',']','{','}','\\','$','^','-'];
+		$folder = preg_replace('/^' . preg_replace('/(\\' . implode('|\\', $_chars).')/', "\\\\$1", $base) . '/i', '', $folder);
+		$folder = strtr($folder, '/\\', DS . DS);
+		$folder = trim($folder);
+		$folder = trim($folder, DS);
+
+		$return = realpath($base);
+
+		if (empty($folder))
+		{
+			return $return;
+		}
+
+		$folder = explode(DS, $folder);
+
+		foreach ($folder as $dir)
+		{
+			$return .= DS . $dir;
+
+			if ( ! file_exists($return))
+			{
+				mkdir($return);
+			}
+
+			if ( ! file_exists($return . DS . 'index.htm'))
+			{
+				file_put_contents($return . DS . 'index.htm', ''); // Silence is golden
+			}
+		}
+
+		return $return;
+	}
+}
+
+if ( ! function_exists('array_html'))
+{
+	/**
+	 * array_html()
+	 * Convierte un Array en un formato nestable para HTML
+	 *
+	 * @param array $arr Array a mostrar
+	 * @return string
+	 */
+	function array_html (array $arr, $lvl = 0)
+	{
+		static $_instances = 0;
+
+		$lvl = (int)$lvl;
+
+		$lvl_child = $lvl + 1 ;
+		$str = [];
+
+		$lvl===0 and $str[] = '<div class="array_html" id="array_html_' . (++$_instances) . '">';
+
+		$str[] = '<ol data-lvl="' . ($lvl) . '" class="array' . ($lvl > 0 ? ' child' : '') . '">';
+
+		if (count($arr) === 0)
+		{
+			$_str = '';
+			$_str.= '<li class="detail">';
+			$_str.= '<pre class="child-inline">';
+			$_str.= '<small style="color: #888">[Array vacío]</small>';
+			$_str.= '</pre>';
+
+			$str[] = $_str;
+		}
+
+		foreach ($arr as $key => $val)
+		{
+			$hash = md5(json_encode([$lvl, $key]));
+			$ctype = gettype($val);
+			$class = $ctype ==='object' ? get_class($val) : $ctype;
+
+			$_str = '';
+
+			$_str.= '<li class="detail" data-hash="' . htmlspecialchars($hash) . '">';
+			$_str.= '<span class="key'.(is_numeric($key)?' num':'').(is_integer($key)?' int':'').'">';
+			$_str.= $key;
+			$_str.= '<small class="info">'.$class.'</small>';
+			$_str.= '</span>';
+			
+			if ( $ctype === 'object')
+			{
+				$asarr = NULL;
+				foreach(['getArrayCopy', 'toArray', '__toArray'] as $f)
+				{
+					if (method_exists($val, $f))
+					{
+						try
+						{
+							$t = call_user_func([$val, $f]);
+							if( ! is_array($t))
+							{
+								throw new Exception('No es Array');
+							}
+							$asarr = $t;
+						}
+						catch(Exception $e)
+						{}
+					}
+				}
+				is_null($asarr) or $val = $asarr;
+			}
+			
+			if (is_array($val))
+			{
+				$_str .= array_html($val, $lvl_child);
+			}
+			
+			elseif ( $ctype === 'object')
+			{
+				$_str.= '<pre data-lvl="'.$lvl_child.'" class="'.$ctype.' child'.($ctype === 'object' ? (' ' . $class) : '').'">';
+				$_str.= htmlentities(print_r($val, true));
+				$_str.= '</pre>';
+			}
+			else
+			{
+				$_str.= '<pre data-lvl="'.$lvl_child.'" class="'.$ctype.' child-inline">';
+				if (is_null($val))
+				{
+					$_str.= '<small style="color: #888">[NULO]</small>';
+				}
+				elseif (is_string($val) and empty($val))
+				{
+					$_str.= '<small style="color: #888">[VACÍO]</small>';
+				}
+				elseif (is_bool($val))
+				{
+					$_str.= '<small style="color: #888">['.($val?'TRUE':'FALSE').']</small>';
+				}
+				else
+				{
+					$_str.= htmlentities(print_r($val, true));
+				}
+				$_str.= '</pre>';
+			}
+
+			$str[] = $_str;
+		}
+
+		$str[] = '</ol>';
+
+		if ($lvl === 0)
+		{
+			$str[] = 
+				'<style>'.
+					'.array_html {display: block;text-align: left;color: #444;background: white;position:relative}'.
+					'.array_html * {margin:0;padding:0}'.
+					'.array_html .array {list-style: none;margin: 0;padding: 0;}'.
+					'.array_html .array .array {margin: 10px 0 10px 10px;}'.
+					'.array_html .key {padding: 5px 10px;display:block;border-bottom: solid 1px #ebebeb}'.
+					'.array_html .detail {display: block;border: solid 1px #ebebeb;margin: 0 0 0;}'.
+					'.array_html .detail + .detail {margin-top: 10px}'.
+					'.array_html .array .array .detail {border-right: none}'.
+					'.array_html .child:not(.array), .array_html .child-inline {padding:10px}'.
+					'.array_html .info {color: #ccc;float: right;margin: 4px 0 4px 4px;user-select:none}'.
+					'.array_html.js .detail.has-child:not(.open)>.child {display:none}'.
+					'.array_html.js .detail.has-child:not(.open)>.key {border-bottom:none}'.
+					'.array_html.js .detail.has-child>.key {cursor:pointer}'.
+					'.array_html.js .detail.has-child:before {content: "▼";float: left;padding: 5px;color: #ccc;}'.
+					'.array_html.js .detail.has-child.open:before {content: "▲";}' . 
+				'</style>'
+			;
+
+			$str[] = 
+				'<script>'.
+					';(function(){'.
+						'var div = document.getElementById("array_html_'.$_instances.'");'.
+						'var open = function(e){if(e.defaultPrevented){return;};var t = e.target;if(/info/.test(t.classList)){t = t.parentElement;};if(!(/key/.test(t.classList))){return;};t.parentElement.classList.toggle("open");e.preventDefault()};'.
+						'div.classList.add("js");'.
+						'div.querySelectorAll(".child").forEach(function(d){var p = d.parentElement, c = p.classList;c.add("has-child");c.add("open");p.onclick = open;});'.
+					'}());' .
+				'</script>'
+			;
+		}
+
+		$lvl===0 and $str[] = '</div>';
+		$str = implode('', $str);
+		return $str;
+	}
+
+}
+
+if ( ! function_exists('build_url'))
+{
+	/**
+	 * build_url()
+	 * Construye una URL
+	 *
+	 * @param	array	$parsed_url	Partes de la URL a construir {@see http://www.php.net/manual/en/function.parse-url.php}
+	 * @return	string
+	 */
+
+	function build_url($parsed_url)
+	{
+		isset($parsed_url['query']) and is_array($parsed_url['query']) and 
+		$parsed_url['query'] = http_build_query($parsed_url['query']);
+
+		$scheme   = isset($parsed_url['scheme'])  ? $parsed_url['scheme']  : '';
+		$host     = isset($parsed_url['host'])    ? $parsed_url['host']    : '';
+		$port     = isset($parsed_url['port'])    ? $parsed_url['port']    : '';
+		$user     = isset($parsed_url['user'])    ? $parsed_url['user']    : '';
+		$pass     = isset($parsed_url['pass'])    ? $parsed_url['pass']    : '';
+		$path     = isset($parsed_url['path'])    ? $parsed_url['path']    : '';
+		$query    = isset($parsed_url['query'])   ? $parsed_url['query']   : '';
+		$fragment = isset($parsed_url['fragment'])? $parsed_url['fragment']: '';
+
+		if (in_array($port, [80, 443]))
+		{
+			## Son puertos webs que dependen del scheme
+			empty($scheme) and $scheme = $port === 80 ? 'http' : 'https';
+			$port = '';
+		}
+
+		empty($scheme)   or $scheme .= '://';
+		empty($port)     or $port    = ':' . $port;
+		empty($pass)     or $pass    = ':' . $pass;
+		empty($query)    or $query   = '?' . $query;
+		empty($fragment) or $fragment= '#' . $fragment;
+
+		$pass     = ($user || $pass) ? "$pass@" : '';
+
+		return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+	}
+}
+
+if ( ! function_exists('redirect'))
+{
+	/**
+	 * Establecer una redirección en caso el Tipo sea
+	 * @param	string	$link
+	 * @return	self
+	 */
+	function redirect($url, $query = NULL)
+	{
+		error_reporting(0);
+
+		is_array($url) and $url = build_url($url);
+		$parsed_url = parse_url($url);
+
+		isset($parsed_url['scheme']) or $parsed_url['scheme'] = url('scheme');
+		if ( ! isset($parsed_url['host']))
+		{
+			$parsed_url['host'] = url('host');
+			$parsed_url['path'] = url('srvpublic_path') . '/' . ltrim($parsed_url['path'], '/');
+		}
+
+		if ( ! is_null($query))
+		{
+			isset($parsed_url['query'])    or $parsed_url['query']  = [];
+			is_array($parsed_url['query']) or $parsed_url['query']  = parse_str($parsed_url['query']);
+
+			$parsed_url['query'] = array_merge($parsed_url['query'], $query);
+		}
+
+		$url = build_url ($parsed_url);
+
+		APP() -> _getandclear_buffer_content(); // El contenido no será reportado como error
+
+		header('Location: ' . $url) or die('<script>location.replace("' . $url . '");</script>');
+		die();
+	}
+}
+
+//=================================================================================//
+//==== Respuestas                                                             =====//
+//=================================================================================//
+
+if ( ! function_exists('http_code_message'))
+{
+	/**
+	 * http_code_message()
+	 * Resuelve el valor por defecto de las respuestas del HTTP status
+	 *
+	 * @param Integer $code El código
+	 * @return string
+	 */
+	function http_code_message (int $code = 200)
+	{
+		static $messages = [
+			100 => 'Continue',
+			101 => 'Switching Protocols',
+
+			200 => 'OK',
+			201 => 'Created',
+			202 => 'Accepted',
+			203 => 'Non-Authoritative Information',
+			204 => 'No Content',
+			205 => 'Reset Content',
+			206 => 'Partial Content',
+
+			300 => 'Multiple Choices',
+			301 => 'Moved Permanently',
+			302 => 'Found',
+			303 => 'See Other',
+			304 => 'Not Modified',
+			305 => 'Use Proxy',
+			307 => 'Temporary Redirect',
+
+			400 => 'Bad Request',
+			401 => 'Unauthorized',
+			402 => 'Payment Required',
+			403 => 'Forbidden',
+			404 => 'Not Found',
+			405 => 'Method Not Allowed',
+			406 => 'Not Acceptable',
+			407 => 'Proxy Authentication Required',
+			408 => 'Request Timeout',
+			409 => 'Conflict',
+			410 => 'Gone',
+			411 => 'Length Required',
+			412 => 'Precondition Failed',
+			413 => 'Request Entity Too Large',
+			414 => 'Request-URI Too Long',
+			415 => 'Unsupported Media Type',
+			416 => 'Requested Range Not Satisfiable',
+			417 => 'Expectation Failed',
+			422 => 'Unprocessable Entity',
+			426 => 'Upgrade Required',
+			428 => 'Precondition Required',
+			429 => 'Too Many Requests',
+			431 => 'Request Header Fields Too Large',
+
+			500 => 'Internal Server Error',
+			501 => 'Not Implemented',
+			502 => 'Bad Gateway',
+			503 => 'Service Unavailable',
+			504 => 'Gateway Timeout',
+			505 => 'HTTP Version Not Supported',
+			511 => 'Network Authentication Required',
+		];
+		return isset($messages[$code]) ? $messages[$code] : 'Non Status Text';
+	}
+}
+
+if ( ! function_exists('http_code'))
+{
+	/**
+	 * http_code()
+	 * Establece la cabecera del status HTTP
+	 *
+	 * @param Integer $code El código
+	 * @param String $message El texto del estado
+	 * @return void
+	 */
+	function http_code ($code = 200, $message = '')
+	{
+		static $server_protocol_alloweds = [
+			'HTTP/1.0', 
+			'HTTP/1.1', 
+			'HTTP/2'
 		];
 
-		foreach($params as &$param)
+		if (defined('STDIN')) return;
+
+		is_int($code) or 
+		$code = (int) $code;
+
+		empty($message) and 
+		$message = http_code_message($code);
+
+		if (ISCOMMAND)
 		{
-			$parameters[] =& $param;
+			@header('Status: ' . $code . ' ' . $message, TRUE);
+			return;
 		}
 
-		return exec_app_nkp(__FUNCTION__, $parameters);
+		
+		$server_protocol = (isset($_SERVER['SERVER_PROTOCOL']) && in_array($_SERVER['SERVER_PROTOCOL'], $server_protocol_alloweds, TRUE)) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1';
+		@header($server_protocol . ' ' . $code . ' ' . $message, TRUE, $code);
+		return;
 	}
 }
 
-if ( ! function_exists('action_add'))
+if ( ! function_exists('force_exit'))
 {
 	/**
-	 * action_add()
-	 * Agrega funciones programadas
-	 *
-	 * @param String $key Hook
-	 * @param Callable $function Función a ejecutar
-	 * @param Integer $priority Prioridad (orden) a ejecutar la función
-	 * @return Boolean
+	 * force_exit()
 	 */
-	function action_add ($key, $function, $priority = 50)
+	function force_exit ($status = null)
 	{
-		return exec_app(__FUNCTION__, $key, $function, $priority);
+		exit($status);
 	}
 }
 
-if ( ! function_exists('non_actioned'))
-{
-	/**
-	 * non_actioned()
-	 * Agrega funciones programadas
-	 * por defecto cuando no se hayan asignado alguno
-	 *
-	 * @param String $key Hook
-	 * @param Callable $function Función a ejecutar
-	 * @param Integer $priority	Prioridad (orden) a ejecutar la función
-	 * @return Boolean
-	 */
-	function non_actioned ($key, $function, $priority = 50)
-	{
-		return exec_app(__FUNCTION__, $key, $function, $priority);
-	}
-}
-
-if ( ! function_exists('action_apply'))
-{
-	/**
-	 * action_apply()
-	 * Ejecuta las funciones programadas
-	 *
-	 * @param String $key Hook
-	 * @param Mixed &...$params Parametros a enviar en las funciones del Hook (Referenced)
-	 * @return Boolean || NULL
-	 */
-	function action_apply ($key, ...$params)
-	{
-		$parameters = [
-			$key,
-		];
-
-		foreach($params as &$param)
-		{
-			$parameters[] =& $param;
-		}
-
-		return exec_app_nkp(__FUNCTION__, $parameters);
-	}
-}
+//=================================================================================//
+//==== Control de errores                                                     =====//
+//=================================================================================//
 
 if ( ! function_exists('logger'))
 {
@@ -183,889 +541,256 @@ if ( ! function_exists('logger'))
 	 * @param array|null 	$trace		(Optional) La ruta que tomó la ejecución hasta llegar al error
 	 * @return void
 	 */
-	function logger ($message, $code = NULL, $severity = NULL, $meta = NULL, $filepath = NULL, $line = NULL, $trace = NULL, $show = TRUE)
+	function logger ($message, $code = NULL, $severity = NULL, $meta = NULL, $filepath = NULL, $line = NULL, $trace = NULL)
 	{
-		return exec_app(__FUNCTION__, $message, $code, $severity, $meta, $filepath, $line, $trace, $show);
-	}
-}
-
-if ( ! function_exists('is_command'))
-{
-	/**
-	 * is_command()
-	 * identifica si la solicitud de procedimiento ha sido por comando
-	 * @return Boolean False en caso de que la solicitud ha sido por web.
-	 */
-	function is_command ()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('is_cli'))
-{
-	/**
-	 * is_cli()
-	 */
-	function is_cli ()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('http_code'))
-{
-	/**
-	 * http_code()
-	 * Establece la cabecera del status HTTP
-	 *
-	 * @param Integer $code El código
-	 * @param String $text El texto del estado
-	 * @return self
-	 */
-	function http_code($code = 200, $text = '')
-	{
-		return exec_app(__FUNCTION__, $code, $text);
-	}
-}
-
-if ( ! function_exists('mkdir2'))
-{
-	/**
-	 * mkdir2()
-	 * Crea los directorios faltantes desde la carpeta $base
-	 *
-	 * @param	string 	$folder folder
-	 * @param	string 	$base	base a considerar
-	 * @return 	string 	ruta del folder creado
-	 */
-	function mkdir2($folder, $base = NULL)
-	{
-		return exec_app(__FUNCTION__, $folder, $base);
-	}
-}
-
-if ( ! function_exists('config'))
-{
-	/**
-	 * config()
-	 *
-	 * Obtiene y retorna la configuración.
-	 *
-	 * La función lee los archivos de configuración generales tales como los de JCore 
-	 * y los que se encuentran en la carpeta 'config' de APPPATH (directorio de la aplicación)
-	 *
-	 * @param String $get Permite obtener una configuración específica, si es NULL entonces devolverá toda la configuración.
-	 * @param Array $replace Reemplaza algunas opciones de la variable $config leida
-	 * @param Boolean $force si es FALSE, entonces validará que el valor a "reemplazar" no exista previamente (solo inserta no reemplaza)
-	 * @return	Mixed
-	 */
-	function &config ($get = NULL, Array $replace = [], bool $force = FALSE)
-	{
-		return exec_app(__FUNCTION__, $get, $replace, $force);
-	}
-}
-
-if ( ! function_exists('url'))
-{
-	/**
-	 * url()
-	 * Obtiene la estructura y datos importantes de la URL
-	 *
-	 * @param	string	$get
-	 * @return	mixed
-	 */
-	function &url($get = 'base')
-	{
-		return exec_app(__FUNCTION__, $get);
-	}
-}
-
-if ( ! function_exists('request'))
-{
-	/**
-	 * request()
-	 * Obtiene los request ($_GET $_POST)
-	 *
-	 * @param	string	$get
-	 * @return	mixed
-	 */
-	function &request($get = 'array', $default = NULL, $put_default_if_empty = TRUE)
-	{
-		return exec_app(__FUNCTION__, $get, $default, $put_default_if_empty);
-	}
-}
-
-if ( ! function_exists('ip_address'))
-{
-	/**
-	 * ip_address()
-	 * Obtiene el IP del cliente
-	 *
-	 * @param string $get
-	 * @return mixed
-	 */
-	function &ip_address ($get = 'ip_address')
-	{
-		return exec_app(__FUNCTION__, $get);
-	}
-}
-
-if ( ! function_exists('is_empty'))
-{
-	/**
-	 * is_empty()
-	 * Validar si $valor está vacío
-	 *
-	 * Si es ARRAY entonces valida que tenga algún elemento
-	 * Si es BOOL entonces retorna FALSO ya que es un valor así sea FALSO
-	 * 
-	 * @param array|bool|string|null $v
-	 * @return bool
-	 */
-	function is_empty($v)
-	{
-		return exec_app(__FUNCTION__, $v);
-	}
-}
-
-if ( ! function_exists('def_empty'))
-{
-	/**
-	 * def_empty()
-	 * Obtener un valor por defecto en caso se detecte que el primer valor se encuentra vacío
-	 *
-	 * @param mixed
-	 * @param mixed
-	 * @return mixed
-	 */
-	function def_empty($v, $def = NULL)
-	{
-		return exec_app(__FUNCTION__, $v, $def);
-	}
-}
-
-if ( ! function_exists('non_empty'))
-{
-	/**
-	 * non_empty()
-	 * Ejecutar una función si detecta que el valor no está vacío
-	 *
-	 * @param mixed
-	 * @param callable
-	 * @return mixed
-	 */
-	function non_empty($v, callable $callback)
-	{
-		return exec_app(__FUNCTION__, $v, $callback);
-	}
-}
-
-if ( ! function_exists('use_CON'))
-{
-	function use_CON ()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('get_CON'))
-{
-	function get_CON ()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('sql_start'))
-{
-	/**
-	 * cbd()
-	 * Inicia una conección de base datos
-	 *
-	 * @param string
-	 * @param string
-	 * @param string
-	 * @param string
-	 * @param string
-	 * @return bool
-	 */
-	function sql_start ($host = 'localhost', $usuario = 'root', $password = NULL, $base_datos = NULL, $charset = 'utf8')
-	{
-		return exec_app(__FUNCTION__, $host, $usuario, $password, $base_datos, $charset);
-	}
-}
-
-if ( ! function_exists('sql_stop'))
-{
-	/**
-	 * sql_stop()
-	 * Cierra una conección de base datos
-	 *
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_stop (mysqli $conection)
-	{
-		return exec_app(__FUNCTION__, $conection);
-	}
-}
-
-if ( ! function_exists('sql_stop_all'))
-{
-	/**
-	 * sql_stop()
-	 * Cierra una conección de base datos
-	 *
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_stop_all ()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('sql_esc'))
-{
-	/**
-	 * sql_esc()
-	 * Ejecuta la función `mysqli_real_escape_string`
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return string
-	 */
-	function sql_esc ($valor = '', mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $valor, $conection);
-	}
-}
-
-if ( ! function_exists('sql_qpesc'))
-{
-	/**
-	 * sql_qpesc()
-	 * Retorna el parametro correcto para una consulta de base datos
-	 *
-	 * @param string
-	 * @param bool
-	 * @param mysqli
-	 * @return string
-	 */
-	function sql_qpesc ($valor = '', $or_null = FALSE, mysqli $conection = NULL, $f_as_f = FALSE)
-	{
-		return exec_app(__FUNCTION__, $valor, $or_null, $conection, $f_as_f);
-	}
-}
-
-if ( ! function_exists('sql'))
-{
-	/**
-	 * sql()
-	 * Ejecuta una consulta a la Base Datos
-	 *
-	 * @param string
-	 * @param bool
-	 * @param mysqli
-	 * @return mixed
-	 */
-	function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $query, $is_insert, $conection);
-	}
-}
-
-if ( ! function_exists('sql_data'))
-{
-	/**
-	 * sql_data()
-	 * Ejecuta una consulta a la Base Datos
-	 *
-	 * @param string
-	 * @param bool
-	 * @param string|array|null
-	 * @param mysqli
-	 * @return mixed
-	 */
-	function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $query, $return_first, $fields, $conection);
-	}
-}
-
-if ( ! function_exists('sql_pswd'))
-{
-	/**
-	 * sql_pswd()
-	 * Obtiene el password de un texto
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_pswd ($valor, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $valor, $conection);
-	}
-}
-
-if ( ! function_exists('sql_trans'))
-{
-	/**
-	 * sql_trans()
-	 * Procesa transacciones de Base Datos
-	 * 
-	 * WARNING: Si se abre pero no se cierra no se guarda pero igual incrementa AUTOINCREMENT
-	 * WARNING: Se deben cerrar exitosamente la misma cantidad de los que se abren
-	 * WARNING: El primero que cierra con error cierra todos los transactions activos 
-	 *          (serìa innecesario cerrar exitosamente las demas)
-	 *
-	 * @param bool|null
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_trans($do = NULL, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $do, $conection);
-	}
-}
-
-if ( ! function_exists('sql_et'))
-{
-	/**
-	 * sql_et()
-	 * Validar la existencia de una tabla en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return string
-	 */
-	function sql_et (string $tabla, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $tabla, $conection);
-	}
-}
-
-if ( ! function_exists('sql_etc'))
-{
-	/**
-	 * sql_etc()
-	 * Valida la existencia de un campo dentro de una tabla de la db
-	 *
-	 * @param string
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_etc (string $campo, string $tabla, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $campo, $tabla, $conection);
-	}
-}
-
-if ( ! function_exists('sql_ev'))
-{
-	/**
-	 * sql_ev()
-	 * Valida la existencia de una vista en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return string
-	 */
-	function sql_ev (string $tabla, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $tabla, $conection);
-	}
-}
-
-if ( ! function_exists('sql_efk'))
-{
-	/**
-	 * sql_efk()
-	 * Valida la existencia de una relación foránea
-	 *
-	 * @param bool|null
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_efk (string $constraint, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $constraint, $conection);
-	}
-}
-
-if ( ! function_exists('sql_euk'))
-{
-	/**
-	 * sql_euk()
-	 * Valida la existencia de una constante única dentro de una tabla
-	 *
-	 * @param string
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_euk (string $constraint, string $tabla, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $constraint, $tabla, $conection);
-	}
-}
-
-if ( ! function_exists('sql_eix'))
-{
-	/**
-	 * sql_eix()
-	 * Valida la existencia de un indice
-	 *
-	 * @param string
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_eix (string $constraint, string $tabla, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $constraint, $tabla, $conection);
-	}
-}
-
-if ( ! function_exists('sql_ee'))
-{
-	/**
-	 * sql_ee()
-	 * Valida la existencia de una evento en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_ee(string $evento, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $evento, $conection);
-	}
-}
-
-if ( ! function_exists('sql_ef'))
-{
-	/**
-	 * sql_ef()
-	 * Valida la existencia de una función en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_ef(string $funcion, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $funcion, $conection);
-	}
-}
-
-if ( ! function_exists('sql_ep'))
-{
-	/**
-	 * sql_ep()
-	 * Valida la existencia de un procedimiento en la db
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_ep(string $proceso, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $proceso, $conection);
-	}
-}
-
-if ( ! function_exists('sql_ed'))
-{
-	/**
-	 * sql_ed()
-	 * Valida la existencia de una disparador (trigger)
-	 *
-	 * @param string
-	 * @param mysqli
-	 * @return bool
-	 */
-	function sql_ed(string $disparador, mysqli $conection = NULL)
-	{
-		return exec_app(__FUNCTION__, $disparador, $conection);
-	}
-}
-
-if ( ! function_exists('map_app_directories'))
-{
-	/**
-	 * map_app_directories ()
-	 * Función que ejecuta una función establecida con todos los directorios de aplicación como parametro
-	 *
-	 * @param $callback Callable Función a ejecutar
-	 * @param $reverse Boolean Indica si la función a ejecutar se hará a la lista invertida
-	 * @return self
-	 */
-	function map_app_directories(callable $callback, $reverse = FALSE)
-	{
-		return exec_app(__FUNCTION__, $callback, $reverse);
-	}
-}
-
-if ( ! function_exists('ResponseAs'))
-{
-	/**
-	 * ResponseAs ()
-	 */
-	function ResponseAs($type, $mime = NULL, $charset = NULL)
-	{
-		return exec_app(__FUNCTION__, $type, $mime, $charset);
-	}
-}
-
-if ( ! function_exists('process_result_message'))
-{
-	/**
-	 * process_result_message ()
-	 */
-	function process_result_message($return_html = false, $clear = TRUE)
-	{
-		return exec_app(__FUNCTION__, $return_html, $clear);
-	}
-}
-
-if ( ! function_exists('response_success'))
-{
-	/**
-	 * response_success ()
-	 */
-	function response_success($message = NULL, $code = NULL)
-	{
-		return exec_app('success', $message, $code);
-	}
-}
-
-if ( ! function_exists('response_error'))
-{
-	/**
-	 * response_error ()
-	 */
-	function response_error($error = NULL, $code = NULL)
-	{
-		return exec_app('error', $error, $code);
-	}
-}
-
-if ( ! function_exists('response_notice'))
-{
-	/**
-	 * response_notice ()
-	 */
-	function response_notice($message = NULL, $code = NULL)
-	{
-		return exec_app('notice', $message, $code);
-	}
-}
-
-if ( ! function_exists('exit_iftype'))
-{
-	/**
-	 * exit_iftype ()
-	 */
-	function exit_iftype($types, $status = NULL)
-	{
-		return exec_app(__FUNCTION__, $types, $status);
-	}
-}
-
-if ( ! function_exists('exit_ifhtml'))
-{
-	/**
-	 * exit_ifhtml ()
-	 */
-	function exit_ifhtml($status = NULL)
-	{
-		return exec_app(__FUNCTION__, $status);
-	}
-}
-
-if ( ! function_exists('exit_ifjson'))
-{
-	/**
-	 * exit_ifjson ()
-	 */
-	function exit_ifjson($status = NULL)
-	{
-		return exec_app(__FUNCTION__, $status);
-	}
-}
-
-if ( ! function_exists('redirect_iftype'))
-{
-	/**
-	 * redirect_iftype ()
-	 */
-	function redirect_iftype($type, $link)
-	{
-		return exec_app(__FUNCTION__, $type, $link);
-	}
-}
-
-if ( ! function_exists('redirect_ifhtml'))
-{
-	/**
-	 * redirect_ifhtml ()
-	 */
-	function redirect_ifhtml($link)
-	{
-		return exec_app(__FUNCTION__, $link);
-	}
-}
-
-if ( ! function_exists('redirect_ifjson'))
-{
-	/**
-	 * redirect_ifjson ()
-	 */
-	function redirect_ifjson($link)
-	{
-		return exec_app(__FUNCTION__, $link);
-	}
-}
-
-if ( ! function_exists('redirect'))
-{
-	/**
-	 * redirect ()
-	 */
-	function redirect($url, $query = NULL)
-	{
-		return exec_app(__FUNCTION__, $url, $query);
-	}
-}
-
-if ( ! function_exists('addJSON'))
-{
-	/**
-	 * addJSON ()
-	 */
-	function addJSON($key, $val = null)
-	{
-		return exec_app(__FUNCTION__, $key, $val);
-	}
-}
-
-if ( ! function_exists('addHTML'))
-{
-	/**
-	 * addHTML ()
-	 */
-	function addHTML($content)
-	{
-		return exec_app(__FUNCTION__, $content);
-	}
-}
-
-if ( ! function_exists('force_uri'))
-{
-	/**
-	 * force_uri ()
-	 */
-	function force_uri($uri = null)
-	{
-		return exec_app(__FUNCTION__, $uri);
-	}
-}
-
-if ( ! function_exists('register_css'))
-{
-	/**
-	 * register_css ()
-	 */
-	function register_css($codigo, $uri = NULL, $arr = [])
-	{
-		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
-	}
-}
-
-if ( ! function_exists('load_css'))
-{
-	/**
-	 * load_css ()
-	 */
-	function load_css($codigo, $uri = NULL, $arr = [])
-	{
-		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
-	}
-}
-
-if ( ! function_exists('load_inline_css'))
-{
-	/**
-	 * load_inline_css ()
-	 */
-	function load_inline_css($content, $orden = 80, $position = 'body')
-	{
-		return exec_app(__FUNCTION__, $content, $orden, $position);
-	}
-}
-
-if ( ! function_exists('register_js'))
-{
-	/**
-	 * register_js ()
-	 */
-	function register_js($codigo, $uri = NULL, $arr = [])
-	{
-		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
-	}
-}
-
-if ( ! function_exists('load_js'))
-{
-	/**
-	 * load_js ()
-	 */
-	function load_js($codigo, $uri = NULL, $arr = [])
-	{
-		return exec_app(__FUNCTION__, $codigo, $uri, $arr);
-	}
-}
-
-if ( ! function_exists('load_inline_js'))
-{
-	/**
-	 * load_inline_js ()
-	 */
-	function load_inline_js($content, $orden = 80, $position = 'body')
-	{
-		return exec_app(__FUNCTION__, $content, $orden, $position);
-	}
-}
-
-if ( ! function_exists('localize_js'))
-{
-	/**
-	 * localize_js ()
-	 */
-	function localize_js($codigo, $content, $when = 'after')
-	{
-		return exec_app(__FUNCTION__, $codigo, $content, $when);
-	}
-}
-
-if ( ! function_exists('translate'))
-{
-	/**
-	 * translate ()
-	 */
-	function translate($frase, $n = NULL, $lang = NULL, ...$sprintf)
-	{
-		$parameters = [
-			$frase,
-			$n,
-			$lang
+		static $_alertas_omitidas = [
+//			'Trying to access array offset on value of type null',
 		];
 
-		foreach($sprintf as &$param)
-		{
-			$parameters[] =& $param;
-		}
+		/**
+		 * Listado de Levels de Errores
+		 * @static
+		 * @global
+		 */
+		static $error_levels = 
+		[
+			E_ERROR			    =>	'Error',				
+			E_WARNING		    =>	'Warning',				
+			E_PARSE			    =>	'Parsing Error',		
+			E_NOTICE		    =>	'Notice',				
 
-		return exec_app_nkp(__FUNCTION__, $parameters);
-	}
-}
+			E_CORE_ERROR		=>	'Core Error',		
+			E_CORE_WARNING		=>	'Core Warning',		
 
-if ( ! function_exists('_t'))
-{
-	/**
-	 * _t ()
-	 */
-	function _t($frase, $n = NULL, ...$sprintf)
-	{
-		$parameters = [
-			$frase,
-			$n
+			E_COMPILE_ERROR		=>	'Compile Error',	
+			E_COMPILE_WARNING	=>	'Compile Warning',	
+
+			E_USER_ERROR		=>	'User Error',		
+			E_USER_DEPRECATED	=>	'User Deprecated',	
+			E_USER_WARNING		=>	'User Warning',		
+			E_USER_NOTICE		=>	'User Notice',		
+
+			E_STRICT		    =>	'Runtime Notice'		
 		];
+		$_directories = APP()->get_app_directories_labels();
 
-		foreach($sprintf as &$param)
+		(is_array($severity) and is_null($meta)) and $meta = $severity and $severity = NULL;
+
+		is_null($code) and $code = 0;
+		is_null($meta) and $meta = [];
+		is_array($meta) or $meta = (array)$meta;
+
+		$meta['datetime']        = date('l d/m/Y H:i:s');
+		$meta['time']            = time();
+		$meta['microtime']       = microtime();
+		$meta['microtime_float'] = microtime(true);
+
+		if ($message instanceof BasicException)
 		{
-			$parameters[] =& $param;
+			$exception = $message;
+
+			$meta = array_merge($exception->getMeta(), $meta);
+			is_null($severity) and $severity = 'BasicException';
+			$meta['class'] = get_class($exception);
+			$meta['class_base'] = 'BasicException';
+		}
+		elseif ($message instanceof Exception)
+		{
+			$exception = $message;
+
+			is_null($severity) and $severity = 'Exception';
+			$meta['class'] = get_class($exception);
+			$meta['class_base'] = 'Exception';
+		}
+		elseif ($message instanceof TypeError)
+		{
+			$exception = $message;
+
+			is_null($severity) and $severity = 'Error';
+			$meta['class'] = get_class($exception);
+			$meta['class_base'] = 'TypeError';
+		}
+		elseif ($message instanceof Error)
+		{
+			$exception = $message;
+
+			is_null($severity) and $severity = 'Error';
+			$meta['class'] = get_class($exception);
+			$meta['class_base'] = 'Error';
 		}
 
-		return exec_app_nkp('translate', $parameters);
-	}
-}
+		if (isset($exception))
+		{
+			$message  = $exception->getMessage();
 
-if ( ! function_exists('obj'))
-{
-	/**
-	 * obj ()
-	 */
-	function obj($class, ...$pk)
-	{
-		$parameters = [
-			$class,
+			is_null($filepath) and $filepath = $exception->getFile();
+			is_null($line)     and $line     = $exception->getLine();
+			is_null($trace)    and $trace    = $exception->getTrace();
+			$code == 0         and $code     = $exception->getCode();
+		}
+
+		is_null($severity) and $severity = E_USER_NOTICE;
+
+		$severity = isset($error_levels[$severity]) ? $error_levels[$severity] : $severity;
+
+		is_null($message) and $message = '[NULL]';
+
+		if (in_array($message, $_alertas_omitidas))
+		{
+			return;
+		}
+
+		if (is_null($trace))
+		{
+			$trace = debug_backtrace(false);
+		}
+
+		$trace = (array)$trace;
+		$trace = array_values($trace);
+
+		$trace = array_map(function($arr) use ($_directories) {
+			if (isset($arr['file']))
+			{
+				foreach($_directories as $_directory => $label)
+				{
+					$arr['file'] = str_replace($_directory, $label, $arr['file']);
+				}
+			}
+
+			return $arr;
+		}, $trace);
+
+		$trace_original = $trace;
+
+		while(count($trace) > 0 and (
+			( ! isset($trace[0]['file']))    or 
+			(   isset($trace[0]['file'])     and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or 
+			(   isset($trace[0]['function']) and in_array   ($trace[0]['function'], ['logger', '_handler_exception', '_handler_error', 'trigger_error']))
+		))
+		{
+			array_shift($trace);
+		}
+
+		if (isset($trace[0]))
+		{
+			if (str_replace(JAPIPATH, '', $filepath) <> $filepath)
+			{
+				$line = $trace[0]['line'];
+				$filepath = $trace[0]['file'];
+			}
+
+			isset($trace[0]['class'])    and ! isset($meta['class'])    and $meta['class']    = $trace[0]['class'];
+			isset($trace[0]['function']) and ! isset($meta['function']) and $meta['function'] = $trace[0]['function'];
+		}
+
+		$SER = [];
+		foreach($_SERVER as $x => $y)
+		{
+			if (preg_match('/^((GATEWAY|HTTP|QUERY|REMOTE|REQUEST|SCRIPT|CONTENT)\_|REDIRECT_URL|REDIRECT_STATUS|PHP_SELF|SERVER\_(ADDR|NAME|PORT|PROTOCOL))/i', $x))
+			{
+				$SER[$x] = $y;
+			}
+		}
+
+		$meta['server'] = $SER;
+
+		try
+		{
+			$url = url('array');
+			$meta['url'] = $url;
+		}
+		catch (\BasicException $e){}
+		catch (\Exception      $e){}
+		catch (\TypeError      $e){}
+		catch (\Error          $e){}
+		finally
+		{
+			$meta['URL_loadable'] = isset($url);
+		}
+
+		try
+		{
+			$ip_address = ip_address('array');
+			$meta['ip_address'] = $ip_address;
+		}
+		catch (\BasicException $e){}
+		catch (\Exception      $e){}
+		catch (\TypeError      $e){}
+		catch (\Error          $e){}
+		finally
+		{
+			$meta['IPADRESS_loadable'] = isset($url);
+		}
+
+		$meta[cdkdsp] = isset($_COOKIE[cdkdsp])  ? $_COOKIE[cdkdsp]  : NULL; // Código de Dispositivo
+
+		$trace_slim = $trace;
+		$trace_slim = array_filter($trace_slim, function($arr){
+			return isset($arr['file']) and isset($arr['line']);
+		});
+		$trace_slim = array_map(function($arr) use ($_directories) {
+			return $arr['file'] . '#' . $arr['line'];
+		}, $trace_slim);
+		$meta['trace_slim'] = $trace_slim;
+		$meta['trace_original'] = $trace_original;
+		$meta['instant_buffer'] = ob_get_contents();
+
+		$_codigo = md5(json_encode([
+			$message,
+			$severity,
+			$code,
+			$filepath,
+			$line,
+			$trace_slim
+		]));
+
+		$data = [
+			'codigo'   => $_codigo,
+			'message'  => $message,
+			'severity' => $severity,
+			'code'     => $code,
+			'filepath' => $filepath,
+			'line'     => $line,
+			'trace'    => $trace,
+			'meta'     => $meta,
 		];
+		APP() -> action_apply('SaveLogger', $data);
+	}
+}
 
-		foreach($pk as &$param)
+if ( ! function_exists('_handler_error'))
+{
+	function _handler_error ($severity, $message, $filepath, $line)
+	{
+		static $error_reporting = E_ALL;
+//		static $error_reporting = E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED; // Recomendado para producción
+
+		if (($severity & $error_reporting) !== $severity)
 		{
-			$parameters[] =& $param;
+			return;
 		}
 
-		return exec_app_nkp(__FUNCTION__, $parameters);
+		$is_error = (((E_ERROR | E_PARSE | E_COMPILE_ERROR | E_CORE_ERROR | E_USER_ERROR) & $severity) === $severity);
+
+		$is_error and
+		http_code(500);
+
+		logger($message, $severity, $severity, [], $filepath, $line);
+
+		$is_error and 
+		force_exit(1);
 	}
 }
 
-if ( ! function_exists('snippet'))
+if ( ! function_exists('_handler_exception'))
 {
-	/**
-	 * snippet ()
-	 */
-	function snippet($file, $return_content = TRUE, $declared_variables = [])
+	function _handler_exception ($exception)
 	{
-		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
-	}
-}
+		logger($exception);
 
-if ( ! function_exists('build_url'))
-{
-	/**
-	 * build_url ()
-	 */
-	function build_url($parsed_url)
-	{
-		return exec_app(__FUNCTION__, $parsed_url);
-	}
-}
+		ISCOMMAND or
+		http_code(500);
 
-if ( ! function_exists('getUTC'))
-{
-	/**
-	 * getUTC ()
-	 */
-	function getUTC()
-	{
-		return exec_app(__FUNCTION__);
-	}
-}
-
-if ( ! function_exists('response_cache'))
-{
-	/**
-	 * response_cache ()
-	 */
-	function response_cache($days = 365, $for = 'private', $rev = 'no-revalidate')
-	{
-		return exec_app('cache', $days, $for, $rev);
-	}
-}
-
-if ( ! function_exists('response_nocache'))
-{
-	/**
-	 * response_nocache ()
-	 */
-	function response_nocache()
-	{
-		return exec_app('nocache');
+		force_exit(1);
 	}
 }

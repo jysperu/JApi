@@ -26,7 +26,7 @@ location / {
 }
 ```
 
-Para una instalación rápida es suficiente copiar la estructura de carpetas de JApp al directorio público <br>
+Para una instalación rápida es suficiente copiar la estructura de carpetas de JApi al directorio público <br>
 `/home/username/public_html`<br>
 `C:\xampp\htdocs`<br>
 
@@ -36,23 +36,62 @@ define ('HOMEPATH', __DIR__);
 require_once HOMEPATH . '/app.php';
 ```
 
-Para una instalación mas ordenada se puede copiar la estructura de JApp en un subdirectorio del proyecto pero se debe definir la variable *APPPATH* con la ruta de la aplicación en el index.php <br>
+Para una instalación mas ordenada se puede copiar la estructura de JApi en un subdirectorio del proyecto pero se debe definir la variable *APPPATH* con la ruta de la aplicación en el index.php <br>
 ```php
 <?php // index.php
 define ('HOMEPATH', __DIR__);
-define ('COREPATH', HOMEPATH . '/JApp');
+define ('COREPATH', HOMEPATH . '/JApi');
 define ('APPPATH' , HOMEPATH . '/APP' );
 require_once COREPATH . '/app.php';
 ```
 
-Para una instalación mas segura se puede copiar la estructura de JApp e incluso la ruta de la aplicación fuera del directorio público <br>
+Para una instalación mas segura se puede copiar la estructura de JApi e incluso la ruta de la aplicación fuera del directorio público <br>
 ```php
 <?php // index.php
 define ('HOMEPATH', __DIR__);
-define ('COREPATH', '/home/username/private/directory/JApp');
+define ('COREPATH', '/home/username/private/directory/JApi');
 define ('APPPATH' , '/home/username/another/private/directory/APP' );
 require_once COREPATH . '/app.php';
 ```
+
+
+### Extensiones Requeridas y/o Recomendadas
+
+[X] curl
+[X] gd
+[X] fileinfo
+[X] intl
+[X] mbstring
+[X] mysqli
+[ ] exif
+[ ] soap
+
+
+### Configuración Recomendada de PHP
+
+[X] display_errors = Off
+[X] display_startup_errors = Off
+[X] error_reporting = E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED
+[X] expose_php = Off
+[X] file_uploads = On
+[X] allow_url_fopen = On
+[ ] log_errors = Off ;; JApi tiene una función para alojar los logs en base datos o archivos
+[ ] max_input_time = -1
+[ ] short_open_tag = Off
+[ ] max_execution_time = 30 ;; Recomendado en ciertas aplicaciones hasta: 300
+[ ] max_input_vars = 3000
+[ ] post_max_size = 0
+[ ] upload_max_filesize = 1024M
+[ ] max_file_uploads = 100
+[ ] date.timezone = America/Lima
+[ ] intl.default_locale = es_PE
+[ ] mysqli.max_persistent = -1
+[ ] mysqli.allow_persistent = On
+[ ] mysqli.default_port = 3306
+[ ] session.name = _japisess
+[ ] session.auto_start = 1
+[ ] session.cookie_lifetime = 0
+[ ] mbstring.internal_encoding = UTF-8
 
 
 
@@ -89,6 +128,7 @@ Se pueden añadir mas directorio de aplicación con un orden de lectura menor/ma
 ├── vendor
 │   └── autoload.php
 ├── install
+│   └── install.php
 └── app.php
 ```
 
@@ -112,28 +152,28 @@ Directorio/Archivo | Funcionalidad
 
 
 ### Proceso
-- [x] Usuario genera la solicitud mediante navegador (eg: http://japp.net/usuario/jrojash)
-- [x] Se inician las variables globales (accesibilidad de carpetas en todo momento)
-- [x] Se registrar el control de errores (no mostrar errores al usuario final, mantenerlo en modo desarrollo)
-    -  [x] Guardar los errores en la base datos
-- [x] Se registra el hook del shutdown (para que desconecte la base datos en caso de haberla sido iniciada y/o limpie el buffer)
-- [x] Se llama al `/init.php` del _APPPATH_ (ello para poder añadir mas directorios de aplicación en caso sea necesario)
-- [x] Se lista todos los directorios de aplicación en el orden según dependencia (incluyendo el _APPPATH_).
-- [x] Se registra el autoload para realizar las busquedas de clases dentro de <br>(_incluyendo en los directorios de aplicación adicionales_):
-    - [x] `/objects`.<br>El namespace base debe ser `Object`.
-    - [x] `/prerequests`.<br>El namespace base debe ser `PreRequest`.
-    - [x] `/requests`.<br>El namespace base debe ser `Request`.
-    - [x] `/responses`.<br>El namespace base debe ser `Response`.
-    - [x] `/configs/classes`.
-- [x] Recorrer Directorios de aplicación (incluyendo el _APPPATH_) en modo inversa
-    - [x] Se leen todos los archivos de funciones dentro de la carpeta `/configs/functions`
-    - [x] Se lee el archivo `/vendor/autoload.php`
-    - [x] Se lee el archivo `/configs/config.php`
-    - [x] Se ejecuta el archivo `/app.php`
+- [X] Usuario genera la solicitud mediante navegador (eg: http://japi.net/usuario/jrojash)
+- [X] Se inician las variables globales (accesibilidad de carpetas en todo momento)
+- [X] Se registrar el control de errores (no mostrar errores al usuario final, mantenerlo en modo desarrollo)
+    -  [X] Guardar los errores en la base datos
+- [X] Se registra el hook del shutdown (para que desconecte la base datos en caso de haberla sido iniciada y/o limpie el buffer)
+- [X] Se llama al `/init.php` del _APPPATH_ (ello para poder añadir mas directorios de aplicación en caso sea necesario)
+- [X] Se lista todos los directorios de aplicación en el orden según dependencia (incluyendo el _APPPATH_).
+- [X] Se registra el autoload para realizar las busquedas de clases dentro de <br>(_incluyendo en los directorios de aplicación adicionales_):
+    - [X] `/objects`.<br>El namespace base debe ser `Object`.
+    - [X] `/prerequests`.<br>El namespace base debe ser `PreRequest`.
+    - [X] `/requests`.<br>El namespace base debe ser `Request`.
+    - [X] `/responses`.<br>El namespace base debe ser `Response`.
+    - [X] `/configs/classes`.
+- [X] Recorrer Directorios de aplicación (incluyendo el _APPPATH_) en modo inversa
+    - [X] Se leen todos los archivos de funciones dentro de la carpeta `/configs/functions`
+    - [X] Se lee el archivo `/vendor/autoload.php`
+    - [X] Se lee el archivo `/configs/config.php`
+    - [X] Se ejecuta el archivo `/app.php`
 
-- [x] Se procesa el uri de la solicitud<br>En caso de ser llamado como comando se ejecuta el primer parametro enviado (eg: /usuario/jrojash)
-    - [x] Se busca parametro de idioma
-    - [x] Se redefine el uri formateado con los parametros solicitados; caso contrario, se redefine el uri por defecto considerando a los números como IDs 
-    - [x] Se ejecuta el PreRequest del Uri
-    - [x] Se ejecuta el Request de Uri
-    - [x] Se llama al response según el tipo de Vista requerida (Html, JSON ó Archivo)
+- [X] Se procesa el uri de la solicitud<br>En caso de ser llamado como comando se ejecuta el primer parametro enviado (eg: /usuario/jrojash)
+    - [X] Se busca parametro de idioma
+    - [X] Se redefine el uri formateado con los parametros solicitados; caso contrario, se redefine el uri por defecto considerando a los números como IDs 
+    - [X] Se ejecuta el PreRequest del Uri
+    - [X] Se ejecuta el Request de Uri
+    - [X] Se llama al response según el tipo de Vista requerida (Html, JSON ó Archivo)

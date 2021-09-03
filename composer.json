@@ -1,0 +1,7 @@
+{
+    "require": {
+        "symfony/cache": "^5.3",
+        "symfony/intl": "^5.3",
+        "guzzlehttp/guzzle": "^7.3"
+    }
+}
