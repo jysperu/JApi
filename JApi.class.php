@@ -41,6 +41,12 @@ class JApi
 	public static $_cache_nmsp_paginaestatica = 'JApi_d8034d571a95b0b8230e5910b8ff8518';
 
 	/**
+	 * $_cache_nmsp_paginaassets
+	 * Variable que almacena el namespace para el cache de las páginas estáticas
+	 */
+	public static $_cache_nmsp_paginaassets = 'JApi_41773ee0ac2ddb550beaca8b88de053f';
+
+	/**
 	 * $_autoload_bases
 	 * Bases de espacios de nombres de las clases para el autoload
 	 */
@@ -1453,6 +1459,8 @@ class JApi
 			$this -> ResponseAs($value['t'], $value['c'], $value['m']);
 			die($value['b']);
 		}
+
+		
 	}
 
 }
