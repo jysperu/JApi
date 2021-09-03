@@ -6,6 +6,7 @@
         "symfony/http-client": "^5.3",
         "nyholm/psr7": "^1.4",
         "php-http/httplug": "^2.2",
-        "guzzlehttp/promises": "^1.4"
+        "guzzlehttp/promises": "^1.4",
+        "symfony/mime": "^5.3"
     }
 }

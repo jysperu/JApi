@@ -13,9 +13,6 @@ if ( ! function_exists('APP')) exit('Función `APP()` es requerida');
 
 use Symfony\Component\HttpClient\HttplugClient as Client;
 
-//---------------------------------------------
-// Otros
-//---------------------------------------------
 if ( ! function_exists('is_mail'))
 {
 	/**
@@ -104,6 +101,24 @@ if ( ! function_exists('is_ip'))
 		}
 
 		return filter_var($ip, FILTER_VALIDATE_IP, $which);
+	}
+}
+
+if ( ! function_exists('regex'))
+{
+	/**
+	 * regex()
+	 * Permite convertir un string para ser analizado como REGEXP
+	 *
+	 * @param string $str String a convertir en REGEXable
+	 * @return string
+	 */
+	function regex ($str)
+	{
+		/** Caractéres que son usables */
+		static $chars = ['/','.','*','+','?','|','(',')','[',']','{','}','\\','$','^','-'];
+		$_regex = '/(\\' . implode('|\\', $chars).')/';
+		return preg_replace($_regex, "\\\\$1", $str);
 	}
 }
 

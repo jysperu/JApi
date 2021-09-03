@@ -1,4 +1,5 @@
 <?php
+
 defined('APPPATH') or exit('Acceso directo al archivo no autorizado.');
 
 /**
@@ -13,21 +14,21 @@ defined('APPPATH') or exit('Acceso directo al archivo no autorizado.');
  * @filesource
  */
 
-class BasicException extends Exception {
-	
+class BasicException extends Exception 
+{
 	protected $meta = [];
-	
-	public function __construct(string $message = '', int $code = 0, array $meta = [], Throwable $previous = NULL)
+
+	public function __construct(string $message = '', int $code = 0, array $meta = [])
 	{
 		$this->meta = $meta;
-		parent::__construct($message, $code, $previous);
+		parent::__construct($message, $code);
 	}
-	
+
 	public function getMeta()
 	{
 		return $this->meta;
 	}
-	
+
 	public function setMeta($meta)
 	{
 		$this->meta = $meta;
