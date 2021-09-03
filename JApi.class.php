@@ -35,6 +35,12 @@ class JApi
 	public static $_file_app = '/app.php';
 
 	/**
+	 * $_cache_nmsp_paginaestatica
+	 * Variable que almacena el namespace para el cache de las páginas estáticas
+	 */
+	public static $_cache_nmsp_paginaestatica = 'JApi_d8034d571a95b0b8230e5910b8ff8518';
+
+	/**
 	 * $_autoload_bases
 	 * Bases de espacios de nombres de las clases para el autoload
 	 */
@@ -152,6 +158,12 @@ class JApi
 	protected $_rqs_method;
 
 	/**
+	 * $URI
+	 * Variable que almacena el uri de la solicitud
+	 */
+	protected $URI;
+
+	/**
 	 * $_rqs_uri_inicial
 	 * Variable que almacena el uri de la solicitud
 	 */
@@ -181,6 +193,11 @@ class JApi
 	protected $_response_charset = null;
 
 	/**
+	 * $_response_mime
+	 */
+	protected $_response_mime = null;
+
+	/**
 	 * $LANG
 	 * Variable que almacena el lenguaje de la solicitud
 	 */
@@ -197,6 +214,11 @@ class JApi
 	 * Variable que almacena el utc del usuario
 	 */
 	protected $utc;
+
+	/**
+	 * $_cache_instances
+	 */
+	protected $_cache_instances = [];
 
 	//=================================================================================//
 	//==== MÉTODOS                                                                =====//
@@ -617,9 +639,9 @@ class JApi
 	}
 
 	/**
-	 * _getandclear_buffer_content()
+	 * GetAndClear_BufferContent()
 	 */
-	public function _getandclear_buffer_content ()
+	public function GetAndClear_BufferContent ()
 	{
 		$_buffer_content = '';
 		while (ob_get_level() > $this->_ob_level)
@@ -631,12 +653,42 @@ class JApi
 		return $_buffer_content;
 	}
 
+	public function ResponseAs ($type, $charset = NULL, $mime = NULL)
+	{
+		$this->set_response_type (mb_strtolower($type));
+
+		isset($charset) and 
+		$this->set_response_charset($charset);
+
+		isset($mime) and
+		$this->set_response_mime ($mime);
+
+		return $this;
+	}
+
 	/**
 	 * get_rqs_method()
 	 */
 	public function get_rqs_method ()
 	{
 		return $this->_rqs_method;
+	}
+
+	/**
+	 * set_URI()
+	 */
+	public function set_URI ($new)
+	{
+		$this->URI = $new;
+		return $this;
+	}
+
+	/**
+	 * get_URI()
+	 */
+	public function get_URI ()
+	{
+		return $this->URI;
 	}
 
 	/**
@@ -687,17 +739,37 @@ class JApi
 		return $this;
 	}
 
+	/**
+	 * set_response_type()
+	 */
 	public function set_response_type ($new)
 	{
 		$this->_response_type = mb_strtolower($new);
+
+		switch($this -> _response_type)
+		{
+			case 'html': case 'body':
+				$this -> set_response_mime('text/html');
+				break;
+			case 'json': case 'cli':
+				$this -> set_response_mime('application/json');
+				break;
+		}
+
 		return $this;
 	}
 
+	/**
+	 * get_response_type()
+	 */
 	public function get_response_type ()
 	{
 		return $this->_response_type;
 	}
 
+	/**
+	 * set_response_charset()
+	 */
 	public function set_response_charset ($new)
 	{
 		$new = mb_strtoupper($new);
@@ -711,11 +783,34 @@ class JApi
 		return $this;
 	}
 
+	/**
+	 * get_response_charset()
+	 */
 	public function get_response_charset ()
 	{
 		return $this->_response_charset;
 	}
 
+	/**
+	 * set_response_mime()
+	 */
+	public function set_response_mime ($new)
+	{
+		$this->_response_mime = $new;
+		return $this;
+	}
+
+	/**
+	 * get_response_mime()
+	 */
+	public function get_response_mime ()
+	{
+		return $this->_response_mime;
+	}
+
+	/**
+	 * set_LANG()
+	 */
 	public function set_LANG ($new, $setcookie = false)
 	{
 		$lang = $this->LANG = $new;
@@ -729,16 +824,25 @@ class JApi
 		return $this;
 	}
 
+	/**
+	 * get_LANG()
+	 */
 	public function get_LANG ()
 	{
 		return $this->LANG;
 	}
 
+	/**
+	 * get_Locale()
+	 */
 	public function get_Locale ()
 	{
 		return \Locale::getDefault();
 	}
 
+	/**
+	 * set_timezone()
+	 */
 	public function set_timezone ($new)
 	{
 		$timezone = $this->timezone = $new;
@@ -755,9 +859,71 @@ class JApi
 		return $this;
 	}
 
+	/**
+	 * get_timezone()
+	 */
 	public function get_timezone ()
 	{
 		return $this->timezone;
+	}
+
+	/**
+	 * Cache()
+	 */
+	public function Cache ($namespace = '@', ? Int $lifetime = null, ? String $dir = null, ? String $adapter_class = null)
+	{
+		if ( ! isset($this->_cache_instances[$namespace]))
+		{
+			if ( ! isset($adapter_class))
+			{
+				$adapter_class = 'Symfony\Component\Cache\Adapter\FilesystemAdapter';
+				$adapter_class = $this->filter_apply('CacheAdapter', $adapter_class, $namespace);
+			}
+
+			$this->_cache_instances[$namespace] = new $adapter_class ($namespace, $lifetime ?? CACHE_LIFETIME, $dir ?? CACHE_DIR);
+		}
+		return $this->_cache_instances[$namespace];
+	}
+
+	/**
+	 * CachePrune()
+	 */
+	public function CachePrune ($namespace = '@')
+	{
+		isset($this->_cache_instances[$namespace]) and
+		$this->_cache_instances[$namespace] -> prune();
+	}
+
+	/**
+	 * AllCachePrune()
+	 */
+	public function AllCachePrune ()
+	{
+		foreach($this->_cache_instances as $instance)
+		$instance -> prune();
+
+		$this->action_apply('AllCachePrune'); // para enviar el comando de limpiar todas las caches que no se han instanciado
+	}
+
+	/**
+	 * CachePaginaEstatica()
+	 */
+	public function CachePaginaEstatica ($content, ? String $id = null)
+	{
+		$id = $id ?? REQUEST_HASH;
+
+		$cache = $this -> Cache(self::$_cache_nmsp_paginaestatica);
+		$item = $cache -> getItem($id);
+
+		$val = [
+			't' => $this -> _response_type,
+			'c' => $this -> _response_charset,
+			'm' => $this -> _response_mime,
+			'b' => $content
+		];
+		$item -> set($val);
+
+		return $cache->save($item);
 	}
 
 	//=================================================================================//
@@ -850,7 +1016,7 @@ class JApi
 		 * CACHE_DIR
 		 * Indica el path por defecto a guardar la cache
 		 */
-		defined('CACHE_DIR')       or define('CACHE_DIR', APPPATH . '/cache_data');
+		defined('CACHE_DIR')       or define('CACHE_DIR', APPPATH . DS . 'cache');
 
 		/**
 		 * CACHE_LIFETIME
@@ -1258,11 +1424,36 @@ class JApi
 		$this -> _rqs_uri_inicial = $this -> URI = url('path');
 
 		$this -> action_apply ('JApi/set_response_type',    $this -> _response_type, $this);
-		$this -> action_apply ('JApi/set_response_charset', $this -> _charset,       $this);
+		$this -> action_apply ('JApi/set_response_charset', $this -> _response_charset,       $this);
 		$this -> action_apply ('JApi/set_LANG',             $this -> LANG,           $this);
 		$this -> action_apply ('JApi/set_timezone',         $this -> timezone,       $this);
 
 		$this -> action_apply('JApi/Config/Complete');
+
+		$this -> action_apply('JApi/Config/Complete');
+
+		/** Generar el hash del request para buscar si esta en la cache de `paginas-estaticas` (URI, _rqs_method, params in GET and POST, LANG, timezone) */
+		$_request_hash = md5(json_encode([
+			$this -> URI,
+			$this -> _rqs_method,
+			$this -> LANG,
+			$this -> timezone,
+			request('array'),
+		]));
+		$_request_hash = $this->filter_apply('JApi/Request/Hash', $_request_hash, $this -> URI, $this -> _rqs_method, $this -> LANG, $this -> timezone, $this);
+		defined('REQUEST_HASH') or define('REQUEST_HASH', $_request_hash);
+
+		/** Si hay una cache guardada del REQUEST_HASH entonces retorna el contenido y finaliza el proceso */
+		$cache = $this -> Cache(self::$_cache_nmsp_paginaestatica);
+		$item = $cache -> getItem(REQUEST_HASH);
+		if ($item->isHit())
+		{
+			$value = $item->get();
+			$this -> GetAndClear_BufferContent();
+
+			$this -> ResponseAs($value['t'], $value['c'], $value['m']);
+			die($value['b']);
+		}
 	}
 
 }

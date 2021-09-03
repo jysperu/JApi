@@ -394,7 +394,7 @@ if ( ! function_exists('redirect'))
 
 		$url = build_url ($parsed_url);
 
-		APP() -> _getandclear_buffer_content(); // El contenido no será reportado como error
+		APP() -> GetAndClear_BufferContent(); // El contenido no será reportado como error
 
 		header('Location: ' . $url) or die('<script>location.replace("' . $url . '");</script>');
 		die();
