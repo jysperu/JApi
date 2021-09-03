@@ -1430,7 +1430,6 @@ class JApi
 
 		$this -> action_apply('JApi/Config/Complete');
 
-		$this -> action_apply('JApi/Config/Complete');
 
 		/** Generar el hash del request para buscar si esta en la cache de `paginas-estaticas` (URI, _rqs_method, params in GET and POST, LANG, timezone) */
 		$_request_hash = md5(json_encode([

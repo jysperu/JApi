@@ -3,3 +3,4 @@ public_html/
 test/
 logs/
 vendor/
+configs/functions/disposables.json

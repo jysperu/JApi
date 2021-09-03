@@ -8,7 +8,7 @@ defined('HOMEPATH') or exit('Archivo no se puede llamar directamente');
 
 defined('ISCOMMAND') or define('ISCOMMAND', false);
 
-if ( ! function_exists('filter_apply')) exit('Función `filter_apply()` es requerida');
+if ( ! function_exists('APP')) exit('Función `APP()` es requerida');
 
 if ( ! class_exists('url_part'))
 {
@@ -86,7 +86,7 @@ if ( ! function_exists('url'))
 			// y sirve para identificar si la aplicación se ejecuta en una subcarpeta
 			// o desde la raiz, con ello podemos añadir esos subdirectorios {...} en el enlace
 			$datos['srvpublic_path'] = '';
-			$datos['srvpublic_path'] = filter_apply('JApi/url/srvpublic_path', $datos['srvpublic_path'], $_SERVER_HTTP_HOST);
+			$datos['srvpublic_path'] = APP()->filter_apply('JApi/url/srvpublic_path', $datos['srvpublic_path'], $_SERVER_HTTP_HOST);
 
 			//Devuelve si usa https (boolean)
 			$datos['https'] = FALSE;
@@ -276,7 +276,7 @@ if ( ! function_exists('url'))
 			//Request Method
 			$datos['request_method'] = mb_strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'cli');
 
-			$datos = filter_apply('JApi/url', $datos);
+			$datos = APP()->filter_apply('JApi/url', $datos);
 		}
 
 		if ($get === 'array')
