@@ -317,17 +317,6 @@ if ( ! function_exists('redirect_ifjson'))
 	}
 }
 
-if ( ! function_exists('redirect'))
-{
-	/**
-	 * redirect ()
-	 */
-	function redirect($url, $query = NULL)
-	{
-		return exec_app(__FUNCTION__, $url, $query);
-	}
-}
-
 if ( ! function_exists('addJSON'))
 {
 	/**
@@ -435,5 +424,101 @@ if ( ! function_exists('localize_js'))
 	function localize_js($codigo, $content, $when = 'after')
 	{
 		return exec_app(__FUNCTION__, $codigo, $content, $when);
+	}
+}
+
+if ( ! function_exists('snippet'))
+{
+	/**
+	 * snippet ()
+	 */
+	function snippet($file, $return_content = TRUE, $declared_variables = [])
+	{
+		return exec_app(__FUNCTION__, $file, $return_content, $declared_variables);
+	}
+}
+
+if ( ! function_exists('obj'))
+{
+	/**
+	 * obj ()
+	 */
+	function obj($class, ...$pk)
+	{
+		$parameters = [
+			$class,
+		];
+
+		foreach($pk as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
+if ( ! function_exists('response_cache'))
+{
+	/**
+	 * response_cache ()
+	 */
+	function response_cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+	{
+		return exec_app(__FUNCTION__, $days, $for, $rev);
+	}
+}
+
+if ( ! function_exists('response_nocache'))
+{
+	/**
+	 * response_nocache ()
+	 */
+	function response_nocache()
+	{
+		return exec_app(__FUNCTION__);
+	}
+}
+
+if ( ! function_exists('translate'))
+{
+	/**
+	 * translate ()
+	 */
+	function translate($frase, $n = NULL, $lang = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n,
+			$lang
+		];
+
+		foreach($sprintf as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp(__FUNCTION__, $parameters);
+	}
+}
+
+if ( ! function_exists('_t'))
+{
+	/**
+	 * _t ()
+	 */
+	function _t($frase, $n = NULL, ...$sprintf)
+	{
+		$parameters = [
+			$frase,
+			$n
+		];
+
+		foreach($sprintf as &$param)
+		{
+			$parameters[] =& $param;
+		}
+
+		return exec_app_nkp('translate', $parameters);
 	}
 }
