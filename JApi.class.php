@@ -226,6 +226,111 @@ class JApi
 	 */
 	protected $_cache_instances = [];
 
+	/**
+	 * $IDS
+	 * Variable que almacena los ids u objetos a pasar en los constructores
+	 * La variable puede alojar objetos las cuales serán pasados a los constructores de 
+	 * las clases PreRequest, Request y Response
+	 */
+	protected $IDS = [];
+
+	protected $_uriprocess_results = [];
+
+	protected $_process_result = null;
+
+	protected $_response_data = [
+		'json' => [],
+		'html' => [
+			'doctype' => 'html5',
+			'tag_attr' => [
+				'prefix' => 'og: https://ogp.me/ns#'
+			],
+			'head' => [
+				'tag_attr' => [
+					'itemscope'  => '',
+					'itemtype'  => 'http://schema.org/WebSite',
+				],
+				'title' => '',
+				'meta' => [
+					'name' => [
+						'viewport' => 'width=device-width, initial-scale=1, shrink-to-fit=no',
+						'HandheldFriendly' => 'True',
+						'MobileOptimized' => '320',
+						'mobile-web-app-capable' => 'yes',
+						'apple-mobile-web-app-capable' => 'yes',
+						'robots' => 'noindex, nofollow',
+//							'apple-mobile-web-app-title' => '',
+//							'application-name' => '',
+//							'msapplication-TileColor' => '',
+//							'theme-color' => '',
+					],
+					'http-equiv' => [
+						'X-UA-Compatible' => 'IE=edge,chrome=1',
+					],
+					'property' => [],
+				],
+				'canonical' => '',
+				'jsonld' => '',
+				'favicon' => '',
+			], 
+			'body' => [
+				'tag_attr' => [], 
+				'header_before' => '', 
+				'header' => '',
+				'header_after' => '',
+				'content_before' => '',
+				'content' => [], // Callbacks o contenido 
+				'content_after' => '',
+				'footer_before' => '', 
+				'footer' => '',
+				'footer_after' => '',
+			],
+			'force_uri' => null,
+			'assets' => [
+				'css' => [],
+				'js' => [
+					'using.js' => [
+						'codigo' => 'using.js',
+						'uri' => 'https://assets.jys.pe/using.js/using.full.min.js',
+						'loaded' => false,
+						'orden' => 10,
+						'version' => 20201016,
+						'position' => 'body',
+						'inline' => false,
+						'attr' => [],
+						'_before' => [],
+						'_after' => [
+							'Using("jquery", "bootstrap");'
+						],
+						'deps' => [],
+					]
+				],
+			],
+		],
+	];
+
+	public static $_doctypes = [
+		'xhtml11' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "https://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">',
+		'xhtml1-strict' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+		'xhtml1-trans' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
+		'xhtml1-frame' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">',
+		'xhtml-basic11' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "https://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">',
+		'html5' => '<!DOCTYPE html>',
+		'html4-strict' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "https://www.w3.org/TR/html4/strict.dtd">',
+		'html4-trans' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "https://www.w3.org/TR/html4/loose.dtd">',
+		'html4-frame' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "https://www.w3.org/TR/html4/frameset.dtd">',
+		'mathml1' => '<!DOCTYPE math SYSTEM "https://www.w3.org/Math/DTD/mathml1/mathml.dtd">',
+		'mathml2' => '<!DOCTYPE math PUBLIC "-//W3C//DTD MathML 2.0//EN" "https://www.w3.org/Math/DTD/mathml2/mathml2.dtd">',
+		'svg10' => '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "https://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">',
+		'svg11' => '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "https://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
+		'svg11-basic' => '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Basic//EN" "https://www.w3.org/Graphics/SVG/1.1/DTD/svg11-basic.dtd">',
+		'svg11-tiny' => '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "https://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">',
+		'xhtml-math-svg-xh' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN" "https://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd">',
+		'xhtml-math-svg-sh' => '<!DOCTYPE svg:svg PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN" "https://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd">',
+		'xhtml-rdfa-1' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "https://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">',
+		'xhtml-rdfa-2' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.1//EN" "https://www.w3.org/MarkUp/DTD/xhtml-rdfa-2.dtd">'
+	];
+
 	//=================================================================================//
 	//==== MÉTODOS                                                                =====//
 	//=================================================================================//
@@ -451,6 +556,36 @@ class JApi
 	}
 
 	/**
+	 * filter_clear()
+	 */
+	public function filter_clear ($key, $priority = null)
+	{
+		if ( ! empty($priority))
+		{
+			unset($this->_hooks_filters[$key][$priority]);
+		}
+		else
+		{
+			unset($this->_hooks_filters[$key]);
+		}
+	}
+
+	/**
+	 * nonfilter_clear()
+	 */
+	public function nonfilter_clear ($key, $priority = null)
+	{
+		if ( ! empty($priority))
+		{
+			unset($this->_hooks_filters_defs[$key][$priority]);
+		}
+		else
+		{
+			unset($this->_hooks_filters_defs[$key]);
+		}
+	}
+
+	/**
 	 * action_add()
 	 * Agrega funciones programadas
 	 *
@@ -541,6 +676,36 @@ class JApi
 	}
 
 	/**
+	 * action_clear()
+	 */
+	public function action_clear ($key, $priority = null)
+	{
+		if ( ! empty($priority))
+		{
+			unset($this->_hooks_actions[$key][$priority]);
+		}
+		else
+		{
+			unset($this->_hooks_actions[$key]);
+		}
+	}
+
+	/**
+	 * nonaction_clear()
+	 */
+	public function nonaction_clear ($key, $priority = null)
+	{
+		if ( ! empty($priority))
+		{
+			unset($this->_hooks_actions_defs[$key][$priority]);
+		}
+		else
+		{
+			unset($this->_hooks_actions_defs[$key]);
+		}
+	}
+
+	/**
 	 * _handler_shutdown()
 	 */
 	public function _handler_shutdown ()
@@ -553,7 +718,7 @@ class JApi
 			_handler_error($last_error['type'], $last_error['message'], $last_error['file'], $last_error['line']);
 		}
 
-//		$this -> _send_response();
+		$this -> _send_response();
 
 		$this -> action_apply('do_when_end');
 		$this -> action_apply('shutdown');
@@ -661,7 +826,7 @@ class JApi
 
 	public function ResponseAs ($type, $charset = NULL, $mime = NULL)
 	{
-		$this->set_response_type (mb_strtolower($type));
+		$this->set_response_type ($type);
 
 		isset($charset) and 
 		$this->set_response_charset($charset);
@@ -819,6 +984,7 @@ class JApi
 	 */
 	public function set_LANG ($new, $setcookie = false)
 	{
+		$new = str_replace('-', '_', $new);
 		$lang = $this->LANG = $new;
 
 		! ISCOMMAND and 
@@ -871,6 +1037,14 @@ class JApi
 	public function get_timezone ()
 	{
 		return $this->timezone;
+	}
+
+	/**
+	 * get_timezone()
+	 */
+	public function get_utc ()
+	{
+		return $this->utc;
 	}
 
 	/**
@@ -930,6 +1104,1900 @@ class JApi
 		$item -> set($val);
 
 		return $cache->save($item);
+	}
+
+	/**
+	 * UriProcess($class)
+	 * Permite reejecutar algún procesamiento de manera manual externo a la app.php
+	 */
+	public function UriProcess ($class)
+	{
+		if ($class === 'All')
+		{
+			return $this->_init_uriprocess();
+		}
+
+		return $this->_init_uriprocess_callback($class);
+	}
+
+	public function set_IDS ($new)
+	{
+		$this->IDS = $new;
+		return $this;
+	}
+
+	public function add_IDs ($new)
+	{
+		$this->IDS[] = $new;
+		return $this;
+	}
+
+	public function get_IDS ()
+	{
+		return $this->IDS;
+	}
+
+	public function get_ProcessResult ($process)
+	{
+		return $this->_uriprocess_results[$process] ?? false;
+	}
+
+	public function GetClassInstancesWithIDS ($_class)
+	{
+		static $_instances = [];
+
+		if ( ! is_string($_class)) return $_class;
+		if (isset($_instances[$_class])) return( $_instances[$_class]);
+
+		try
+		{
+			$_class_reflect  = new ReflectionClass($_class);
+			$_class_instance = $_class_reflect -> newInstanceArgs($this->IDS);
+		}
+		catch(Exception $e)
+		{
+			// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+			if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+			{
+				throw $e;
+			}
+
+			$_class_instance = new $_class();
+		}
+		$_instances[$_class] = $_class_instance;
+		return $_instances[$_class];
+	}
+
+	public function GetProcessClass ($for, $uri = NULL)
+	{
+		static $_home_uri;
+
+		is_null($uri) and $uri =  $this -> URI;
+
+		if ($uri === '/')
+		{
+			$uri = '/inicio';
+			isset($_home_uri) or 
+			$_home_uri = $this -> filter_apply('JApi/uri-process/home', $uri, $this->URI, $this->IDS);
+			$uri = $_home_uri;
+		}
+
+		$_uri = explode('/', $uri);
+		empty($_uri[0]) and array_shift($_uri);
+		array_unshift($_uri, $for);
+		$_uri = array_values($_uri);
+
+		$_class = null;
+		$_func = null;
+		$_func_params = ['index'];
+
+		$_n = count($_uri) - 1;
+		for($_tn = 1; $_tn <= $_n; $_tn++)
+		{
+			$_uri_t = $_uri;
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
+			$_uri_t = $_uri;
+			$_uri_t = array_map(function($o){
+				return ucfirst($o);
+			}, $_uri_t);
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
+			$_uri_t = $_uri;
+			$_uri_t = array_map(function($o){
+				$o = ucfirst($o);
+				$o = str_replace(['.', '-'], ['_', '_'], $o);
+				return $o;
+			}, $_uri_t);
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
+			$_uri_t = $_uri;
+			$_uri_t = array_map(function($o){
+				$o = ucfirst($o);
+				$o = preg_split('/[\.\-\_]/', $o);
+				$o = array_map(function($p){
+					return ucfirst($p);
+				}, $o);
+				$o = implode('', $o);
+				return $o;
+			}, $_uri_t);
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
+			$_uri2 = $_uri;
+			$_uri2_lp = array_pop($_uri2);
+
+			if (preg_match('/\./', $_uri2_lp))
+			{
+				$_uri2_lp = explode('.', $_uri2_lp);
+				array_pop($_uri2_lp);
+				$_uri2_lp = implode('.', $_uri2_lp);
+				$_uri2[] = $_uri2_lp;
+
+				$_uri_t = $_uri2;
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+
+				$_uri_t = $_uri2;
+				$_uri_t = array_map(function($o){
+					return ucfirst($o);
+				}, $_uri_t);
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+
+				$_uri_t = $_uri2;
+				$_uri_t = array_map(function($o){
+					$o = ucfirst($o);
+					$o = str_replace(['.', '-'], ['_', '_'], $o);
+					return $o;
+				}, $_uri_t);
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+
+				$_uri_t = $_uri2;
+				$_uri_t = array_map(function($o){
+					$o = ucfirst($o);
+					$o = preg_split('/[\.\-\_]/', $o);
+					$o = array_map(function($p){
+						return ucfirst($p);
+					}, $o);
+					$o = implode('', $o);
+					return $o;
+				}, $_uri_t);
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+			}
+
+			$part = array_pop($_uri);
+			array_unshift($_func_params, $part);
+			$_class = NULL;
+		}
+
+		$_func = array_shift($_func_params);
+		count($_func_params) > 0 and array_pop($_func_params);
+
+		$_class = $this -> filter_apply('JApi/uri-process/get-class', $_class, $_func, $_func_params);
+		$_class = $this -> filter_apply('JApi/uri-process/get-class/' . $for, $_class, $_func, $_func_params);
+
+		if (is_null($_class))
+		{
+			return [null, null, null];
+		}
+
+		return [
+			$_class, 
+			$_func, 
+			$_func_params
+		];
+	}
+
+	public function set_process_result ($status, $message = NULL, $code = NULL)
+	{
+		is_null($this->_process_result) and 
+		$this->_process_result = [
+			'status' => null,
+			'message' => null,
+			'code' => null,
+		];
+
+		$this->_process_result['status'] = $status;
+		is_null($message) or $this->_process_result['message'] = $message;
+		is_null($code)    or $this->_process_result['code']    = $code;
+
+		return $this;
+	}
+
+	public function del_process_result ()
+	{
+		$this->_process_result = null;
+		return $this;
+	}
+
+	public function success($message = NULL, $code = NULL)
+	{
+		$this->set_process_result('success', $message, $code);
+		return $this;
+	}
+
+	public function error($error = NULL, $code = NULL)
+	{
+		$this->set_process_result('error', $error, $code);
+		return $this;
+	}
+
+	public function notice($message = NULL, $code = NULL)
+	{
+		$this->set_process_result('notice', $message, $code);
+		return $this;
+	}
+
+	public function process_result_message($return_html = false, $clear = TRUE)
+	{
+		if (is_null($this->_process_result))
+		{
+			if ($return_html)
+			{
+				return null;
+			}
+			return $this;
+		}
+
+		$_class = [
+			'alert',
+			'alert-' . $this->_process_result['status'],
+		];
+		$this->_process_result['status'] === 'error' and $_class[] = 'alert-danger';
+
+		$return = '';
+		$return.= '<div class = "' . implode(' ', (array)$_class) . '" >';
+		if ( ! is_null($this->_process_result['code']))
+		{
+			$return.= '<b class="alert-code">' . ucfirst($this->_process_result['status']) . ' #' . $this->_process_result['code'] . '</b>&nbsp;';
+		}
+
+		is_null($this->_process_result['message']) and 
+		$this->_process_result['message'] = $this->_process_result['status'];
+
+		$return.= '<span class="alert-message">' . $this->_process_result['message'] . '</span>';
+		$return.= '</div>';
+
+		$return = $this -> filter_apply('JApi/process-result/message', $return, $this->_process_result['status'], $this->_process_result);
+
+		$clear and
+		$this->_process_result = null;
+
+		if ($return_html) return $return;
+		echo $return;
+		return $this;
+	}
+
+	public function exit_iftype($types, $status = NULL)
+	{
+		$types = (array)$types;
+		$types = array_map('mb_strtolower', $types);
+
+		in_array($this->_response_type,  $types) and
+		force_exit ($status);
+
+		return $this;
+	}
+
+	public function exit_ifhtml($status = NULL, $strict = false)
+	{
+		return $this->exit_iftype($strict ? ['html'] : ['html', 'body'], $status);
+	}
+
+	public function exit_ifjson($status = NULL)
+	{
+		return $this->exit_iftype(['json', 'cli'], $status);
+	}
+
+	/**
+	 * Establecer una redirección en caso el Tipo sea
+	 * @param	string	$type
+	 * @param	string	$link
+	 * @return	self
+	 */
+	public function redirect_iftype($types, $link)
+	{
+		$types = (array)$types;
+		$types = array_map('mb_strtolower', $types);
+
+		in_array($this->_response_type,  $types) and
+		redirect ($link);
+
+		return $this;
+	}
+
+	/**
+	 * Establecer una redirección en caso el Tipo sea
+	 * @param	string	$link
+	 * @return	self
+	 */
+	public function redirect_ifhtml($link)
+	{
+		return $this -> redirect_iftype('html', $link);
+	}
+
+	/**
+	 * Establecer una redirección en caso el Tipo sea
+	 * @param	string	$link
+	 * @return	self
+	 */
+	public function redirect_ifjson($link)
+	{
+		return $this -> redirect_iftype('json', $link);
+	}
+
+	public function addJSON ($key, $val = null)
+	{
+		if (is_array($key))
+
+		{
+			foreach ($key as $_key => $_val)
+			{
+				$this -> addJSON($_key, $_val);
+			}
+			return $this;
+		}
+
+		$this -> _response_data['json'][$key] = $val;
+		return $this;
+	}
+
+	public function addHTML ($content)
+	{
+		if (is_array($content))
+		{
+			foreach ($content as $msg)
+			{
+				$this->addHTML($msg);
+			}
+			return $this;
+		}
+
+		$this -> _response_data['html']['body']['content'][] = $content;
+		return $this;
+	}
+
+	public function force_uri ($uri = null)
+	{
+		if (preg_match('#^Display#', $uri))
+		{
+			$uri = str_replace('Display\\', '', $uri);
+			$uri = mb_strtolower($uri);
+			$uri = explode('::', $uri);
+			array_unshift($uri, '');
+			$uri = implode('/', $uri);
+		}
+
+		if (preg_match('#^http#', $uri))
+		{
+			$uri = str_replace(url(), '', $uri);
+		}
+
+		if (preg_match('#^http#', $uri))
+		{
+			trigger_error('Se esta forzando a una URI que no esta basado en la ruta de la aplicación: ' . $uri, E_USER_WARNING);
+		}
+
+		$this -> _response_data['html']['force_uri'] = $uri;
+		return $this;
+	}
+
+	public function set_doctype ($new)
+	{
+		$this -> _response_data['html']['doctype'] = $new;
+		return $this;
+	}
+
+	public function set_htmltag_attr ($key, $val = '')
+	{
+		if (is_array($key))
+		{
+			$this -> _response_data['html']['tag_attr'] = $key;
+			return $this;
+		}
+
+		$this -> _response_data['html']['tag_attr'][$key] = $val;
+		return $this;
+	}
+
+	public function set_headtag_attr ($key, $val = '')
+	{
+		if (is_array($key))
+		{
+			$this -> _response_data['html']['head']['tag_attr'] = $key;
+			return $this;
+		}
+
+		$this -> _response_data['html']['head']['tag_attr'][$key] = $val;
+		return $this;
+	}
+
+	public function set_title ($new)
+	{
+		$this -> _response_data['html']['head']['title'] = $new;
+		return $this;
+	}
+
+	public function set_meta ($type, $key, $val = '')
+	{
+		$this -> _response_data['html']['head']['meta'][$type][$key] = $val;
+		return $this;
+	}
+
+	public function set_meta_name ($key, $val = '')
+	{
+		$this -> _response_data['html']['head']['meta']['name'][$key] = $val;
+		return $this;
+	}
+
+	public function set_meta_property ($key, $val = '')
+	{
+		$this -> _response_data['html']['head']['meta']['property'][$key] = $val;
+		return $this;
+	}
+
+	public function set_canonical ($new = '')
+	{
+		$this -> _response_data['html']['head']['canonical'] = $new;
+		return $this;
+	}
+
+	public function set_jsonld ($new = '')
+	{
+		$this -> _response_data['html']['head']['jsonld'] = $new;
+		return $this;
+	}
+
+	public function set_favicon ($new = '')
+	{
+		$this -> _response_data['html']['head']['favicon'] = $new;
+		return $this;
+	}
+
+	public function set_bodytag_attr ($key, $val = '')
+	{
+		if (is_array($key))
+		{
+			$this -> _response_data['html']['body']['tag_attr'] = $key;
+			return $this;
+		}
+
+		$this -> _response_data['html']['body']['tag_attr'][$key] = $val;
+		return $this;
+	}
+
+	public function set_bodyheader_before ($new = '')
+	{
+		$this -> _response_data['html']['body']['header_before'] = $new;
+		return $this;
+	}
+
+	public function set_bodyheader ($new = '')
+	{
+		$this -> _response_data['html']['body']['header'] = $new;
+		return $this;
+	}
+
+	public function set_bodyheader_after ($new = '')
+	{
+		$this -> _response_data['html']['body']['header_after'] = $new;
+		return $this;
+	}
+
+	public function set_bodycontent_before ($new = '')
+	{
+		$this -> _response_data['html']['body']['content_before'] = $new;
+		return $this;
+	}
+
+	public function set_bodycontent ($new = '')
+	{
+		$this -> _response_data['html']['body']['content'] = $new;
+		return $this;
+	}
+
+	public function set_bodycontent_after ($new = '')
+	{
+		$this -> _response_data['html']['body']['content_after'] = $new;
+		return $this;
+	}
+
+	public function set_bodyfooter_before ($new = '')
+	{
+		$this -> _response_data['html']['body']['footer_before'] = $new;
+		return $this;
+	}
+
+	public function set_bodyfooter ($new = '')
+	{
+		$this -> _response_data['html']['body']['footer'] = $new;
+		return $this;
+	}
+
+	public function set_bodyfooter_after ($new = '')
+	{
+		$this -> _response_data['html']['body']['footer_after'] = $new;
+		return $this;
+	}
+
+	public function set_force_uri ($uri = null)
+	{
+		return $this -> force_uri($uri);
+	}
+
+	public function register_css ($codigo, $uri = NULL, $arr = [])
+	{
+		$lista =& $this->_response_data['html']['assets']['css'];
+
+		if (is_null($uri) and count($arr) === 0)
+		{
+			if ( ! isset($lista[$codigo]))
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+		elseif (is_array($uri) and count($arr) === 0)
+		{
+			$arr = $uri;
+			
+			if (isset($lista[$codigo]))
+			{
+				$uri = null;
+			}
+			else
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+
+		if (is_null($codigo))
+		{
+			$codigo = parse_url($uri, PHP_URL_PATH);
+			$codigo = preg_replace('/\.min$/i', '', basename($codigo, '.css'));
+		}
+
+		isset($lista[$codigo]) or $lista[$codigo] = [
+			'codigo' => $codigo,
+			'uri' => $uri,
+			'loaded' => false,
+			'orden' => 50,
+			'version' => null,
+			'position' => 'body',
+			'inline' => false,
+			'attr' => [],
+			'deps' => [],
+		];
+
+		isset($arr['version']) or $arr['version'] = $lista[$codigo]['version'];
+		is_null($uri) and $uri = $lista[$codigo]['uri'];
+
+		if (is_null($lista[$codigo]['version']) or is_null($arr['version']) or $lista[$codigo]['version'] <= $arr['version'])
+		{
+			$lista[$codigo] = array_merge($lista[$codigo], ['uri' => $uri], $arr);
+		}
+
+		return $this;
+	}
+
+	public function load_css ($codigo, $uri = NULL, $arr = [])
+	{
+		$lista =& $this->_response_data['html']['assets']['css'];
+
+		if (is_null($uri) and count($arr) === 0)
+		{
+			if ( ! isset($lista[$codigo]))
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+		elseif (is_array($uri) and count($arr) === 0)
+		{
+			$arr = $uri;
+			
+			if (isset($lista[$codigo]))
+			{
+				$uri = null;
+			}
+			else
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+
+		if (is_null($codigo))
+		{
+			$codigo = parse_url($uri, PHP_URL_PATH);
+			$codigo = preg_replace('/\.min$/i', '', basename($codigo, '.css'));
+		}
+
+		$this -> register_css($codigo, $uri, $arr);
+		$lista[$codigo]['loaded'] = true;
+		return $this;
+	}
+
+	public function load_inline_css ($content, $orden = 80, $position = 'body')
+	{
+		static $codes = [];
+
+		$lista =& $this->_response_data['html']['assets']['css'];
+
+		if ( ! is_numeric($orden))
+		{
+			$position = $orden;
+			$orden = NULL;
+		}
+
+		is_numeric($orden) or $orden = 80;
+		in_array(mb_strtolower($position), ['head', 'body']) or $position = 'body';
+
+		isset($codes[$position . '_' . $orden]) or $codes[$position . '_' . $orden] = uniqid($position . '_' . $orden . '_');
+		$codigo = $codes[$position . '_' . $orden];
+		isset($lista[$codigo]['uri']) and $content = $lista[$codigo]['uri'] . $content;
+
+		$this -> load_css($codigo, $content, [
+			'orden' => $orden,
+			'position' => $position,
+		]);
+		$lista[$codigo]['inline'] = true;
+		return $this;
+	}
+
+	public function register_js ($codigo, $uri = NULL, $arr = [])
+	{
+		$lista =& $this->_response_data['html']['assets']['js'];
+
+		if (is_null($uri) and count($arr) === 0)
+		{
+			if ( ! isset($lista[$codigo]))
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+		elseif (is_array($uri) and count($arr) === 0)
+		{
+			$arr = $uri;
+			
+			if (isset($lista[$codigo]))
+			{
+				$uri = null;
+			}
+			else
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+
+		if (is_null($codigo))
+		{
+			$codigo = parse_url($uri, PHP_URL_PATH);
+			$codigo = preg_replace('/\.min$/i', '', basename($codigo, '.js'));
+		}
+
+		isset($lista[$codigo]) or $lista[$codigo] = [
+			'codigo' => $codigo,
+			'uri' => $uri,
+			'loaded' => false,
+			'orden' => 50,
+			'version' => null,
+			'position' => 'body',
+			'inline' => false,
+			'attr' => [],
+			'_before' => [],
+			'_after' => [],
+			'deps' => [],
+		];
+
+		isset($arr['version']) or $arr['version'] = $lista[$codigo]['version'];
+		is_null($uri) and $uri = $lista[$codigo]['uri'];
+
+		if (is_null($lista[$codigo]['version']) or is_null($arr['version']) or $lista[$codigo]['version'] <= $arr['version'])
+		{
+			$lista[$codigo] = array_merge($lista[$codigo], ['uri' => $uri], $arr);
+		}
+
+		return $this;
+	}
+
+	public function load_js ($codigo, $uri = NULL, $arr = [])
+	{
+		$lista =& $this->_response_data['html']['assets']['js'];
+
+		if (is_null($uri) and count($arr) === 0)
+		{
+			if ( ! isset($lista[$codigo]))
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+		elseif (is_array($uri) and count($arr) === 0)
+		{
+			$arr = $uri;
+			
+			if (isset($lista[$codigo]))
+			{
+				$uri = null;
+			}
+			else
+			{
+				$uri = $codigo;
+				$codigo = NULL;
+			}
+		}
+
+		if (is_null($codigo))
+		{
+			$codigo = parse_url($uri, PHP_URL_PATH);
+			$codigo = preg_replace('/\.min$/i', '', basename($codigo, '.js'));
+		}
+
+		$this -> register_js($codigo, $uri, $arr);
+		$lista[$codigo]['loaded'] = true;
+		return $this;
+	}
+
+	public function load_inline_js ($content, $orden = 80, $position = 'body')
+	{
+		static $codes = [];
+
+		$lista =& $this->_response_data['html']['assets']['js'];
+
+		if ( ! is_numeric($orden))
+		{
+			$position = $orden;
+			$orden = NULL;
+		}
+
+		is_numeric($orden) or $orden = 80;
+		in_array(mb_strtolower($position), ['head', 'body']) or $position = 'body';
+
+		isset($codes[$position . '_' . $orden]) or $codes[$position . '_' . $orden] = uniqid($position . '_' . $orden . '_');
+		$codigo = $codes[$position . '_' . $orden];
+		isset($lista[$codigo]['uri']) and $content = $lista[$codigo]['uri'] . $content;
+
+		$this -> load_js($codigo, $content, [
+			'orden' => $orden,
+			'position' => $position,
+		]);
+		$lista[$codigo]['inline'] = true;
+		return $this;
+	}
+
+	public function localize_js ($codigo, $content, $when = 'after')
+	{
+		$lista =& $this->_response_data['html']['assets']['js'];
+
+		if ( ! isset($lista[$codigo]))
+		{
+			trigger_error('JS con código `' . $codigo . '` no encontrado');
+			return $this;
+		}
+
+		$lista[$codigo]['_' . $when][] = $content;
+		return $this;
+	}
+
+	public function snippet ($file, $return_content = TRUE, $declared_variables = [])
+	{
+		$directory = dirname($file);
+		$file_name = basename($file, '.php') . '.php';
+
+		if ($directory === '.')
+		{
+			$directory = DS;
+		}
+		elseif ($directory !== '')
+		{
+			$directory = strtr($directory, '/\\', DS.DS);
+			$directory = DS . ltrim($directory, DS);
+		}
+
+		$file_view = null;
+
+		$_app_directories_list = $this->get_app_directories();
+		foreach($_app_directories_list as $base)
+		{
+			$file_view = $base . '/snippets' . $directory . DS . $file_name;
+
+			if (file_exists($file_view))
+			{
+				break;
+			}
+
+			$file_view = null;
+		}
+
+		if (is_null($file_view))
+		{
+			trigger_error('Vista `' . $file . '` no encontrado', E_USER_WARNING);
+			return NULL;
+		}
+
+		if (is_array($return_content))
+		{
+			$declared_variables = (array)$declared_variables;
+			$declared_variables = array_merge($return_content, $declared_variables);
+
+			$return_content = TRUE;
+		}
+
+		if ($return_content)
+		{
+			ob_start();
+			extract($declared_variables, EXTR_REFS);
+			include $file_view;
+			$content = ob_get_contents();
+			ob_end_clean();
+
+			return $content;
+		}
+
+		return $file_view;
+	}
+
+	public function obj ($class, ...$pk)
+	{
+		$class = str_replace('/', '\\', $class);
+		$class = explode('\\', $class);
+		empty($class[0]) and array_shift($class);
+		$class[0] === 'Objeto' or array_unshift($class, 'Objeto');
+		$class = array_values($class);
+		$class = implode('\\', $class);
+
+		try
+		{
+			$_class_reflect  = new ReflectionClass($class);
+			$_class_instance = $_class_reflect -> newInstanceArgs($pk);
+		}
+		catch(Exception $e)
+		{
+			// Class {Clase Llamada} does not have a constructor, so you cannot pass any constructor arguments
+			if ( ! preg_match('/does not have a constructor/i', $e->getMessage()))
+			{
+				throw $e;
+			}
+
+			$_class_instance = new $class();
+		}
+
+		return $_class_instance;
+	}
+
+	public function translate ($frase, $n = NULL, ...$sprintf)
+	{
+		static $langs = [], $_lang = null;
+
+		if ($_lang <> $this->LANG)
+		{
+			$langs = [];
+			$_lang = $this->LANG;
+		}
+
+		if (count($langs) === 0)
+		{
+			$_app_directories_list = $this->get_app_directories(true);
+
+			foreach($_app_directories_list as $base)
+			{
+				$_temp_lang = $_lang;
+				$_temp_lang = explode('-', $_temp_lang, 2);
+				$_temp_lang = $_temp_lang[0];
+
+				if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_temp_lang . '.php' and file_exists($file))
+				{
+					@include $file;
+				}
+
+				if ($file = $base. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_temp_lang) . '.php' and file_exists($file))
+				{
+					@include $file;
+				}
+
+				if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_lang . '-noerror.php' and file_exists($file))
+				{
+					@include $file;
+				}
+
+				if ($file = $base. DS. 'configs' . DS . 'translates'. DS. $_lang . '.php' and file_exists($file))
+				{
+					@include $file;
+				}
+
+				if ($file = $base. DS. 'configs' . DS . 'translate'. DS. mb_strtolower($_lang) . '.php' and file_exists($file))
+				{
+					@include $file;
+				}
+			}
+		}
+
+		$_sprintf = function($frase, array $params = [])
+		{
+			array_unshift($params, $frase);
+			return call_user_func_array('sprintf', $params);
+		};
+
+		is_null($n) and
+		$n = 1;
+
+		$frase_original = $frase;
+
+		$frase_arr = (array)$frase;
+		$frase_arr = array_values($frase_arr);
+		$frase_count = count($frase_arr);
+		$frase_count > 4 and $frase_count = 4;
+		$frase = $frase_arr;
+		$frase = array_shift($frase);
+
+		switch($frase_count)
+		{
+			case 2:
+					if($n==1) $frase_traduccion = $frase_arr[0];
+				else          $frase_traduccion = $frase_arr[1];
+				break;
+			case 3:
+					if($n==1) $frase_traduccion = $frase_arr[0];
+				elseif($n==0) $frase_traduccion = $frase_arr[2];
+				else          $frase_traduccion = $frase_arr[1];
+				break;
+			case 4:
+					if($n==1) $frase_traduccion = $frase_arr[0];
+				elseif($n==0) $frase_traduccion = $frase_arr[2];
+				elseif($n <0) $frase_traduccion = $frase_arr[3];
+				else          $frase_traduccion = $frase_arr[1];
+				break;
+			default:
+				$frase_traduccion = array_shift($frase_arr);
+				break;
+		}
+		$frase = $frase_traduccion;
+
+		if ( ! isset($langs[$frase_traduccion]) and ! isset($langs[$frase]))
+		{
+			if ( ! preg_match('/^es/i', $this->LANG))
+			{
+				$path = mkdir2('/configs/translates', APPPATH);
+				$_file_dest = $path . DS . $this->LANG . '-noerror.php';
+
+				file_exists($_file_dest) or 
+				file_put_contents($_file_dest, '<?php' .PHP_EOL. '/** Generado automáticamente el ' . date('d/m/Y H:i:s') . ' */'.PHP_EOL);
+
+				$trace = debug_backtrace(false);
+				while(count($trace) > 0 and (
+					( ! isset($trace[0]['file']))    or 
+					(   isset($trace[0]['file'])     and str_replace(JAPIPATH, '', $trace[0]['file']) <> $trace[0]['file']) or 
+					(   isset($trace[0]['function']) and in_array   ($trace[0]['function'], ['_t', 'translate']))
+				))
+				{
+					array_shift($trace);
+				}
+
+				$filename = __FILE__ . '#' . __LINE__;
+				isset($trace[0]) and
+				$filename = $trace[0]['file'] . '#' . $trace[0]['line'];
+
+				$frase_esc = str_replace('\'', '\\\'', $frase);
+
+				$message = '' . PHP_EOL;
+				$message.= '/**' . PHP_EOL;
+				$message.= ' * Traducción por defecto - ' . md5($frase) . PHP_EOL;
+				$message.= ' * ' . PHP_EOL;
+				$message.= ' * ' . $frase . PHP_EOL;
+				$message.= ' * ' . PHP_EOL;
+				$message.= ' * Parámetro N: '. $n . PHP_EOL;
+				$message.= ' * Parámetros SPrintF: '. count($sprintf) . PHP_EOL;
+				if (count($sprintf) > 0)
+				{
+					$message.= ' * Detalle Parámetros SPrintF: ' . PHP_EOL;
+					$message.= ' * ```' . PHP_EOL;
+					$message.= ' * '. implode(PHP_EOL . ' * ', explode("\n", json_encode($sprintf, JSON_PRETTY_PRINT))) . PHP_EOL;
+					$message.= ' * ```' . PHP_EOL;
+				}
+				$message.= ' * Ubicado en '. $filename . PHP_EOL;
+				$message.= ' */' . PHP_EOL;
+				$message.= '$_frase = \'' . $frase_esc . '\';' . PHP_EOL;
+				$message.= 'isset($langs[$_frase]) or $langs[$_frase] = ';
+
+				if (is_array($frase_original))
+				{
+					$message.= '[' . PHP_EOL;
+					foreach($frase_original as $_temp_frase)
+					{
+						$_temp_frase = str_replace('\'', '\\\'', $_temp_frase);
+						$message.= '    \'' . $_temp_frase . '\',' . PHP_EOL;
+					}
+					$message.= ']';
+				}
+				else
+				{
+					$message.= '$_frase';
+				}
+				$message.= ';' . PHP_EOL;
+
+				file_put_contents($_file_dest, $message, FILE_APPEND);
+				$this -> action_apply('TraduccionFaltante', $frase, $n, $filename, $sprintf);
+			}
+
+			$langs[$frase_traduccion] = $frase_traduccion;
+			$langs[$frase] = $frase_traduccion;
+		}
+
+		array_unshift($sprintf, $n);
+
+		$traduccion = isset($langs[$frase_traduccion]) ? $langs[$frase_traduccion] : $langs[$frase];
+		$traduccion = (array)$traduccion;
+		$traduccion = array_values($traduccion);
+		$traduccion_count = count($traduccion);
+		$traduccion_count > 4 and $traduccion_count = 4;
+
+		switch($traduccion_count)
+		{
+			case 2:
+					if($n==1) $traduccion = $traduccion[0];
+				else          $traduccion = $traduccion[1];
+				break;
+			case 3:
+					if($n==1) $traduccion = $traduccion[0];
+				elseif($n==0) $traduccion = $traduccion[2];
+				else          $traduccion = $traduccion[1];
+				break;
+			case 4:
+					if($n==1) $traduccion = $traduccion[0];
+				elseif($n==0) $traduccion = $traduccion[2];
+				elseif($n <0) $traduccion = $traduccion[3];
+				else          $traduccion = $traduccion[1];
+				break;
+			default:
+				$traduccion = array_shift($traduccion);
+				break;
+		}
+
+		$traduccion = $_sprintf($traduccion, $sprintf);
+		return $traduccion;
+	}
+
+	public function response_nocache()
+	{
+		header('Cache-Control: no-cache, must-revalidate'); //HTTP 1.1
+		header('Pragma: no-cache'); //HTTP 1.0
+		header('Expires: Sat, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+
+		return $this;
+	}
+
+	public function response_cache($days = 365, $for = 'private', $rev = 'no-revalidate')
+	{
+		$time = 60 * 60 * 24 * $days;
+		$cache_expire_date = gmdate("D, d M Y H:i:s", time() + $time);
+
+		header('User-Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+		header('Cache-Control: max-age=' . $time. ', ' . $for . ', ' . $rev); //HTTP 1.1
+		header('Pragma: cache'); //HTTP 1.0
+		header('Expires: '.$cache_expire_date.' GMT'); // Date in the future
+
+		return $this;
+	}
+
+	protected function _send_response ()
+	{
+		/** 
+		 * Si el tipo de respuesta es **manual** o **file** se enviará tal cual lo que se haya generado en los requests o response
+		 * - El buffer fue limpiado antes de ejecutar el _init_uriprocess_request
+		 * - Si se quiere cambiar el mime tendrá que ser en el mismo request o response 
+		 */
+		if (in_array($this->_response_type, ['manual', 'file']))
+		{
+			return;
+		}
+
+		$this -> action_apply('JApi/send-response/before');
+
+		/** Estableciendo el mime */
+		$_response_mime = $this -> _response_mime;
+		if (is_null($_response_mime))
+		{
+			switch($this -> _response_type)
+			{
+				case 'html':case 'body':
+					$_response_mime = 'text/html';
+					break;
+				case 'json':case 'cli':
+					$_response_mime = 'application/json';
+					break;
+			}
+		}
+
+		$_response_charset = $this -> _response_charset;
+		is_null($_response_charset) and $_response_charset = $this -> config('charset');
+		is_null($_response_mime) or array_unshift($this->_headers, 'Content-Type: ' . $_response_mime . '; charset=' . $_response_charset);
+
+		foreach ($this->_headers as $header)
+		{
+			$header = (array)$header;
+			$header[] = true;
+			list($_header, $_replace) = $header;
+
+			@header($_header, $_replace);
+		}
+		$this -> action_apply('JApi/send-response/headers');
+
+		$_buffer_content = $this -> GetAndClear_BufferContent();
+
+		if (in_array($this->_response_type, ['json', 'cli']))
+		{
+			return $this -> _send_response_json ($_buffer_content);
+		}
+
+		return $this -> _send_response_html ($_buffer_content);
+	}
+
+	protected function _send_response_json ($_buffer_content)
+	{
+		$data = (array)$this -> _response_data['json'];
+
+		if ( ! is_null($this->_process_result))
+		{
+			$data_pr = [
+				'status' => $this->_process_result['status'],
+				'message' => $this->_process_result['message'],
+			];
+
+			is_null($this->_process_result['code']) or $data_pr['code'] = $this->_process_result['code'];
+			if ($this->_process_result['status'] === 'error')
+			{
+				$data_pr['error'] = $data_pr['message'];
+				unset($data_pr['message']);
+			}
+
+			$data = array_merge($data_pr, $data);
+		}
+
+		if ( ! empty($_buffer_content))
+		{
+			$k = 'message';
+			if (isset($data['error']) or (isset($data['message']) and ! is_null($data['message'])))
+			{
+				$k = 'html_content';
+			}
+			$data[$k] = $_buffer_content;
+		}
+
+		$data = $this -> filter_apply('JAapp/send-response-json/data', $data);
+
+		$result = json_encode($data);
+
+		if ($result === false)
+		{
+			switch (json_last_error()) {
+				case JSON_ERROR_NONE:
+					$error = 'No errors';
+				break;
+				case JSON_ERROR_DEPTH:
+					$error = 'Maximum stack depth exceeded';
+				break;
+				case JSON_ERROR_STATE_MISMATCH:
+					$error = 'Underflow or the modes mismatch';
+				break;
+				case JSON_ERROR_CTRL_CHAR:
+					$error = 'Unexpected control character found';
+				break;
+				case JSON_ERROR_SYNTAX:
+					$error = 'Syntax error, malformed JSON';
+				break;
+				case JSON_ERROR_UTF8:
+					$error = 'Malformed UTF-8 characters, possibly incorrectly encoded';
+				break;
+				case JSON_ERROR_RECURSION:
+					$error = 'One or more recursive references in the value to be encoded';
+				break;
+				case JSON_ERROR_INF_OR_NAN:
+					$error = 'One or more NAN or INF values in the value to be encoded';
+				break;
+				case JSON_ERROR_UNSUPPORTED_TYPE:
+					$error = 'A value of a type that cannot be encoded was given';
+				default:
+					$error = 'Unknown error';
+				break;
+			}
+
+			trigger_error($error . ':' . PHP_EOL . PHP_EOL . $data, E_USER_ERROR);
+			$result = '';
+		}
+
+		echo $result;
+	}
+
+	public function HtmlAttrs ($attrs)
+	{
+		if ( ! is_array($attrs))
+		{
+			$attrs = [$attrs => ''];
+		}
+
+		if (count($attrs) === 0)
+		{
+			return '';
+		}
+
+		$attrs = ' ' . implode(' ', array_map(function($key, $val){
+			is_array($val) and $val = implode(' ', $val);
+			
+			return $key . (empty($val) ? '' : '="' . htmlspecialchars($val) . '"');
+		}, array_keys($attrs), array_values($attrs)));
+
+		return $attrs;
+	}
+
+	protected function _send_response_html ($_buffer_content)
+	{
+		$data = (array)$this -> _response_data['html'];
+		$data = $this -> filter_apply('JAapp/send-response-html/data', $data);
+
+		$_body_content = '';
+		foreach($data['body']['content'] as $content)
+		{
+			if (is_callable($content))
+			{
+				ob_start();
+				$_body_content .= call_user_func($content);
+				$_body_content .= ob_get_contents();
+				ob_end_clean();
+			}
+			else
+			{
+				$_body_content .= $content;
+			}
+		}
+
+		$_body_content_before = $data['body']['content_before'];
+		if (is_callable($_body_content_before))
+		{
+			ob_start();
+			$_body_content_before = call_user_func($_body_content_before);
+			$_body_content_before .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_content_after = $data['body']['content_after'];
+		if (is_callable($_body_content_after))
+		{
+			ob_start();
+			$_body_content_after = call_user_func($_body_content_after);
+			$_body_content_after .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		if ($this->_response_type === 'body')
+		{
+			$process_result_message = $this -> process_result_message (true);
+
+			$result =   $_body_content_before . 
+						$process_result_message . 
+						$_body_content . 
+						$_buffer_content . 
+						$_body_content_after;
+
+			$result = $this -> filter_apply('JApi/send-response-body/content', $result);
+			echo $result;
+			die();
+		}
+
+		$_body_header_before = $data['body']['header_before'];
+		if (is_callable($_body_header_before))
+		{
+			ob_start();
+			$_body_header_before = call_user_func($_body_header_before);
+			$_body_header_before .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_header = $data['body']['header'];
+		if (is_callable($_body_header))
+		{
+			ob_start();
+			$_body_header = call_user_func($_body_header);
+			$_body_header .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_header_after = $data['body']['header_after'];
+		if (is_callable($_body_header_after))
+		{
+			ob_start();
+			$_body_header_after = call_user_func($_body_header_after);
+			$_body_header_after .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_footer_before = $data['body']['footer_before'];
+		if (is_callable($_body_footer_before))
+		{
+			ob_start();
+			$_body_footer_before = call_user_func($_body_footer_before);
+			$_body_footer_before .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_footer = $data['body']['footer'];
+		if (is_callable($_body_footer))
+		{
+			ob_start();
+			$_body_footer = call_user_func($_body_footer);
+			$_body_footer .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_body_footer_after = $data['body']['footer_after'];
+		if (is_callable($_body_footer_after))
+		{
+			ob_start();
+			$_body_footer_after = call_user_func($_body_footer_after);
+			$_body_footer_after .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$process_result_message = $this -> process_result_message (true);
+
+		$_head_jsonld = $data['head']['jsonld'];
+		if (is_callable($_head_jsonld))
+		{
+			ob_start();
+			$_head_jsonld = call_user_func($_head_jsonld);
+			$_head_jsonld .= ob_get_contents();
+			ob_end_clean();
+		}
+
+		$_head_favicon = $data['head']['favicon'];
+		if (is_callable($_head_favicon))
+		{
+			ob_start();
+			$_head_favicon = call_user_func($_head_favicon);
+			$_head_favicon .= ob_get_contents();
+			ob_end_clean();
+		}
+		if (empty($_head_favicon))
+		{
+			$_head_favicon = '<link rel="shortcut icon" href="' . url('base') . '/favicon.ico">';
+		}
+
+		$_html_tag_before = '';
+		$_head_tag_before = '';
+		$_head_html = '';
+		$_head_tag_after = '';
+		$_body_tag_before = '';
+		$_body_html = '';
+		$_body_tag_after = '';
+		$_html_tag_after = '';
+
+		$_body_content =	$_body_content_before . 
+							$process_result_message . 
+							$_body_content . 
+							$_buffer_content . 
+							$_body_content_after;
+
+		$_body_content = $this -> filter_apply('JApi/send-response-html/body-content', $_body_content);
+
+		$_body_html = 	$_body_header_before . 
+						$_body_header . 
+						$_body_header_after . 
+						$_body_content . 
+						$_body_footer_before . 
+						$_body_footer . 
+						$_body_footer_after;
+
+		$_body_html = $this -> filter_apply('JApi/send-response-html/body', $_body_html);
+
+		$title =& $data['head']['title'];
+		empty($title) and $title = 'Plataforma';
+
+		$title = $this -> filter_apply('JApi/send-response-html/title', $title);
+		$title = $this -> filter_apply('title', $title, $data);
+
+		isset($data['tag_attr']['lang']) or 
+		$data['tag_attr']['lang'] = $this->LANG;
+
+		empty($data['head']['canonical']) and $data['head']['canonical'] = url('full'); 
+
+		$doctype = $data['doctype'];
+		isset(self::$_doctypes[$doctype]) and $doctype = self::$_doctypes[$doctype];
+		$_html_tag_before .= $doctype . PHP_EOL;
+
+		$_html_tag_before .= '<html' . $this -> HtmlAttrs($data['tag_attr']) . '>' . PHP_EOL;
+		$_head_tag_before .= '<head' . $this -> HtmlAttrs($data['head']['tag_attr']) . '>' . PHP_EOL;
+		$_body_tag_before .= '<body' . $this -> HtmlAttrs($data['body']['tag_attr']) . '>' . PHP_EOL;
+
+		$_response_charset = $this -> _response_charset;
+		is_null($_response_charset) and $_response_charset = $this -> config('charset');
+		$_head_html .= '<meta charset="' . $_response_charset . '">' . PHP_EOL;
+		$_head_html .= '<meta http-equiv="Content-Type" content="text/html; charset=' . $_response_charset . '" />' . PHP_EOL;
+
+		if ( ! isset($data['head']['meta']['name']['apple-mobile-web-app-title']) or 
+			   empty($data['head']['meta']['name']['apple-mobile-web-app-title']))
+		{
+			$data['head']['meta']['name']['apple-mobile-web-app-title'] = $title;
+		}
+
+		if ( ! isset($data['head']['meta']['name']['application-name']) or 
+			   empty($data['head']['meta']['name']['application-name']))
+		{
+			$data['head']['meta']['name']['application-name'] = 'Aplicación basada en JApi';
+		}
+
+		$data['head']['meta'] = $this -> filter_apply('JApi/send-response-html/head-meta', $data['head']['meta'], $_head_html);
+		foreach($data['head']['meta'] as $param => $dats)
+		{
+			foreach($dats as $key => $val)
+			{
+				is_array($val) and $val = implode(',', $val);
+				$_head_html .= '<meta ' . $param . '="' . htmlspecialchars($key) . '" content="' . htmlspecialchars($val) . '" />' . PHP_EOL;
+			}
+		}
+
+		$_head_html .= '<title itemprop="name">' . $title . '</title>' . PHP_EOL;
+		$_head_html .= '<link rel="canonical" href="' . $data['head']['canonical'] . '" itemprop="url" />' . PHP_EOL;
+
+		empty($_head_jsonld) or $_head_html .= $_head_jsonld . PHP_EOL;
+		empty($_head_favicon) or $_head_html .= $_head_favicon . PHP_EOL;
+
+		$_head_html .= '<base href="' . url('base') . '" />' . PHP_EOL;
+
+		$_head_html_script = '';
+
+		/** Añadir el script location.base en $_head_html_script */
+		$_head_html_script .= 'location.base="' . url('base') . '";';
+		$_head_html_script .= 'location.full="' . url('full') . '";';
+		$_head_html_script .= 'location.cookie="' . url('cookie-base') . '";';
+
+		/** Añadir el script force_uri en $_head_html_script */
+		$force_uri = $data['force_uri'];
+		if (is_null($force_uri))
+		{
+			$force_uri =  url('path');
+			if (count($_GET) > 0)
+			{
+				$force_uri .= '?' . http_build_query($_GET);
+			}
+		}
+		$force_uri = url('base') . $force_uri;
+		$_head_html_script .= 'history.replaceState([], "", "' . $force_uri . '");';
+
+		$_head_html_script = $this -> filter_apply('JApi/send-response-html/head/script', $_head_html_script);
+
+		if ( ! empty($_head_html_script))
+		{
+			$_head_html .= '<script>';
+			$_head_html .= $_head_html_script . PHP_EOL;
+			$_head_html .= '</script>' . PHP_EOL;
+		}
+
+		$_head_html = $this -> filter_apply('JApi/send-response-html/head', $_head_html);
+
+		$data_assets_css = $this -> _reorder_assets($data['assets']['css']);
+		$data_assets_js = $this -> _reorder_assets($data['assets']['js']);
+
+		$data_assets_css_head_noinline = array_filter($data_assets_css, function($o){
+			return $o['loaded'] and $o['position'] === 'head' and ! $o['inline'];
+		});
+		$data_assets_css_head_inline = array_filter($data_assets_css, function($o){
+			return $o['loaded'] and $o['position'] === 'head' and $o['inline'];
+		});
+		$data_assets_css_body_noinline = array_filter($data_assets_css, function($o){
+			return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
+		});
+		$data_assets_css_body_inline = array_filter($data_assets_css, function($o){
+			return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
+		});
+		$data_assets_js_head_noinline = array_filter($data_assets_js, function($o){
+			return $o['loaded'] and $o['position'] === 'head' and ! $o['inline'];
+		});
+		$data_assets_js_head_inline = array_filter($data_assets_js, function($o){
+			return $o['loaded'] and $o['position'] === 'head' and $o['inline'];
+		});
+		$data_assets_js_body_noinline = array_filter($data_assets_js, function($o){
+			return $o['loaded'] and $o['position'] === 'body' and ! $o['inline'];
+		});
+
+
+		$data_assets_js_body_inline = array_filter($data_assets_js, function($o){
+			return $o['loaded'] and $o['position'] === 'body' and $o['inline'];
+		});
+
+		$parsed = explode('<script>', $_body_html);
+		if (count($parsed) > 1)
+		{
+			$_body_html = array_shift($parsed);
+			foreach($parsed as $_temp)
+			{
+				$_temp = explode('</script>', $_temp, 2);
+				$_body_html.= $_temp[1];
+				$data_assets_js_body_inline[] = [
+					'codigo' => uniqid('body_inline_js_founds_'),
+					'uri' => $_temp[0],
+					'loaded' => true,
+					'version' => null,
+					'inline' => true,
+					'attr' => [],
+					'deps' => [],
+					'position' => 'body',
+					'orden_original' => 99,
+					'orden' => 99,
+				];
+			}
+		}
+
+		$parsed = explode('<style>', $_body_html);
+		if (count($parsed) > 1)
+		{
+			$_body_html = array_shift($parsed);
+			foreach($parsed as $_temp)
+			{
+				$_temp = explode('</style>', $_temp, 2);
+				$_body_html.= $_temp[1];
+				$data_assets_css_body_inline[] = [
+					'codigo' => uniqid('body_inline_css_founds_'),
+					'uri' => $_temp[0],
+					'loaded' => true,
+					'version' => null,
+					'inline' => true,
+					'attr' => [],
+					'deps' => [],
+					'position' => 'body',
+					'orden_original' => 99,
+					'orden' => 99,
+				];
+			}
+		}
+
+		foreach($data_assets_css_head_noinline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'version'   => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'rel' => 'stylesheet',
+				'type' => 'text/css',
+			], (array)$dats['attr']);
+
+			if ( ! empty($dats['uri']))
+			{
+				$attr['href'] = $dats['uri'];
+				if ( ! is_null($dats['version']))
+				{
+					$_has_sign = preg_match('/\?/i', $attr['href']);
+					$attr['href'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+				}
+			}
+			
+			$_head_html .= PHP_EOL . '<link' . $this -> HtmlAttrs ($attr) . ' />';
+		}
+
+		foreach($data_assets_js_head_noinline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'version'   => NULL,
+				'attr'      => [],
+				'_before'   => [],
+				'_after'   => [],
+			], $dats);
+
+			$attr = array_merge([
+				'type' => 'application/javascript',
+			], (array)$dats['attr']);
+
+			if ( ! empty($dats['uri']))
+			{
+				$attr['src'] = $dats['uri'];
+				if ( ! is_null($dats['version']))
+				{
+					$_has_sign = preg_match('/\?/i', $attr['href']);
+					$attr['src'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+				}
+			}
+
+			foreach($dats['_before'] as $_tmp_script)
+			{
+				function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+				$_head_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+			}
+
+			$_head_html .= PHP_EOL . '<script' . $this -> HtmlAttrs ($attr) . '></script>';
+
+			foreach($dats['_after'] as $_tmp_script)
+			{
+				function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+				$_head_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+			}
+		}
+
+		foreach($data_assets_css_head_inline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'rel' => 'stylesheet',
+				'type' => 'text/css',
+			], (array)$dats['attr']);
+
+			$content = $dats['uri'];
+			function_exists('css_compressor') and $content = css_compressor($content);
+
+			$_head_html .= PHP_EOL . '<style' . $this -> HtmlAttrs ($attr) . '>' . $content . '</style>';
+		}
+
+		foreach($data_assets_js_head_inline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'type' => 'application/javascript',
+			], (array)$dats['attr']);
+
+			$content = $dats['uri'];
+			function_exists('js_compressor') and $content = js_compressor($content);
+
+			$_head_html .= PHP_EOL . '<script' . $this -> HtmlAttrs ($attr) . '>' . $content . '</script>';
+		}
+
+		foreach($data_assets_css_body_noinline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'version'   => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'rel' => 'stylesheet',
+				'type' => 'text/css',
+			], (array)$dats['attr']);
+
+			if ( ! empty($dats['uri']))
+			{
+				$attr['href'] = $dats['uri'];
+				if ( ! is_null($dats['version']))
+				{
+					$_has_sign = preg_match('/\?/i', $attr['href']);
+					$attr['href'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+				}
+			}
+			
+			$_body_html .= PHP_EOL . '<link' . $this -> HtmlAttrs ($attr) . ' />';
+		}
+
+		foreach($data_assets_js_body_noinline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'version'   => NULL,
+				'attr'      => [],
+				'_before'   => [],
+				'_after'   => [],
+			], $dats);
+
+			$attr = array_merge([
+				'type' => 'application/javascript',
+			], (array)$dats['attr']);
+
+			if ( ! empty($dats['uri']))
+			{
+				$attr['src'] = $dats['uri'];
+				if ( ! is_null($dats['version']))
+				{
+					$_has_sign = preg_match('/\?/i', $attr['src']);
+					$attr['src'] .= ($_has_sign ? '&' : '?') . $dats['version'];
+				}
+			}
+
+			foreach($dats['_before'] as $_tmp_script)
+			{
+				function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+				$_body_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+
+			}
+
+			$_body_html .= PHP_EOL . '<script' . $this -> HtmlAttrs ($attr) . '></script>';
+
+			foreach($dats['_after'] as $_tmp_script)
+			{
+				function_exists('js_compressor') and $_tmp_script = js_compressor($_tmp_script);
+				$_body_html .= PHP_EOL . '<script>' . $_tmp_script . '</script>';
+			}
+		}
+
+		foreach($data_assets_css_body_inline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'rel' => 'stylesheet',
+				'type' => 'text/css',
+			], (array)$dats['attr']);
+
+			$content = $dats['uri'];
+			function_exists('css_compressor') and $content = css_compressor($content);
+
+			$_body_html .= PHP_EOL . '<style' . $this -> HtmlAttrs ($attr) . '>' . $content . '</style>';
+		}
+
+		foreach($data_assets_js_body_inline as $dats)
+		{
+			$dats = array_merge([
+				'codigo'    => NULL,
+				'uri'       => NULL,
+				'attr'      => [],
+			], $dats);
+
+			$attr = array_merge([
+				'type' => 'application/javascript',
+			], (array)$dats['attr']);
+
+			$content = $dats['uri'];
+			function_exists('js_compressor') and $content = js_compressor($content);
+
+			$_body_html .= PHP_EOL . '<script' . $this -> HtmlAttrs ($attr) . '>' . $content . '</script>';
+		}
+
+		$_head_tag_after .= PHP_EOL . '</head>' . PHP_EOL;
+		$_body_tag_after .= PHP_EOL . '</body>' . PHP_EOL;
+		$_html_tag_after .= '</html>';
+
+		$result =   $_html_tag_before . 
+					$_head_tag_before . 
+					$_head_html . 
+					$_head_tag_after . 
+					$_body_tag_before . 
+					$_body_html . 
+					$_body_tag_after . 
+					$_html_tag_after;
+
+		$result = $this -> filter_apply('JApi/send-response-html/result', $result);
+
+		@header('Referrer-Policy: no-referrer-when-downgrade');
+		echo $result;
+	}
+
+	protected function _reorder_assets ($arr)
+	{
+		// Validar Dependencias
+		foreach($arr as &$item)
+		{
+			$position = $item['position'];
+			unset($item['position']);
+			$item['position'] = $position;
+			$item['orden_original'] = $item['orden'];
+			unset($item['orden']);
+
+			if (count($item['deps']) === 0)
+			{
+				$item['orden'] = $item['orden_original'];
+			}
+			unset($item);
+		}
+
+		$validar = true;
+		$validar_c = 10;
+		while($validar and $validar_c > 0)
+		{
+			$validar = false;
+			$validar_c--;
+
+			foreach($arr as &$item)
+			{
+				if (isset($item['orden']))
+				{
+					continue;
+				}
+
+				if (count($item['deps']) === 0)
+				{
+					$item['orden'] = $item['orden_original'];
+					continue;
+				}
+
+				$_orden_settng = true;
+				$_orden_setted = $item['orden_original'];
+				$_position_new = $item['position'];
+				foreach($item['deps'] as $_dep)
+				{
+					if ( ! isset($arr[$_dep]))
+					{
+						// Dependencia invalida
+						continue;
+					}
+
+					if (isset($arr[$_dep]['orden']))
+					{
+						if ($_orden_setted < $arr[$_dep]['orden'])
+						{
+							$_orden_setted = $arr[$_dep]['orden'] + 0.01;
+							if ($arr[$_dep]['position'] === 'body')
+							{
+								$_position_new = 'body';
+							}
+							if ( ! $arr[$_dep]['loaded'])
+							{
+								$item['orden'] = $item['orden_original'];
+								$item['loaded'] = false;
+								continue 2;
+							}
+						}
+						continue;
+					}
+					
+					$validar = true;
+					$_orden_settng = false;
+				}
+
+				if ($_orden_settng)
+				{
+					$item['orden'] = $_orden_setted;
+					$item['position'] = $_position_new;
+					continue;
+				}
+			}
+		}
+
+		usort($arr, function($a, $b){
+			if ($a['orden'] === $b['orden']) return 0;
+			return $a['orden'] < $b['orden'] ? -1 : 1;
+		});
+
+		return $arr;
 	}
 
 	//=================================================================================//
@@ -1235,7 +3303,7 @@ class JApi
 		if (preg_match('/^([a-z]{2}|[A-Z]{2}|[a-z]{2}\-[A-Z]{2})$/', $_uri_lang))
 		{
 			$this -> _rqs_uri_inicial = $this -> URI = '/' . implode('/', $_uri);
-			$_url_path =& $this -> url('path');
+			$_url_path =& url('path');
 			$_url_path = $this -> _rqs_uri_inicial;
 
 			return $this->set_LANG($_uri_lang, false);
@@ -1293,6 +3361,150 @@ class JApi
 	}
 
 	/**
+	 * _init_get_uri_ids()
+	 */
+	protected function _init_get_uri_ids ()
+	{
+		$this -> IDS = $this -> filter_apply ('JApi/Uri/IDS', $this -> IDS, $this -> URI);
+
+		// Quitar los números del URI
+		$_uri = explode('/', $this -> URI);
+		empty($_uri[0]) and array_shift($_uri);
+
+		$_uri_new = [];
+		foreach($_uri as $_uri_part)
+		{
+			if (preg_match('/^[0-9]+$/', $_uri_part))
+			{
+				$this -> IDS[] = $_uri_part;
+			}
+			else
+			{
+				$_uri_new[] = $_uri_part;
+			}
+		}
+		$this -> URI = '/' . implode('/', $_uri_new);
+	}
+
+	/**
+	 * _init_uriprocess()
+	 */
+	protected function _init_uriprocess ()
+	{
+		$routes_bases = self::$_routes_bases;
+		foreach($routes_bases as $route)
+		{
+			$this -> _init_uriprocess_callback ($route);
+		}
+
+		$this -> action_apply ('JApi/uri-process/validations');
+
+		in_array($this->_response_type, ['file', 'manual']) and
+		$this -> set_response_type ($this->_response_type);
+
+		foreach(['Request', 'Response'] as $route)
+		{
+			$this -> _init_uriprocess_callback ($route);
+		}
+	}
+
+	/**
+	 * _init_uriprocess_callback()
+	 */
+	protected function _init_uriprocess_callback ($Process)
+	{
+		$Process_lower = mb_strtolower($Process);
+		$_uri_process = true;
+		$_uri_process = $this -> filter_apply ('JApi/uri-process/' . $Process      , $_uri_process, $this->URI, $this->IDS);
+		$_uri_process = $this -> filter_apply ('JApi/uri-process/' . $Process_lower, $_uri_process, $this->URI, $this->IDS);
+
+		if ( ! $_uri_process) return;
+
+		$this -> action_apply ('JApi/uri-process/' . $Process       . '/before');
+		$this -> action_apply ('JApi/uri-process/' . $Process_lower . '/before');
+
+		list($_class, $_func, $_params) = $this -> GetProcessClass ($Process);
+		$_class  = $this -> filter_apply ('JApi/uri-process/' . $Process_lower . '/class',       $_class, $_func, $_params, $this->URI, $this->IDS);
+		$_func   = $this -> filter_apply ('JApi/uri-process/' . $Process_lower . '/func',        $_func, $_params, $_class, $this->URI, $this->IDS);
+		$_params = $this -> filter_apply ('JApi/uri-process/' . $Process_lower . '/func_params', $_params, $_func, $_class, $this->URI, $this->IDS);
+
+		if (is_null($_class))
+		{
+			$Process === 'Response' and 
+			$this->_init_uriprocess_response_404();
+			return;
+		}
+
+		$_class_instance = $this -> GetClassInstancesWithIDS($_class);
+
+		$method = mb_strtoupper($this -> _rqs_method);
+		$type   = mb_strtoupper($this -> _response_type);
+
+		foreach([$method . '_', ''] as $x)
+		{
+			foreach([$type . '_', ''] as $y)
+			{
+				if ($_func_tmp = $x . $y . $_func and is_callable([$_class_instance, $_func_tmp]))
+				{
+					$_func = $_func_tmp;
+					break 2;
+				}
+
+				if ($_func_tmp = $y . $x . $_func and is_callable([$_class_instance, $_func_tmp]))
+				{
+					$_func = $_func_tmp;
+					break 2;
+				}
+			}
+		}
+
+		if (is_null($_func) or ! is_callable([$_class_instance, $_func]))
+		{
+			$Process === 'Response' and 
+			$this->_init_uriprocess_response_404();
+			return;
+		}
+
+		call_user_func_array([$_class_instance, $_func], $_params);
+		$this->_uriprocess_results[$Process] = true;
+
+		$this -> action_apply ('JApi/uri-process/' . $Process      );
+		$this -> action_apply ('JApi/uri-process/' . $Process_lower);
+	}
+
+	/**
+	 * _init_uriprocess_response_404()
+	 * Solo los response tipo html y body pueden retornar una página de error
+	 * Si es json o cli debe retornar el mensaje de procesamiento,
+	 * Si es file o manual se debe retornar de manera independiente la pagina de no-existe si es el caso
+	 */
+	protected function _init_uriprocess_response_404 ()
+	{
+		if ( ! in_array($this->_response_type, ['html', 'body']))
+		{
+			// Solo se mostrará una página de error404 en los retornos tipo html o body
+			return;
+		}
+
+		$uri = '/error404';
+		$uri = $this -> filter_apply('JApi/uri-process/error404', $uri, $this->URI, $this->IDS);
+
+		http_code(404, 'Página no encontrada');
+		list($_class, $_func, $_params) = $this -> GetProcessClass ('Response', $uri);
+
+		if (is_null($_class)) return;
+
+		$_class_instance = $this -> GetClassInstancesWithIDS($_class);
+
+		if ( ! is_callable([$_class_instance, $_func]))
+		{
+			return;
+		}
+
+		call_user_func_array([$_class_instance, $_func], $_params);
+	}
+
+	/**
 	 * init()
 	 */
 	public function init ()
@@ -1301,6 +3513,9 @@ class JApi
 
 		if ( ! $_init) return $this;
 		$_init = false;
+
+//		$__debug_start_mem  = memory_get_usage();
+//		$__debug_start_time = microtime(true);
 
 		/** Iniciando el leído del buffer */
 		$this->_ob_level = ob_get_level();
@@ -1436,6 +3651,16 @@ class JApi
 
 		$this -> action_apply('JApi/Config/Complete');
 
+//		$__debug_end_mem  = memory_get_usage();
+//		$__debug_end_time = microtime(true);
+//
+//		$__debug_used_mem  = $__debug_end_mem - $__debug_start_mem;
+//		$__debug_used_time = $__debug_end_time - $__debug_start_time;
+//
+//		die_array([
+//			'memoria utilizada' => transform_size($__debug_used_mem),
+//			'tiempo de proceso' => convertir_tiempo($__debug_used_time),
+//		]);
 
 		/** Generar el hash del request para buscar si esta en la cache de `paginas-estaticas` (URI, _rqs_method, params in GET and POST, LANG, timezone) */
 		$_request_hash = md5(json_encode([
@@ -1460,7 +3685,26 @@ class JApi
 			die($value['b']);
 		}
 
-		
+		/** Obtener IDs del enlace */
+		$this -> _init_get_uri_ids();
+
+		/** Inicio el procesamiento del URI */
+		$this -> action_apply ('JApi/uri-process/before', $this->URI, $this->IDS);
+
+		/**
+		 * Procesar acciones de validacion de autenticación
+		 * Aquí se puede cambiar el URI en caso de no estar logueado dependiendo de la URI
+		 * Pueden existir URIs que se permitan sin logueo
+		 */
+		$this -> action_apply ('JApi/uri-process/login', $this->URI, $this->IDS);
+		$this -> action_apply ('JApi/uri-process/auth', $this->URI, $this->IDS);
+		$this -> action_apply ('JApi/uri-process/authenticate', $this->URI, $this->IDS);
+
+		/** Iniciando el proceso del uri */
+		$this -> _init_uriprocess ();
+
+		/** Finaliza el procesamiento del URI */
+		$this -> action_apply ('JApi/uri-process/after', $this->URI, $this->IDS);
 	}
 
 }
