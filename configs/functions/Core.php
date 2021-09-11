@@ -126,12 +126,11 @@ if ( ! function_exists('url'))
 				}
 			}
 
-			empty($datos['srvpublic_path']) or $datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
+			empty($datos['srvpublic_path']) or 
+			$datos['path'] = str_replace($datos['srvpublic_path'], '', $datos['path']);
 
-			if (mb_strlen($datos['path']) > 1)
-			{
-				$datos['path'] = rtrim($datos['path'], '/');
-			}
+			$datos['path'] = preg_replace('#(^|[^:])//+#', '\\1/', $datos['path']); // reduce double slashes
+			$datos['path'] = '/' . trim($datos['path'], '/');
 
 			$datos['query'] = isset($_parsed['query']) ? $_parsed['query'] : '';
 			$datos['fragment'] = isset($_parsed['fragment']) ? $_parsed['fragment'] : '';
