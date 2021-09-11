@@ -20,7 +20,7 @@ class Error404
 						<p class="mb-0"><?= _t('La página que buscas no existe o ha sido movido temporalmente.'); ?></p>
 						<p><?= _t('Por favor valide el enlace de acceso o comuniquese con el administrador.'); ?></p>
 						<br>
-						<a href="<?= url(); ?>" class="btn btn-primary btn-lg"><?= _t('Ir al INICIO', 2, 'asd', 'asaa'); ?></a>
+						<a href="<?= url(); ?>" class="btn btn-primary btn-lg"><?= _t('Ir al INICIO'); ?></a>
 						&nbsp;&nbsp;|&nbsp;&nbsp;
 						<a href="javascript:history.back()" class="btn btn-secondary btn-sm"><?= _t('Regresar'); ?></a>
 					</div>

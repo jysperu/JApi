@@ -462,7 +462,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 */
 	public function __toString()
 	{
-		return get_class() . ' v' . self::version . ' by JYS Perú';
+		return get_class() . ' v' . self::version . ' by J&S Perú';
 	}
 
 	/**
@@ -473,11 +473,11 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	public function __debugInfo()
 	{
 		return [
-			'class' => get_class(),
-			'data' => $data,
-			'data_result' => $data_result,
-			'campos' => $campos,
-			'fields' => $fields
+			'class'  => get_class(),
+			'data'   => $this->data,
+			'result' => $this->data_result,
+			'campos' => $this->campos,
+			'fields' => $this->fields
 		];
 	}
 
