@@ -1990,7 +1990,7 @@ abstract class ObjetoBase extends JArray
 			}
 		}
 
-		if (in_array($_founded_obj['field'], $this->_manual_setted))
+		if ( ! is_null($_founded_obj) and in_array($_founded_obj['field'], $this->_manual_setted))
 		{
 			$_founded = NULL;
 		}
