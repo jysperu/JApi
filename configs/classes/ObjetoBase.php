@@ -982,8 +982,9 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjetoBase::Select', $query, self::gcc(), $this);
-		$query = filter_apply ('ObjTbl::Select',     $query, self::gcc(), $this);
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::Select', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Select',     $query, $gcc, $this);
 
 		$data = sql_data($query, TRUE);
 		
@@ -1176,8 +1177,9 @@ abstract class ObjetoBase extends JArray
 		}, array_values($_insert_data))) . PHP_EOL;
 		$query.= ')' . PHP_EOL;
 
-		$query = filter_apply ('ObjetoBase::Insert', $query, self::gcc(), $this);
-		$query = filter_apply ('ObjTbl::Insert',     $query, self::gcc(), $this);
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::Insert', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Insert',     $query, $gcc, $this);
 
 		$_exec = @sql($query,  ! is_null($_ai_key));
 
@@ -1267,8 +1269,9 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
-			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
+			$gcc = self::gcc();
+			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
 		}
 
 		return TRUE;
@@ -1389,8 +1392,9 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjetoBase::Update', $query, self::gcc(), $this);
-		$query = filter_apply ('ObjTbl::Update',     $query, self::gcc(), $this);
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::Update', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Update',     $query, $gcc, $this);
 
 		$rxs_hijo_changeds = [];
 		$rxs_hijo = self::rxs_hijo();
@@ -1546,8 +1550,9 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
-			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
+			$gcc = self::gcc();
+			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
 		}
 
 		return TRUE;
@@ -1609,8 +1614,9 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjetoBase::Delete', $query, self::gcc(), $this);
-		$query = filter_apply ('ObjTbl::Delete',     $query, self::gcc(), $this);
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::Delete', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Delete',     $query, $gcc, $this);
 
 		$_delete_data_before = $this->__toArray();
 
@@ -1727,8 +1733,9 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
-			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
+			$gcc = self::gcc();
+			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
 		}
 
 		return TRUE;
@@ -1785,8 +1792,9 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjetoBase::Delete', $query, self::gcc(), $this);
-		$query = filter_apply ('ObjTbl::Delete',     $query, self::gcc(), $this);
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::Delete', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Delete',     $query, $gcc, $this);
 
 		$_delete_data_before = $this->__toArray();
 
@@ -1876,6 +1884,7 @@ abstract class ObjetoBase extends JArray
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
+
 					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
 				}
 				return false;
@@ -1910,8 +1919,9 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
-			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
+			$gcc = self::gcc();
+			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
 		}
 
 		return TRUE;
@@ -2041,8 +2051,9 @@ abstract class ObjetoBase extends JArray
 					}
 				}
 
-				$query = filter_apply ('ObjetoBase::Select', $query, self::gcc(), $this);
-				$query = filter_apply ('ObjTbl::Select',     $query, self::gcc(), $this);
+				$gcc = self::gcc();
+				$query = filter_apply ('ObjetoBase::Select', $query, $gcc, $this);
+				$query = filter_apply ('ObjTbl::Select',     $query, $gcc, $this);
 
 				$data = sql_data($query);
 
