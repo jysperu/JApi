@@ -78,7 +78,6 @@ if ( ! function_exists('url'))
 		{
 			$file = __FILE__;
 
-			isset($_SERVER['REQUEST_SCHEME']) or $_SERVER['REQUEST_SCHEME'] = 'http' . ($datos['https'] ? 's' : '');
 			isset($_SERVER['SERVER_PORT'])    or $_SERVER['SERVER_PORT']    = ISCOMMAND ? 8080 : 80;
 			isset($_SERVER['REQUEST_URI'])    or $_SERVER['REQUEST_URI']    = '/';
 			isset($_SERVER['HTTP_HOST'])      or $_SERVER['HTTP_HOST']      = (ISCOMMAND ? 'coman' : 'desconoci') .'.do';
@@ -105,6 +104,7 @@ if ( ! function_exists('url'))
 			{
 				$datos['https'] = TRUE;
 			}
+			isset($_SERVER['REQUEST_SCHEME']) or $_SERVER['REQUEST_SCHEME'] = 'http' . ($datos['https'] ? 's' : '');
 
 			$_parsed = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER_HTTP_HOST . ':' . $_SERVER['SERVER_PORT'] . $_SERVER['REQUEST_URI'];
 			$_parsed = parse_url($_parsed);
