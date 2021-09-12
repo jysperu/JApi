@@ -1,6 +1,6 @@
 <?php
 /**
- * ObjTbl
+ * ObjetoBase
  * Manipulador de Objetos Tbl de la db 
  */
 
@@ -75,8 +75,8 @@ abstract class ObjetoBase extends JArray
 	 * Formato de los valores dentro del array
 	 * [
 	 * 	 'nombre'   => 'field',        		// Nombre del campo
-	 *   'tipo'     => ObjTbl::Texto,  		// El tipo del campo, por defecto será asumido como ObjTbl::Texto
-	 *   'largo'    => ObjTbl::Ilimitado,	// El mb_strlen del valor del campo, por defecto es el máximo posible
+	 *   'tipo'     => self::Texto,  		// El tipo del campo, por defecto será asumido como self::Texto
+	 *   'largo'    => self::Ilimitado,	// El mb_strlen del valor del campo, por defecto es el máximo posible
 	 *   'opciones' => NULL,           		// Si el campo solo tiene autorizado uno de los valores dentro de esta lista, por defecto NULO
 	 *   'defecto'  => NULL,           		// El valor que tomará por defecto si no se ha asignado algún valor al campo, por defecto NULO
 	 *   'attr'     => NULL,           		// Alguna atribución especial al campo tal como UNSIGNED ZEROFILL, por defecto NULO
@@ -114,8 +114,8 @@ abstract class ObjetoBase extends JArray
 				// Añadiendo posibles atributos faltantes
 				$column = array_merge([
 					'nombre'   => NULL,
-					'tipo'     => ObjTbl::Texto,
-					'largo'    => ObjTbl::Ilimitado,
+					'tipo'     => self::Texto,
+					'largo'    => self::Ilimitado,
 					'opciones' => NULL,
 					'defecto'  => NULL,
 					'attr'     => NULL,
@@ -133,8 +133,8 @@ abstract class ObjetoBase extends JArray
 				}
 
 				// Corrigiendo posibles atributos dañados
-				is_null ($column['tipo'])     and $column['tipo']     = ObjTbl::Texto;
-				is_null ($column['largo'])    and $column['largo']    = ObjTbl::Ilimitado;
+				is_null ($column['tipo'])     and $column['tipo']     = self::Texto;
+				is_null ($column['largo'])    and $column['largo']    = self::Ilimitado;
 				is_empty($column['opciones']) and $column['opciones'] = NULL;
 				is_empty($column['defecto'])  and $column['defecto']  = NULL;
 				is_empty($column['attr'])     and $column['attr']     = NULL;
@@ -159,42 +159,42 @@ abstract class ObjetoBase extends JArray
 				{
 					switch($column['tipo'])
 					{
-						case ObjTbl::Boolean:
+						case self::Boolean:
 							$column['defecto'] = false;
 							break;
-						case ObjTbl::Arreglo:
+						case self::Arreglo:
 							$column['defecto'] = [];
 							break;
-						case ObjTbl::Numero:
+						case self::Numero:
 							$column['defecto'] = $column['ai'] ? NULL : 0;
 							break;
-						case ObjTbl::FechaHora:
+						case self::FechaHora:
 							$column['defecto'] = date('Y-m-d H:i:s');
 							break;
-						case ObjTbl::Fecha:
+						case self::Fecha:
 							$column['defecto'] = date('Y-m-d');
 							break;
-						case ObjTbl::Hora:
+						case self::Hora:
 							$column['defecto'] = date('H:i:s');
 							break;
-						case ObjTbl::Texto: default:
+						case self::Texto: default:
 							$column['defecto'] = '';
 							break;
 					}
 				}
 
-//				if (in_array($column['tipo'], [ObjTbl::FechaHora, ObjTbl::Fecha, ObjTbl::Hora]) and 
+//				if (in_array($column['tipo'], [self::FechaHora, self::Fecha, self::Hora]) and 
 //					in_array($column['defecto'], ['CURRENT_TIMESTAMP', 'NOW', 'NOW()']))
 //				{
 //					switch($column['tipo'])
 //					{
-//						case ObjTbl::FechaHora:
+//						case self::FechaHora:
 //							$column['defecto'] = date('Y-m-d H:i:s');
 //							break;
-//						case ObjTbl::Fecha:
+//						case self::Fecha:
 //							$column['defecto'] = date('Y-m-d');
 //							break;
-//						case ObjTbl::Hora:
+//						case self::Hora:
 //							$column['defecto'] = date('H:i:s');
 //							break;
 //					}
@@ -499,7 +499,7 @@ abstract class ObjetoBase extends JArray
 
 			if (is_array($val))
 			{
-				if ($clas === ObjTbl::Numero AND $val[0] === 'IN')
+				if ($clas === self::Numero AND $val[0] === 'IN')
 				{
 					array_shift($val);
 					
@@ -510,15 +510,15 @@ abstract class ObjetoBase extends JArray
 					
 					$_where .= ' IN (' . implode(', ', array_map('qp_esc', $val)) . ')';
 				}
-				elseif ($clas === ObjTbl::Numero AND in_array($val[0], ['>', '<', '=']) AND count($val) === 2)
+				elseif ($clas === self::Numero AND in_array($val[0], ['>', '<', '=']) AND count($val) === 2)
 				{
 					$_where .= ' ' . $val[0] . ' ' . qp_esc($val[1]);
 				}
-				elseif (in_array($clas, [ObjTbl::Numero, ObjTbl::FechaHora, ObjTbl::Fecha, ObjTbl::Hora]) AND count($val) === 2)
+				elseif (in_array($clas, [self::Numero, self::FechaHora, self::Fecha, self::Hora]) AND count($val) === 2)
 				{
 					$_where .= ' BETWEEN ' . qp_esc($val[0]) . ' AND ' . qp_esc($val[1]) . '';
 				}
-//				elseif ($clas === ObjTbl::Numero AND count($val) === 3)
+//				elseif ($clas === self::Numero AND count($val) === 3)
 //				{
 //					// Antiguo
 //					$_where .= ' ' . $val[1] . ' ' . $val[0];
@@ -533,7 +533,7 @@ abstract class ObjetoBase extends JArray
 			{
 				$_where .= ' IS NULL';
 			}
-			elseif (in_array($clas, [ObjTbl::FechaHora, ObjTbl::Fecha, ObjTbl::Hora]))
+			elseif (in_array($clas, [self::FechaHora, self::Fecha, self::Hora]))
 			{
 				$_where .= ' LIKE "' . esc($val) . '%"';
 			}
@@ -898,13 +898,13 @@ abstract class ObjetoBase extends JArray
 			}
 			else if (is_empty($valor))
 			{
-				$valor = $columns[$indice]['nn'] ? ($columns[$indice]['tipo'] === ObjTbl::Arreglo ? [] : '') : NULL;
+				$valor = $columns[$indice]['nn'] ? ($columns[$indice]['tipo'] === self::Arreglo ? [] : '') : NULL;
 			}
 			else
 			{
 				switch($columns[$indice]['tipo'])
 				{
-					case ObjTbl::Boolean:
+					case self::Boolean:
 						if (is_string($valor) and in_array(mb_strtolower($valor[0]), ['f', '0']))
 						{
 							$valor = false;
@@ -912,7 +912,7 @@ abstract class ObjetoBase extends JArray
 						
 						$valor = boolval($valor);
 						break;
-					case ObjTbl::Arreglo:
+					case self::Arreglo:
 						if (is_string($valor))
 						{
 							$json = json_decode($valor, true);
@@ -923,11 +923,11 @@ abstract class ObjetoBase extends JArray
 						}
 						is_array($valor) or $valor = (array)$valor;
 						break;
-					case ObjTbl::Numero:
+					case self::Numero:
 						$valor = floatval($valor);
 						break;
-					case ObjTbl::FechaHora: case ObjTbl::Fecha: case ObjTbl::Hora:
-					case ObjTbl::Texto: default:
+					case self::FechaHora: case self::Fecha: case self::Hora:
+					case self::Texto: default:
 						$valor = strval($valor);
 						break;
 				}
@@ -982,7 +982,8 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjTbl::Select', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjetoBase::Select', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjTbl::Select',     $query, self::gcc(), $this);
 
 		$data = sql_data($query, TRUE);
 		
@@ -1175,7 +1176,8 @@ abstract class ObjetoBase extends JArray
 		}, array_values($_insert_data))) . PHP_EOL;
 		$query.= ')' . PHP_EOL;
 
-		$query = filter_apply ('ObjTbl::Insert', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjetoBase::Insert', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjTbl::Insert',     $query, self::gcc(), $this);
 
 		$_exec = @sql($query,  ! is_null($_ai_key));
 
@@ -1265,7 +1267,8 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjTbl::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
 		}
 
 		return TRUE;
@@ -1386,7 +1389,8 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjTbl::Update', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjetoBase::Update', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjTbl::Update',     $query, self::gcc(), $this);
 
 		$rxs_hijo_changeds = [];
 		$rxs_hijo = self::rxs_hijo();
@@ -1542,7 +1546,8 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjTbl::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
 		}
 
 		return TRUE;
@@ -1604,7 +1609,8 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjTbl::Delete', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjetoBase::Delete', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjTbl::Delete',     $query, self::gcc(), $this);
 
 		$_delete_data_before = $this->__toArray();
 
@@ -1721,7 +1727,8 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjTbl::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
 		}
 
 		return TRUE;
@@ -1778,7 +1785,8 @@ abstract class ObjetoBase extends JArray
 
 		$query.= 'LIMIT 1' . PHP_EOL;
 
-		$query = filter_apply ('ObjTbl::Delete', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjetoBase::Delete', $query, self::gcc(), $this);
+		$query = filter_apply ('ObjTbl::Delete',     $query, self::gcc(), $this);
 
 		$_delete_data_before = $this->__toArray();
 
@@ -1902,7 +1910,8 @@ abstract class ObjetoBase extends JArray
 
 		if ($_op_level === 1)
 		{
-			action_apply('ObjTbl::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjetoBase::Changes', $_changes, self::gcc(), $this);
+			action_apply('ObjTbl::Changes',     $_changes, self::gcc(), $this);
 		}
 
 		return TRUE;
@@ -2032,7 +2041,8 @@ abstract class ObjetoBase extends JArray
 					}
 				}
 
-				$query = filter_apply ('ObjTbl::Select', $query, self::gcc(), $this);
+				$query = filter_apply ('ObjetoBase::Select', $query, self::gcc(), $this);
+				$query = filter_apply ('ObjTbl::Select',     $query, self::gcc(), $this);
 
 				$data = sql_data($query);
 
