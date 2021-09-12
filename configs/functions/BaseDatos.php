@@ -182,6 +182,7 @@ if ( ! function_exists('_sql_update_utc_all'))
 	function _sql_update_utc_all ($utc)
 	{
 		global $_CONs;
+		$_CONs = (array)$_CONs;
 		foreach($_CONs as $conection)
 		{
 			mysqli_query($conection, 'SET time_zone = "' . $utc . '";');
@@ -202,6 +203,7 @@ if ( ! function_exists('sql_stop_all'))
 	function sql_stop_all ()
 	{
 		global $_CONs;
+		$_CONs = (array)$_CONs;
 		foreach($_CONs as $conection)
 		{
 			sql_stop($conection);
