@@ -1133,6 +1133,11 @@ if ( ! function_exists('logger'))
 			isset($trace[0]['function']) and ! isset($meta['function']) and $meta['function'] = $trace[0]['function'];
 		}
 
+		foreach($_directories as $_directory => $label)
+		{
+			$filepath = str_replace($_directory, $label, $filepath);
+		}
+
 		$SER = [];
 		foreach($_SERVER as $x => $y)
 		{
