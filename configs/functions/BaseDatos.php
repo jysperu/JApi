@@ -163,8 +163,12 @@ if ( ! function_exists('sql_stop'))
 		if ($ati == $tid)
 		{
 			$CON = null;
-			count($_CONs) > 0 and
-			$CON = $_CONs[array_shift(array_keys($_CONs))];
+			if (count($_CONs) > 0)
+			{
+				$CON = array_keys($_CONs);
+				$CON = array_shift($CON);
+				$CON = $_CONs[$CON];
+			}
 		}
 		return $return;
 	}
