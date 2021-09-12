@@ -2341,7 +2341,6 @@ class JApi
 		}
 
 		echo $result;
-		exit();
 	}
 
 	public function HtmlAttrs ($attrs)

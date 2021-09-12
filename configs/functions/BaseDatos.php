@@ -155,17 +155,16 @@ if ( ! function_exists('sql_stop'))
 
 		$identify = $conection -> identify;
 		$tid = $conection -> thread_id;
+		$ati = (isset($CON) and isset($CON->thread_id)) ? $CON->thread_id : 0;
 
 		$return = mysqli_close($conection);
 
 		unset($_CONs[$identify]);
-		if ($CON->thread_id == $tid)
+		if ($ati == $tid)
 		{
 			$CON = null;
-			if (count($_CONs) > 0)
-			{
-				$CON = $_CONs[array_shift(array_keys($_CONs))];
-			}
+			count($_CONs) > 0 and
+			$CON = $_CONs[array_shift(array_keys($_CONs))];
 		}
 		return $return;
 	}
