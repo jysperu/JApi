@@ -91,7 +91,7 @@ class MysqlResultData extends ArrayIterator
 		
 		$table = uniqid('tmptbl_');
 		
-		APP() -> sql('
+		sql('
 CREATE TEMPORARY TABLE `' . $table . '` 
 (
 	' . implode(', ', array_map(function($campo, $type){
@@ -101,16 +101,14 @@ CREATE TEMPORARY TABLE `' . $table . '`
 		
 		foreach($valores as $valor)
 		{
-			APP()
-			-> sql('
+			sql('
 			INSERT INTO `' . $table . '` 
 			(' . implode(', ', array_map(function($campo){ return '`' . $campo . '`'; }, array_keys($campos))) . ') 
 			VALUES (' . implode(', ', array_map(function($v){ return qp_esc($v, TRUE); }, array_values($valor))) . ')
 			');
 		}
 
-		return APP()
-		-> sql_data('SELECT * FROM `' . $table . '`');
+		return sql_data('SELECT * FROM `' . $table . '`');
 	}
 
 	const version = '1.0';
