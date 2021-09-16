@@ -3265,7 +3265,7 @@ class JApi
 					mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'androidapp' or 
 					mb_strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'iosapp'
 				)
-			) or isset($_GET['json']) or isset($_GET['cron'])
+			) or isset($_GET['json']) or isset($_GET['cron']) or preg_match('/\.json$/i',  $this -> URI)
 		)
 		{
 			return $this -> set_response_type('json');
