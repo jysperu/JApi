@@ -6,6 +6,7 @@
  */
 
 defined('HOMEPATH') or exit('Archivo no se puede llamar directamente');
+defined('sql_pswd_blowfish') or define('sql_pswd_blowfish', 'JApi@2021');
 
 if ( ! function_exists('APP')) exit('Función `APP()` es requerida');
 
@@ -209,6 +210,7 @@ if ( ! function_exists('sql_stop_all'))
 		$_CONs = (array)$_CONs;
 		foreach($_CONs as $conection)
 		{
+			if ( ! is_a($conection, 'mysqli')) continue;
 			sql_stop($conection);
 		}
 		return true;
@@ -524,6 +526,11 @@ if ( ! function_exists('sql_pswd'))
 	 */
 	function sql_pswd ($valor, mysqli $conection = NULL)
 	{
+		if (function_exists('encrypt'))
+		{
+			return encrypt ($valor, sql_pswd_blowfish);
+		}
+
 		return sql_data('
 		SELECT PASSWORD(' . sql_qpesc($valor, FALSE, $conection) . ') as `valor`;
 		', TRUE, 'valor', $conection);
