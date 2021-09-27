@@ -1406,7 +1406,7 @@ abstract class ObjetoBase extends JArray
 			}
 
 			$field = $rx['field'];
-			$data = $this->offsetGet($field);
+			$data = (array)$this->offsetGet($field);
 			$vnulo = $rx['on_update'] === 'SET NULL';
 
 			foreach($data as $reg_o)
