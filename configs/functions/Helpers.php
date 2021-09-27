@@ -414,7 +414,7 @@ if ( ! function_exists('js_compressor'))
 		{
 			if ($use_apiminifier)
 			{
-				static $uri = 'https://javascript-minifier.com/raw';
+				static $uri = 'https://www.toptal.com/developers/javascript-minifier/';
 
 				$temp = file_get_contents($uri, false, stream_context_create([
 					'http' => [
