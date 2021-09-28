@@ -828,6 +828,7 @@ if ( ! function_exists('redirect'))
 		$parsed_url = parse_url($url);
 
 		isset($parsed_url['scheme']) or $parsed_url['scheme'] = url('scheme');
+		isset($parsed_url['path']) or $parsed_url['path'] = '/';
 		if ( ! isset($parsed_url['host']))
 		{
 			$parsed_url['host'] = url('host');
