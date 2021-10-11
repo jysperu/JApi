@@ -3188,7 +3188,26 @@ class JApi
 				{
 					if ($_tmp_file = $_dirbase . $class_file and file_exists($_tmp_file))
 					{
-						if (class_exists($_class_required, FALSE) === FALSE and class_exists($class, FALSE) === FALSE)
+						if (class_exists($_class_required, FALSE) === FALSE)
+						{
+							require_once $_tmp_file;
+						}
+					}
+				}
+			}
+		}
+
+		foreach($class_dir_base_array as $class_dir_base)
+		{
+			foreach($directories as $directory)
+			{
+				$_dirbase = $directory . $class_dir_base;
+
+				foreach($class_file_lista as $class_file)
+				{
+					if ($_tmp_file = $_dirbase . $class_file and file_exists($_tmp_file))
+					{
+						if (class_exists($class, FALSE) === FALSE)
 						{
 							require_once $_tmp_file;
 						}
