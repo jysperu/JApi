@@ -1196,23 +1196,6 @@ class JApi
 		for($_tn = 1; $_tn <= $_n; $_tn++)
 		{
 			$_uri_t = $_uri;
-			$_class = implode('\\', $_uri_t);
-			if (class_exists($_class))
-			{
-				break;
-			}
-
-			$_uri_t = $_uri;
-			$_uri_t = array_map(function($o){
-				return ucfirst($o);
-			}, $_uri_t);
-			$_class = implode('\\', $_uri_t);
-			if (class_exists($_class))
-			{
-				break;
-			}
-
-			$_uri_t = $_uri;
 			$_uri_t = array_map(function($o){
 				$o = ucfirst($o);
 				$o = str_replace(['.', '-'], ['_', '_'], $o);
@@ -1240,6 +1223,23 @@ class JApi
 				break;
 			}
 
+			$_uri_t = $_uri;
+			$_uri_t = array_map(function($o){
+				return ucfirst($o);
+			}, $_uri_t);
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
+			$_uri_t = $_uri;
+			$_class = implode('\\', $_uri_t);
+			if (class_exists($_class))
+			{
+				break;
+			}
+
 			$_uri2 = $_uri;
 			$_uri2_lp = array_pop($_uri2);
 
@@ -1249,23 +1249,6 @@ class JApi
 				array_pop($_uri2_lp);
 				$_uri2_lp = implode('.', $_uri2_lp);
 				$_uri2[] = $_uri2_lp;
-
-				$_uri_t = $_uri2;
-				$_class = implode('\\', $_uri_t);
-				if (class_exists($_class))
-				{
-					break;
-				}
-
-				$_uri_t = $_uri2;
-				$_uri_t = array_map(function($o){
-					return ucfirst($o);
-				}, $_uri_t);
-				$_class = implode('\\', $_uri_t);
-				if (class_exists($_class))
-				{
-					break;
-				}
 
 				$_uri_t = $_uri2;
 				$_uri_t = array_map(function($o){
@@ -1289,6 +1272,23 @@ class JApi
 					$o = implode('', $o);
 					return $o;
 				}, $_uri_t);
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+
+				$_uri_t = $_uri2;
+				$_uri_t = array_map(function($o){
+					return ucfirst($o);
+				}, $_uri_t);
+				$_class = implode('\\', $_uri_t);
+				if (class_exists($_class))
+				{
+					break;
+				}
+
+				$_uri_t = $_uri2;
 				$_class = implode('\\', $_uri_t);
 				if (class_exists($_class))
 				{
@@ -3172,6 +3172,7 @@ class JApi
 		$class_file_lista[] = '/' . str_replace($_bs, '/', $class) . '.php';
 		$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower($class)) . '.php';
 		$class_file_lista[] = '/' . str_replace($_bs, '/', mb_strtolower(str_replace('-', '_', $class))) . '.php';
+		$class_file_lista = array_unique($class_file_lista);
 
 		$directories = $this->get_app_directories();
 
@@ -3186,12 +3187,11 @@ class JApi
 
 				foreach($class_file_lista as $class_file)
 				{
-					if ($_tmp_file = $_dirbase . $class_file and file_exists($_tmp_file))
+					$_tmp_file = $_dirbase . $class_file;
+					if (file_exists($_tmp_file) and class_exists($_class_required, FALSE) === FALSE)
 					{
-						if (class_exists($_class_required, FALSE) === FALSE)
-						{
-							require_once $_tmp_file;
-						}
+						require_once $_tmp_file;
+						return;
 					}
 				}
 			}
@@ -3205,12 +3205,11 @@ class JApi
 
 				foreach($class_file_lista as $class_file)
 				{
-					if ($_tmp_file = $_dirbase . $class_file and file_exists($_tmp_file))
+					$_tmp_file = $_dirbase . $class_file;
+					if (file_exists($_tmp_file) and class_exists($class, FALSE) === FALSE)
 					{
-						if (class_exists($class, FALSE) === FALSE)
-						{
-							require_once $_tmp_file;
-						}
+						require_once $_tmp_file;
+						return;
 					}
 				}
 			}
