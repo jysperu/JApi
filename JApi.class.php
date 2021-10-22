@@ -3238,17 +3238,16 @@ class JApi
 	protected function _init_install ($dir = NULL)
 	{
 		$_install_file = $dir . self::$_file_install;
-		$_installed_file = $_install_file . '.bckp';
 		if ( ! file_exists($_install_file)) return;
 
-		$this->action_apply('JApi/install/start', $dir, $_install_file);
-		@include_once ($_install_file);
-		$this->action_apply('JApi/install/end', $dir, $_install_file);
+		$_install02_file = dirname($_install_file) . DS . basename($_install_file, '.php') . '-' . na(4) . '.php';
+		$_installed_file = $_install_file . '.bckp';
+		@rename($_install_file, $_install02_file);
 
-		if (file_exists($_install_file))
-		{
-			@rename($_install_file, $_installed_file);
-		}
+		$this->action_apply('JApi/install/start', $dir, $_install02_file);
+		@include_once ($_install02_file);
+		$this->action_apply('JApi/install/end', $dir, $_install02_file);
+		@rename($_install02_file, $_installed_file);
 	}
 
 	/**
