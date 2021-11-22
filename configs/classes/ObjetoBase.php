@@ -1,112 +1,198 @@
 <?php
 /**
  * ObjetoBase
- * Manipulador de Objetos Tbl de la db 
+ * Manipulador de Objetos Tbl de la db
+ * @upddated 22/DIC/2021 03:14 AM
  */
 
 abstract class ObjetoBase extends JArray
 {
-	/**
-     * Constantes
-     */
-	const Numero = 1;
-	const Texto = 2;
-	const Arreglo = 4;
-	const FechaHora = 8;
-	const Fecha = 16;
-	const Hora = 32;
-	const Boolean = 64;
-	
+	//////////////////////////////////////
+	/// Constantes                     ///
+	//////////////////////////////////////
+	const Numero    =  1;
+	const Texto     =  2;
+	const Arreglo   =  4;
+	const FechaHora =  8;
+	const Fecha     = 16;
+	const Hora      = 32;
+	const Boolean   = 64;
 	const Ilimitado = -1;
-	
-	private static function gcc ()
+
+	//////////////////////////////////////
+	/// Variables gestión de clase     ///
+	//////////////////////////////////////
+
+	/**
+	 * @static @var $_tblname
+	 * Nombre de la tabla del objeto
+	 */
+	protected static $_tblname = NULL;
+
+	/**
+	 * @static @var $_keys
+	 * Listado de los campos claves
+	 */
+	protected static $_keys = [];
+
+	/**
+	 * @static @var $_key
+	 * Si solo hay un campo clave, entonces es este
+	 */
+	protected static $_key = NULL;
+
+	/**
+	 * @static @var $_toString
+	 * Si hay un campo o función que permita retornar el objeto como string
+	 */
+	protected static $_toString = NULL;
+
+	/**
+	 * @static @var $_columns
+	 * Listado de todas las columnas mediante un array:
+	 *
+	 * Formato de los valores dentro del array
+	 * [
+	 *   'nombre'      => 'field',             // Nombre del campo
+	 *   'tipo'        => self::Texto,         // El tipo del campo, por defecto será asumido como self::Texto
+	 *   'largo'       => self::Ilimitado,     // El mb_strlen del valor del campo, por defecto es el máximo posible
+	 *   'opciones'    => NULL,                // Si el campo solo tiene autorizado uno de los valores dentro de esta lista, por defecto NULO
+	 *   'defecto'     => NULL,                // El valor que tomará por defecto si no se ha asignado algún valor al campo, por defecto NULO
+	 *   'attr'        => NULL,                // Alguna atribución especial al campo tal como UNSIGNED ZEROFILL, por defecto NULO
+	 *   'nn'          => FALSE,               // Identificador si el campo es NULLABLE o no, por defecto siempre es NULLABLE
+	 *   'ne'          => TRUE,                // Si el campo es NOT NULL, se va a permitir campo vacío o no
+	 *   'ai'          => FALSE,               // Si el campo es el único KEY identifica si el valor es AUTO_INCREMENT, caso contrario no sirve
+	 *   'ag'          => NULL,                // Si el campo es autogenerado, este es el nombre de la función que devolverá el valor del campo
+	 *   'dg'          => FALSE,               // Si el campo es autogenerado mediante DATA_BASE, por tanto no se puede hacer un INSERT o UPDATE
+	 * ]
+	 */
+	protected static $_columns = [];
+
+	/**
+	 * @static @var $_rxs_hijo
+	 * Listado de todas las referencias en las cuales este objeto es el padre
+	 * (los valores de las llaves de este objeto son campos del otro objeto)
+	 *
+	 * Formato de los objetos dentro del array
+	 * [
+	 *     'tabla'     => 'tabla',             // Nombre de la tabla que relacinó su campo con este objeto
+	 *     'clase'     => 'clase',             // Nombre de la clase a la cual llamar cuando se consulte el listado de los objetos hijos
+	 *     'columnas'  => [                    // Listado de todos los campos relacionados entre sí de la tabla de este objeto como el del hijo
+	 *         'campo' => 'campo_hijo'
+	 *     ],
+	 *     'field'     => NULL,               // Un valor del cual como se quiere que aparezca como campo en este objeto
+	 *     'on_update' => 'CASCADE',          // Acción relacionado con el hijo una vez que este objeto cambie los valores de los campos llaves
+	 *     'on_delete' => 'CASCADE',          // Acción relacionado con el hijo una vez que el registro db de este objeto es eliminado
+	 *     'r11'       => FALSE,              // La relación con el hijo es 1-1, si ese es el caso se intenta agregar un registro automáticamente
+	 *     'is_attr'   => FALSE,              // El listado de hijos son considerados como atributos del objeto por lo que se procurará cachear la data con el select
+	 *     'attr_uniq' => NULL,               // El listado de hijos son ÚNICOS basados en este atributo
+	 * ]
+	 */
+	protected static $_rxs_hijo = [];
+
+	/**
+	 * @static @var $_rxs_padre
+	 * Listado de todas las referencias en las cuales este objeto es el hijo
+	 * (algunos de los campos del este objeto son los valores de las llaves de otro objeto)
+	 *
+	 * Formato de los objetos dentro del array
+	 * [
+	 *     'tabla'     => 'tabla',            // Nombre de la tabla con el cual esta relacionado este objeto
+	 *     'clase'     => 'clase',            // Nombre de la clase a la cual llamar cuando se consulte el objeto padre
+	 *     'columnas'  => [                   // Listado de todos los campos relacionados entre sí de la tabla de este objeto como el del padre
+	 *         'campo' => 'campo_padre'
+	 *     ],
+	 *     'field'     => NULL,               // Un valor del cual como se quiere que aparezca como campo en este objeto
+	 *     'r11'       => FALSE,              // La relación con el padre es 1-1, si ese es el caso se intenta eliminar el registro automáticamente
+	 *     'fus'       => FALSE,              // Force Update Sync, ejecuta un update al padre para que se autocalcule algún parametro o algo
+	 * ]
+	 */
+	protected static $_rxs_padre = [];
+
+	//////////////////////////////////////
+	/// Funciones gestión de clase     ///
+	//////////////////////////////////////
+
+	/**
+	 * gcc ()
+	 */
+	public static function gcc ()
 	{
 		return get_called_class();
 	}
 
 	/**
-     * @static @var $_tblname
-	 * Nombre de la tabla del objeto
-     */
-    protected static $_tblname = NULL;
+	 * tblname ()
+	 * use $_tblname
+	 */
 	public static function tblname()
 	{
 		$that = self::gcc();
 		return $that::$_tblname;
 	}
 
-    /**
-     * @static @var $_keys
-	 * Listado de los campos claves
-     */
-    protected static $_keys = [];
+	/**
+	 * keys ()
+	 * use $_keys
+	 */
 	public static function keys()
 	{
 		$that = self::gcc();
 		return $that::$_keys;
 	}
 
-    /**
-     * @static @var $_key
-	 * Si solo hay un campo clave, entonces es este
-     */
-    protected static $_key = NULL;
+	/**
+	 * key ()
+	 * use $_key
+	 */
 	public static function key()
 	{
 		$that = self::gcc();
 		return $that::$_key;
 	}
 
-    /**
-     * @static @var $_toString
-	 * Si hay un campo o función que permita retornar el objeto como string
-     */
-    protected static $_toString = NULL;
+	/**
+	 * toString ()
+	 * use $_toString
+	 */
 	public static function toString()
 	{
 		$that = self::gcc();
 		return $that::$_toString;
 	}
 
-    /**
-     * @static @var $_columns
-	 * Listado de todas las columnas mediante un array:
-	 *
-	 * Formato de los valores dentro del array
-	 * [
-	 * 	 'nombre'   => 'field',        		// Nombre del campo
-	 *   'tipo'     => self::Texto,  		// El tipo del campo, por defecto será asumido como self::Texto
-	 *   'largo'    => self::Ilimitado,	// El mb_strlen del valor del campo, por defecto es el máximo posible
-	 *   'opciones' => NULL,           		// Si el campo solo tiene autorizado uno de los valores dentro de esta lista, por defecto NULO
-	 *   'defecto'  => NULL,           		// El valor que tomará por defecto si no se ha asignado algún valor al campo, por defecto NULO
-	 *   'attr'     => NULL,           		// Alguna atribución especial al campo tal como UNSIGNED ZEROFILL, por defecto NULO
-	 *   'nn'       => FALSE,          		// Identificador si el campo es NULLABLE o no, por defecto siempre es NULLABLE
-	 *   'ne'       => TRUE,           		// Si el campo es NOT NULL, se va a permitir campo vacío o no
-	 *   'ai'       => FALSE,          		// Si el campo es el único KEY identifica si el valor es AUTO_INCREMENT, caso contrario no sirve
-	 *   'ag'       => NULL,           		// Si el campo es autogenerado, este es el nombre de la función que devolverá el valor del campo
-	 *   'dg'       => FALSE,          		// Si el campo es autogenerado mediante DATA_BASE, por tanto no se puede hacer un INSERT o UPDATE
-	 * ]
-     */
-    protected static $_columns = [];
-	
+	/**
+	 * add_column ()
+	 * Agrega mas columnas
+	 * use $_columns
+	 */
 	public static function add_column($_column)
 	{
 		$that = self::gcc();
 		$that::$_columns[] = $_column;
 		return;
 	}
-	
+
+	/**
+	 * columns_real ()
+	 * use $_columns
+	 */
 	public static function columns_real()
 	{
 		$that = self::gcc();
 		return $that::$_columns;
 	}
-	
+
+	/**
+	 * columns ()
+	 * use columns_real ()
+	 */
 	public static function columns()
 	{
 		static $_columns = [];
 		$that = self::gcc();
 		isset($_columns[$that]) or $_columns[$that] = [];
+
 		if ($columns = self::columns_real() and count($_columns[$that]) !== count($columns))
 		{
 			foreach($columns as $column)
@@ -183,36 +269,24 @@ abstract class ObjetoBase extends JArray
 					}
 				}
 
-//				if (in_array($column['tipo'], [self::FechaHora, self::Fecha, self::Hora]) and 
-//					in_array($column['defecto'], ['CURRENT_TIMESTAMP', 'NOW', 'NOW()']))
-//				{
-//					switch($column['tipo'])
-//					{
-//						case self::FechaHora:
-//							$column['defecto'] = date('Y-m-d H:i:s');
-//							break;
-//						case self::Fecha:
-//							$column['defecto'] = date('Y-m-d');
-//							break;
-//						case self::Hora:
-//							$column['defecto'] = date('H:i:s');
-//							break;
-//					}
-//				}
-
 				// Añadiendo la columna corregida
 				$_columns[$that][$column['nombre']] = $column;
 			}
 		}
-		
+
 		return $_columns[$that];
 	}
-	
+
+	/**
+	 * fields ()
+	 * use columns ()
+	 */
 	public static function fields()
 	{
 		static $_fields = [];
 		$that = self::gcc();
 		isset($_fields[$that]) or $_fields[$that] = [];
+
 		if ($columns = self::columns() and count($_fields[$that]) !== count($columns))
 		{
 			$_fields[$that] = array_map(function($o){
@@ -222,38 +296,28 @@ abstract class ObjetoBase extends JArray
 
 		return $_fields[$that];
 	}
-	
-    /**
-     * @static @var $_rxs_hijo
-	 * Listado de todas las referencias en las cuales este objeto es el padre
-	 * (los valores de las llaves de este objeto son campos del otro objeto)
-	 *
-	 * Formato de los objetos dentro del array
-	 * [
-	 * 	 'tabla'   => 'tabla',        // Nombre de la tabla que relacinó su campo con este objeto
-	 * 	 'clase'   => 'clase',        // Nombre de la clase a la cual llamar cuando se consulte el listado de los objetos hijos
-	 * 	 'columnas'=> [               // Listado de todos los campos relacionados entre sí de la tabla de este objeto como el del hijo
-	 *     'campo' => 'campo_hijo'
-	 *   ],
-	 *   'field'   => NULL,           // Un valor del cual como se quiere que aparezca como campo en este objeto
-     *   'on_update' => 'CASCADE',    // Acción relacionado con el hijo una vez que este objeto cambie los valores de los campos llaves
-     *   'on_delete' => 'CASCADE',    // Acción relacionado con el hijo una vez que el registro db de este objeto es eliminado
-     *   'r11'       => FALSE,        // La relación con el hijo es 1-1, si ese es el caso se intenta agregar un registro automáticamente
-	 * ]
-     */
-    protected static $_rxs_hijo = [];
-	
+
+	/**
+	 * rxs_hijo_real ()
+	 * use $_rxs_hijo
+	 */
 	public static function rxs_hijo_real()
 	{
 		$that = self::gcc();
 		return $that::$_rxs_hijo;
 	}
-	
+
+	/**
+	 * rxs_hijo ()
+	 * use rxs_hijo_real ()
+	 * use fields ()
+	 */
 	public static function rxs_hijo()
 	{
 		static $_rxs_hijo = [];
 		$that = self::gcc();
 		isset($_rxs_hijo[$that]) or $_rxs_hijo[$that] = [];
+
 		if ($rxs_hijo = self::rxs_hijo_real() and count($_rxs_hijo[$that]) !== count($rxs_hijo))
 		{
 			$fields = self::fields();
@@ -262,13 +326,15 @@ abstract class ObjetoBase extends JArray
 			{
 				// Añadiendo posibles atributos faltantes
 				$rx = array_merge([
-					'tabla'   => NULL,
-					'clase'   => NULL,
-					'columnas'=> [],
-					'field'   => NULL,
+					'tabla'     => NULL,
+					'clase'     => NULL,
+					'columnas'  => [],
+					'field'     => NULL,
 					'on_update' => 'CASCADE',
 					'on_delete' => 'CASCADE',
-					'r11'     => FALSE,
+					'r11'       => FALSE,
+					'is_attr'   => FALSE,
+					'attr_uniq' => null,
 				], $rx);
 
 				// Validando que exista el atributo NOMBRE y CLASE
@@ -314,39 +380,31 @@ abstract class ObjetoBase extends JArray
 				$_rxs_hijo[$that][] = $rx;
 			}
 		}
-		
+
 		return $_rxs_hijo[$that];
 	}
 
-    /**
-     * @static @var $_rxs_padre
-	 * Listado de todas las referencias en las cuales este objeto es el hijo
-	 * (algunos de los campos del este objeto son los valores de las llaves de otro objeto)
-	 *
-	 * Formato de los objetos dentro del array
-	 * [
-	 * 	 'tabla'   => 'tabla',        // Nombre de la tabla con el cual esta relacionado este objeto
-	 * 	 'clase'   => 'clase',        // Nombre de la clase a la cual llamar cuando se consulte el objeto padre
-	 * 	 'columnas'=> [               // Listado de todos los campos relacionados entre sí de la tabla de este objeto como el del padre
-	 *     'campo' => 'campo_padre'
-	 *   ],
-	 *   'field'   => NULL,           // Un valor del cual como se quiere que aparezca como campo en este objeto
-	 *   'r11'     => FALSE,          // La relación con el padre es 1-1, si ese es el caso se intenta eliminar el registro automáticamente
-	 *   'fus'     => FALSE,          // Force Update Sync, ejecuta un update al padre para que se autocalcule algún parametro o algo
-	 * ]
-     */
-    protected static $_rxs_padre = [];
+	/**
+	 * rxs_padre_real ()
+	 * use $_rxs_padre
+	 */
 	public static function rxs_padre_real()
 	{
 		$that = self::gcc();
 		return $that::$_rxs_padre;
 	}
 
+	/**
+	 * rxs_padre ()
+	 * use rxs_padre_real ()
+	 * use fields ()
+	 */
 	public static function rxs_padre()
 	{
 		static $_rxs_padre = [];
 		$that = self::gcc();
 		isset($_rxs_padre[$that]) or $_rxs_padre[$that] = [];
+
 		if ($rxs_padre = self::rxs_padre_real() and count($_rxs_padre[$that]) !== count($rxs_padre))
 		{
 			$fields = self::fields();
@@ -400,33 +458,35 @@ abstract class ObjetoBase extends JArray
 
 				$fields[] = $rx['field'];
 
-				is_bool ($rx['r11'])        or $rx['r11']       = FALSE;
+				is_bool ($rx['r11']) or $rx['r11'] = FALSE;
 
 				// Añadiendo la columna corregida
 				$_rxs_padre[$that][] = $rx;
 			}
 		}
-		
+
 		return $_rxs_padre[$that];
 	}
 
+	/**
+	 * rxs_padre_nexto_fields ()
+	 * use rxs_padre ()
+	 */
 	public static function rxs_padre_nexto_fields()
 	{
 		static $_nexto_fields = [];
 		$that = self::gcc();
 		isset($_nexto_fields[$that]) or $_nexto_fields[$that] = [];
+
 		if (count($_nexto_fields[$that]) === 0)
 		{
 			$rxs_padre = self::rxs_padre();
 
 			foreach($rxs_padre as $rx)
 			{
-				if ( ! $rx['c1'])
-				{
-					continue;
-				}
+				if ( ! $rx['c1']) continue;
 
-				$cam_padre = array_keys($rx['columnas']) [0];
+				$cam_padre = array_keys  ($rx['columnas']) [0];
 				$cam_hijo  = array_values($rx['columnas']) [0];
 
 				$_nexto_fields[$that][$cam_hijo] = $rx['field'];
@@ -436,21 +496,23 @@ abstract class ObjetoBase extends JArray
 		return $_nexto_fields[$that];
 	}
 
+	/**
+	 * rxs_padre_nonexto_fields ()
+	 * use rxs_padre ()
+	 */
 	public static function rxs_padre_nonexto_fields()
 	{
 		static $_nonexto_fields = [];
 		$that = self::gcc();
 		isset($_nonexto_fields[$that]) or $_nonexto_fields[$that] = [];
+
 		if (count($_nonexto_fields[$that]) === 0)
 		{
 			$rxs_padre = self::rxs_padre();
 
 			foreach($rxs_padre as $rx)
 			{
-				if ($rx['c1'])
-				{
-					continue;
-				}
+				if ($rx['c1']) continue;
 
 				$_nonexto_fields[$that][] = $rx['field'];
 			}
@@ -459,32 +521,81 @@ abstract class ObjetoBase extends JArray
 		return $_nonexto_fields[$that];
 	}
 
+	/**
+	 * rxs_padre_castval_objects ()
+	 * use rxs_padre ()
+	 */
+	public static function rxs_padre_castval_objects()
+	{
+		static $_castval_objects = [];
+		$that = self::gcc();
+		isset($_castval_objects[$that]) or $_castval_objects[$that] = [];
+
+		if (count($_castval_objects[$that]) === 0)
+		{
+			$rxs_padre = self::rxs_padre();
+
+			foreach($rxs_padre as $rx)
+			{
+				$_castval_objects[$that][$rx['field']] = [
+					'class'  => 'Objeto\\' . $rx['clase'],
+					'campos' => $rx['columnas'],
+				];
+
+				foreach($rx['columnas'] as $padre => $hijo)
+				{
+					$_castval_objects[$that][$hijo] = [
+						'class'  => 'Objeto\\' . $rx['clase'],
+						'campos' => $rx['columnas'],
+					];
+				}
+			}
+		}
+
+		return $_castval_objects[$that];
+	}
+
+	//////////////////////////////////////
+	/// Funciones Generales de lista   ///
+	//////////////////////////////////////
+
+	/**
+	 * FromArray ()
+	 * Retorna la clase generado desde un array
+	 * @param array $data
+	 * @return self
+	 */
 	public static function FromArray($data)
 	{
 		$that = self::gcc();
 		$instance = new $that();
-		
+
 		foreach($data as $k => $v)
 		{
 			$instance -> _data_original [$k] = $v;
 			$instance -> _data_instance [$k] = $v;
 		}
-		
-		// [ToDo] Identificar posibles hijos agregados
-		
+
 		$instance -> _found = TRUE;
 		$instance -> _from_array = TRUE;
 
 		return $instance;
 	}
 
+	/**
+	 * Lista ()
+	 * Lista objetos basados en filtros
+	 * @param array $filter
+	 * @param int $limit
+	 * @param string $sortby
+	 * @return array[self]
+	 */
 	public static function Lista ($filter = [], $limit = NULL, $sortby = NULL)
 	{
 		$columns = self::columns();
 		$fields = array_keys($columns);
-		
-		$_sql_where = '';
 
+		$_sql_where = '';
 		foreach($filter as $field => $val)
 		{
 			if ( ! in_array($field, $fields))
@@ -518,16 +629,10 @@ abstract class ObjetoBase extends JArray
 				{
 					$_where .= ' BETWEEN ' . qp_esc($val[0]) . ' AND ' . qp_esc($val[1]) . '';
 				}
-//				elseif ($clas === self::Numero AND count($val) === 3)
-//				{
-//					// Antiguo
-//					$_where .= ' ' . $val[1] . ' ' . $val[0];
-//				}
 				else
 				{
 					$_where .= ' IN (' . implode(', ', array_map('qp_esc', $val)) . ')';
 				}
-				
 			}
 			elseif (is_null($val) and ! $field_dats['nn'])
 			{
@@ -541,20 +646,18 @@ abstract class ObjetoBase extends JArray
 			{
 				$_where .= ' = ' . qp_esc($val);
 			}
-			
+
 			$_sql_where .= $_where;
 		}
-		
+
 		if ( ! is_null($sortby))
 		{
 			is_array($sortby) or $sortby = (array)$sortby;
 			! isset($sortby[0]) and ! is_empty($sortby) and $sortby = [$sortby];
-			
+
 			$_sql_where .= ' ORDER BY ' . implode(', ', array_map(function($o){
 				$o = (array)$o;
-				
 				(isset($o[1]) and in_array($o[1], ['ASC', 'DESC'])) or $o[1] = 'DESC';
-				
 				return '`' . $o[0] . '` ' . $o[1];
 			}, $sortby));
 		}
@@ -563,236 +666,93 @@ abstract class ObjetoBase extends JArray
 		{
 			$_sql_where .= ' LIMIT ' . $limit;
 		}
-		
+
 		$query = 'SELECT * FROM `' . self::tblname() . '` WHERE TRUE' . $_sql_where;
 		$data = (array)sql_data($query, FALSE);
-		
+
 		$_return = [];
-		
 		foreach($data as $reg)
 		{
 			$_return[] = self::FromArray($reg);
 		}
-		
+
 		return $_return;
 	}
 
-	public static function ListaSSP ()
-	{
-		// En construcción, DataTable Server Side Processor
-	}
+	//////////////////////////////////////
+	/// Atributos de objeto creado     ///
+	//////////////////////////////////////
 
-	public static function ListaToken ()
-	{
-		// En construcción, Tokenizador de Busquedas (As Facebook)
-		// Crear tablas reales con la busqueda deseada y mediante alojamiento de otra tabla identificar el tiempo de no uso para eliminarla
-	}
-
-    //========================================//
-    // Atributos de Objeto                    //
-    //========================================//
-
+	/**
+	 * $_found
+	 */
 	protected $_found = FALSE;
-	public function found()
-	{
-		return $this->_found;
-	}
 
+	/**
+	 * $_from_array
+	 */
 	protected $_from_array = FALSE;
-	public function from_array()
-	{
-		return $this->_from_array;
-	}
 
+	/**
+	 * $_data_original
+	 * Data original del objeto en la base datos
+	 * Permite comparar los cambios realizados en UPDATE y se actualiza después de cada SELECT
+	 */
 	protected $_data_original;
+
+	/**
+	 * $_data_instance
+	 */
 	protected $_data_instance;
-	
-	// Listado de campos que el usuario establecio manualmente
-	// Si un campo autogenerado es seteado manualmente entonces ya no se generará mas y lo mismo sucede con las datas de los RX
-	// Solo al momento de que el usuario estable un valor NULL, ese campo se quitará de la lista
-	// Al hacerse un SELECT la lista queda vacía nuevamente 
-	// pero se debe detectar los campos autogenerados que no corresponden con lo calculados 
-	// ya que pueden ser porque se editaron manualmente en un pasado
-	// Al hacerse un INSERT o un UPDATE y se ha establecido un array de datos "rxs_hijo", 
-	// estos serán intentados ser insertados o actualizados también
+
+	/**
+	 * $_manual_setted
+	 * Listado de campos que el usuario estableció manualmente
+	 *
+	 * Consideraciones:
+	 * - Si el nuevo valor es NULL el campo se quita de la lista
+	 * - Después de un SELECT se vacía la lista
+	 * - Los rxs_hijo son insertados/actualizados despues de cada insert/update del objeto
+	 */
 	protected $_manual_setted = [];
 
-    //========================================//
-    // Funciones de Objeto                    //
-    //========================================//
-
-	protected function _añadir_callbacks()
-	{
-		$this->_callbacks['offsetSet'] = function ($newval, $index, $that)
-		{
-			$this->_calc_ag ();
-		};
-
-		$this->_callbacks['before_set'] = function (&$newval, &$index, $that)
-		{
-			$newval = $this->_repair_data_type($index, $newval);
-		};
-
-//		$this->_callbacks['toarray'] = function (&$arr, $that)
-//		{
-//			$arr = [];
-//			print_array('toarray', $arr);
-//		};
-//
-//		$this->_callbacks['exists'] = function (&$return, $index, $that)
-//		{
-//			print_array('exists', $return, $index);
-//		};
-//
-//		$this->_callbacks['get'] = function (&$return, &$index, $that)
-//		{
-//			print_array('get', $return, $index);
-//		};
-//
-//
-//
-//		$this->_callbacks['before_unset'] = function (&$index, $that)
-//		{
-//			print_array('unset', $index);
-//		};
-	}
-	
-    /**
-     * Constructor
-     */
-    public function __construct (...$data_keys)
-    {
-		//=== Habilitando los atributos que contendrán la data del objeto
-
-		// Aquí estará la data original que será comparada al hacer un insert, update o delete;
-		// Se reestablece al hacer un select o un rollback
-		$this->_data_original = new JArray();
-
-		// Aquí estará la data cambiable de la instancia
-		$this->_data_instance = new JArray();
-
-		//=== Instancio los atributos de las datas en el objeto
-		parent::__construct($this->_data_instance);
-		
-		// Aquí cargaré todos los callbacks que me ayudarán a identificar todos los cambios generados
-		$this->_añadir_callbacks();
-
-		//=== Reparo todos los atributos del objeto basado en los campos de la db
-        $this->_repair_data();
-
-		//=== Validando si se ha enviado atributos llaves para el objeto
-
-		if (count($data_keys) === 0)
-		{
-			// No se ha enviado atributos llaves, así que el objeto esta listo para crear uno nuevo
-			return;
-		}
-		
-		// Limpiando de posibles ALL IS NULL
-		do
-		{
-			$last = array_pop($data_keys);
-		}
-		while(is_null($last) and count($data_keys) > 0);
-		
-		// Si el último analizado no era NULL entonces se agregará nuevamente al array
-		is_null($last) or $data_keys[] = $last;
-		
-		if (count($data_keys) === 0)
-		{
-			// Se habían enviado puros valores NULO
-			return;
-		}
-
-		//=== Agregando los datos de los atributos llaves al objeto
-		foreach(self::keys() as $_ind => $_field)
-		{
-			if ( ! isset($data_keys[$_ind]) or is_null($data_keys[$_ind]))
-			{
-				// El dato no se envió en el array o es NULO
-				continue;
-			}
-
-			// Agregando a la data de la instancia
-			$this->_data_instance[$_field] = $data_keys[$_ind];
-			$this->_data_original[$_field] = $data_keys[$_ind];
-		}
-
-		//=== Buscando la información del objeto basado en los campos laves
-		$this->select();
-    }
-
-    /**
-     * _calc_ag
-	 * Permite calcular todos los autogenerados
-     */
-	protected function _calc_ag ()
-	{
-		$columns = self::columns();
-		foreach($columns as $column)
-		{
-			if (is_empty($column['ag']))
-        	{
-        		continue;
-        	}
-
-			$method = $column['ag'];
-			is_callable($method) or $method = [$this, $method];
-			
-			if ( ! is_callable($method))
-			{
-				continue;
-			}
-
-			$field = $column['nombre'];
-			if (in_array($field, $this->_manual_setted))
-			{
-				continue;
-			}
-
-			try
-			{
-				$valor = call_user_func_array($method, [$this]);
-				
-				if ($this[$field] <> $valor)
-				{
-					$this->offsetSet($field, $valor, false);
-				}
-			}
-			catch (Exception $e)
-			{}
-		}
-	}
-
-    /**
-     * _uid
-	 * Hasheo único basado en los atributos llaves
-     */
-	protected function _uid ()
-	{
-		if ($_key = self::key() and ! is_empty($_key))
-		{
-			return $this->_data_original[$_key];
-		}
-
-		$_llaves = [];
-		$_keys = self::keys();
-
-		$_llaves[] = self::gcc();
-		foreach($_keys as $_key)
-		{
-			$_llaves[] = $this->_data_original[$_key];
-		}
-
-		return md5(json_encode($_llaves));
-	}
-
+	/**
+	 * $_errors
+	 */
 	protected $_errors = [];
+
+	//////////////////////////////////////
+	/// Funciones del objeto creado    ///
+	//////////////////////////////////////
+
+	/**
+	 * add_error ()
+	 */
+	public function add_error ($error)
+	{
+		if (is_array($error))
+		{
+			foreach($error as $_error)
+			{
+				$this->add_error($_error);
+			}
+			return;
+		}
+
+		$this->_errors[] = $error;
+	}
+
+	/**
+	 * get_errors ()
+	 */
 	public function get_errors ()
 	{
 		return $this->_errors;
 	}
 
+	/**
+	 * get_error ()
+	 */
 	public function get_error ($join_by = '<br>')
 	{
 		return implode($join_by, array_map(function($o){
@@ -800,194 +760,216 @@ abstract class ObjetoBase extends JArray
 		}, $this->_errors));
 	}
 
+	/**
+	 * get_last_error ()
+	 */
 	public function get_last_error ()
 	{
 		$_errors = $this->_errors;
 		return array_pop($_errors);
 	}
 
-    /**
-     * _repair_data
-	 * Permite añadir o corregir atributos faltantes
-     */
-	protected function _repair_data ()
+	/**
+	 * found ()
+	 */
+	public function found()
 	{
-		// === Alojando los valores necesarios para reparar la data
-		
-		// Alojando las columnas
-		$columns = self::columns();
-
-		// Alojando todos los objetos de las cuales alguno de estos campos dependen
-		$rxs_padre_nexto_fields = self::rxs_padre_nexto_fields();
-
-		// Alojando todos los objetos de las cuales alguno de estos campos dependen
-		$rxs_padre_nonexto_fields = self::rxs_padre_nonexto_fields();
-
-		// Alojando las relaciones de objetos que dependen de este objeto
-		$rxs_hijo = self::rxs_hijo();
-
-		foreach($columns as $column)
-		{
-			$field = $column['nombre'];
-			
-			if (isset($this->_data_instance[$field]) and ! is_empty($this->_data_instance[$field]))
-        	{
-        		continue;
-        	}
-			
-			$default = $column['defecto'];
-			
-			$this->_data_instance[$field] = $default;
-//			$this->_data_original[$field] = $default;
-
-			if (isset($rxs_padre_nexto_fields[$field]))
-			{
-				$this->_data_instance[$rxs_padre_nexto_fields[$field]] = NULL;
-			}
-		}
-
-		foreach($rxs_padre_nonexto_fields as $field)
-		{
-			$this->_data_instance[$field] = NULL;
-		}
-
-		foreach($rxs_hijo as $rx)
-		{
-			$field = $rx['field'];
-			$this->_data_instance[$field] = [];
-		}
-		
-		// Calculando los AG
-		$this->_calc_ag();
-
-		foreach($columns as $column)
-		{
-			$field = $column['nombre'];
-
-			if (isset($this->_data_original[$field]) and ! is_empty($this->_data_original[$field]))
-        	{
-        		continue;
-        	}
-
-			$this->_data_original[$field] = $this->_data_instance[$field];
-		}
-		
-		$this->_repair_data_type();
+		return $this->_found;
 	}
 
-    /**
-     * _repair_data_type
-	 * Permite corregir atributos direntes al tipo correcto
-     */
-	protected function _repair_data_type ($indice = NULL, $valor = NULL)
+	/**
+	 * set_found_as ()
+	 */
+	public function set_found_as ($found)
+	{
+		$this->_found = $found;
+		return $this;
+	}
 
+	/**
+	 * from_array ()
+	 */
+	public function from_array()
+	{
+		return $this->_from_array;
+	}
+
+	/**
+	 * CastVal
+	 * Retorna el valor casteado y reparado basado en el indice
+	 */
+	public function CastVal ($indice, $valor = null)
 	{
 		// Alojando las columnas
-		$columns = self::columns();
+		$columns   = self::columns();
+		$rxs_padre = self::rxs_padre();
 
-		$return = ! is_null($valor);
-		$indices = is_null($indice) ? array_keys($columns) : [$indice];
-		
-		foreach($indices as $indice)
+		if ( ! isset($columns[$indice]))
+			return $valor;
+
+		$column   = $columns[$indice];
+		$nullable = ! $column['nn'];
+		$tipo     = $column['tipo'];
+
+		if (is_empty($valor))
+			return $nullable ? null : ( $tipo === self::Arreglo ? [] : '' );
+
+		switch ($tipo)
 		{
-			$valor = $return ? $valor : $this->_data_instance[$indice];
-			
-			if ( ! isset($columns[$indice]))
-			{
-				
-			}
-			else if (is_empty($valor))
-			{
-				$valor = $columns[$indice]['nn'] ? ($columns[$indice]['tipo'] === self::Arreglo ? [] : '') : NULL;
-			}
-			else
-			{
-				switch($columns[$indice]['tipo'])
+			case self::Boolean:
+				$valor = strtobool ($valor);
+				break;
+			case self::Numero:
+				$valor = floatval ($valor);
+				break;
+			case self::Arreglo:
+				if (is_string($valor))
 				{
-					case self::Boolean:
-						if (is_string($valor) and in_array(mb_strtolower($valor[0]), ['f', '0']))
-						{
-							$valor = false;
-						}
-						
-						$valor = boolval($valor);
-						break;
-					case self::Arreglo:
-						if (is_string($valor))
-						{
-							$json = json_decode($valor, true);
-							if ( ! is_null($json))
-							{
-								$valor = $json;
-							}
-						}
-						is_array($valor) or $valor = (array)$valor;
-						break;
-					case self::Numero:
-						$valor = floatval($valor);
-						break;
-					case self::FechaHora: case self::Fecha: case self::Hora:
-					case self::Texto: default:
-						$valor = strval($valor);
-						break;
+					$json = json_decode($valor, true);
+					if ( ! is_null($json)) $valor = $json;
 				}
-			}
 
-			if ($return)
-			{
-				return $valor;
-			}
-			
-			$this->_data_instance[$indice] = $valor;
+				$valor = (array) $valor;
+				break;
+			default:
+				$valor = (string) $valor;
+				break;
 		}
-		
-	}
 
-	protected function _where_sql (&$query)
-	{
-		$keys = self::keys();
-		$columns = self::columns();
+		$largo_req = $column['largo'];
+		$largo_act = is_string($valor) ? mb_strlen($valor) : 0;
 
-		$_data = $this->_found ? $this->_data_original : $this->_data_instance;
-
-		foreach($keys as $key)
+		if ($largo_req > 0 and $largo_act > $largo_req and ! in_array($tipo, [ self::Arreglo, self::Boolean ]))
 		{
-			$campo = $columns[$key];
-			
-			if (is_null($_data[$key]) and ! $campo['nn'])
+			$valor = mb_substr($valor, 0, $largo_req);
+		}
+
+		$opciones  = $column['opciones'];
+		if ( ! is_empty($opciones) and ! in_array($tipo, [ self::Boolean ]))
+		{
+			if (is_array($valor))
 			{
-				$query.= ' AND `'.$key.'` IS NULL' . PHP_EOL;
+				$valor = array_filter($valor, function($o) use ($opciones) {
+					return in_array($o, $opciones);
+				});
 			}
-			else
+			elseif ( ! in_array($valor, $opciones))
 			{
-				$query.= ' AND `'.$key.'` = ' . qp_esc($_data[$key]) . PHP_EOL;
+				$valor = $nullable ? null : ( $tipo === self::Arreglo ? [] : '' );
 			}
 		}
+
+		   isset($this->_callbacks['cast_val']) and 
+		$valor = $this->_callbacks['cast_val']($valor, $indice,   $this);
+
+		   isset($this->_callbacks['cast_val_' . $indice]) and 
+		$valor = $this->_callbacks['cast_val_' . $indice]($valor, $this);
+
+		return $valor;
 	}
 
-    /**
-     * select
+	/**
+	 * UID
+	 * Hasheo único basado en los atributos llaves
+	 */
+	public function UID ()
+	{
+		return $this->_uid();
+	}
+
+	/**
+	 * valid
+	 * Permite validar que todos los campos requeridos esten llenos
+	 */
+	public function valid ()
+	{
+		return $this -> _verify('validar', 1, false);
+	}
+
+	/**
+	 * reset
+	 * Permite deshacer cualquier cambio realizado hasta el último select realizado
+	 * Esto permite que previo a hacer un update o delete, la información regrese a como era el ultimo select
+	 */
+	public function reset ()
+	{
+		$this -> _found = false;
+		return $this -> select();
+	}
+
+	/**
+	 * getData()
+	 * Obtiene un array con los campos requeridos
+	 *
+	 * @param Array $fields Campos requeridos
+	 * @return Array
+	 */
+	public function getData ($fields = NULL, $context = 'edit')
+	{
+		$return = [];
+		$this->AssignDefaultContext($context);
+
+		$fields = $this -> _callback_exec ('getData_fields', $fields, $context);
+		if (is_empty($fields)) $fields = array_keys((array)$this->_data_instance);
+		$fields = (array)$fields;
+
+		foreach($fields as $field)
+		{
+			$function = [$this, 'get_' . $field] and
+			is_callable ($function) and 
+			$return[$field] = call_user_func($function);
+		}
+
+		$return = (array)$return;
+		$return = $this -> _callback_exec ('getData',   $return, $context);
+		$return = $this -> _callback_exec ('getData_' . $context, $return);
+
+		return $return;
+	}
+
+	//////////////////////////////////////
+	/// Funciones de consultas bbdd    ///
+	//////////////////////////////////////
+
+	/**
+	 * insert_forced
+	 * Permite hacer una consulta INSERT aún si existe el registro
+	 */
+	public function insert_forced (&$_sync = [], &$_changes = [], $_op_level = 1)
+	{
+		$this -> _found = false;
+
+		$key = self::key();
+		$msk = array_search($key, $this->_manual_setted);
+		if ($msk !== false) {
+			unset($this->_manual_setted[$msk]);
+			$this->_manual_setted[$msk] = array_values($this->_manual_setted[$msk]);
+		}
+
+		return $this -> insert($_sync, $_changes, $_op_level);
+	}
+
+	/**
+	 * insert_update
+	 * Permite hacer una consulta INSERT si el registro no existe o UPDATE si existe
+	 */
+	public function insert_update (&$_sync = [], &$_changes = [], $_op_level = 1)
+	{
+		return $this->_found ? 
+		$this->update($_sync, $_changes, $_op_level) : 
+		$this->insert($_sync, $_changes, $_op_level);
+	}
+
+	/**
+	 * select
 	 * Permite hacer una consulta SELECT a la DB 
-     */
+	 */
 	public function select (&$_sync = [])
 	{
-		$_uid = $this->_uid();
+		$_uid  = $this -> _uid();
+		$query = $this -> _query_select ();
+		$data  = sql_data($query, TRUE);
 
-		$query = '';
-		$query.= 'SELECT *' . PHP_EOL;
-		$query.= 'FROM `' . self::tblname() . '`' . PHP_EOL;
-		$query.= 'WHERE TRUE' . PHP_EOL;
-
-		$this->_where_sql($query);
-
-		$query.= 'LIMIT 1' . PHP_EOL;
-
-		$gcc = self::gcc();
-		$query = filter_apply ('ObjetoBase::Select', $query, $gcc, $this);
-		$query = filter_apply ('ObjTbl::Select',     $query, $gcc, $this);
-
-		$data = sql_data($query, TRUE);
-		
 		if (is_null($data) or count($data) === 0)
 		{
 			$this->_found = FALSE;
@@ -1002,19 +984,8 @@ abstract class ObjetoBase extends JArray
 			}
 		}
 
-		$this -> _repair_data ();
-		
+		$this -> __construct_fields ();
 		$this -> _manual_setted = [];
-		
-		// Todos los que han cambiado por ser autogenerados se agregarán a _manual_setted
-		foreach($this->_data_original as $k => $v)
-		{
-			if ($this->_data_instance[$k] <> $v)
-			{
-				$this -> _manual_setted[] = $k;
-				$this->_data_instance[$k] = $this->_data_original[$k];
-			}
-		}
 
 		if ($this->_found)
 		{
@@ -1024,143 +995,207 @@ abstract class ObjetoBase extends JArray
 		{
 			$_sync['eliminar'][self::gcc()][] = $_uid;
 		}
+
 		return $this;
 	}
 
-    /**
-     * valid
-	 * Permite validar que todos los campos requeridos esten llenos
-     */
-	public function valid ()
+	/**
+	 * recalc_childs
+	 */
+	public function recalc_childs ()
 	{
-		return $this->verify('validar', 1);
+		$this->_callback_exec ('recalc_childs');
 	}
 
-    /**
-     * verify
-	 * Permite validar que todos los campos requeridos esten llenos
-     */
-	protected function verify ($from = null, $_op_level = 1)
+	/**
+	 * sync_childs
+	 */
+	public function sync_childs ($rxshj_editeds, &$_sync = [], &$_changes = [], $_op_level = 1)
 	{
-		// Validar No vacíos
-		$not_valids = [];
-		$columns = self::columns();
+		$rxshj_editeds = $this->_callback_exec ('before_sync_childs', $rxshj_editeds);
+		if (count($rxshj_editeds) === 0) return true;
 
-		$columns_ne = array_keys(array_filter($columns, function($o){
-			return $o['ne'];
-		}));
-		foreach($columns_ne as $column)
+		foreach($rxshj_editeds as $field => $_rx)
 		{
-			if (is_empty($this->_data_instance[$column]))
+			$rx    = $_rx['rx'];
+			$data  = $_rx['data'];
+			$iattr = $_rx['iattr'];
+			$auniq = $_rx['auniq'];
+			$class = 'Objeto\\' . $rx['clase'];
+
+			$_UIDs = [];
+			foreach($data as $reg)
 			{
-				$not_valids[] = $column;
-			}
-		}
+				$reg_o = $reg;
 
-		if (count($not_valids) > 0)
-		{
-			$_error = grouping($not_valids, [
-				'prefix' => ['El campo ', 'Los campos '],
-				'suffix' => [' es requerido', ' son requeridos'],
-			]);
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-			return false;
-		}
-
-		// Validar campos hijos
-		$rxs_padre = self::rxs_padre();
-		foreach($rxs_padre as $rx)
-		{
-			$a_null = true;
-			$_pks = [];
-			$_pkn = '';
-			
-			foreach($rx['columnas'] as $_padre => $_hijo)
-			{
-				$_valor_hijo = $this->_data_instance[$_hijo];
-				if ( ! is_null($_valor_hijo))
+				if ( ! is_object($reg_o) or ! is_a($reg_o, $class))
 				{
-					$a_null = false;
+					$reg_d = $reg_o;
+					$reg_o = new $class();
+					$reg_k = $reg_o :: keys();
+
+					foreach($reg_k as $k) 
+						if (isset($reg_d[$k]))
+							$reg_o[$k] = $reg_d[$k];
+
+					// Comprobar que el objeto existe en base datos habiendo añadido las posibles llaves existentes
+					$reg_o -> select();
+
+					foreach($reg_d as $k => $v) 
+						$reg_o[$k] = $v; // Se actualiza la información exista o no el objeto
 				}
-				$_pks[] = $_valor_hijo;
-				
-				if ($rx['c1'])
+
+				if ($reg_o -> found())
 				{
-					$pkn = ' con `' . $_padre . '` = ' . $_valor_hijo;
+					// Ya que el objeto existe, comprobar que esté asociado al objeto padre
+					$all_correct = true;
+					foreach($rx['columnas'] as $_padre => $_hijo)
+					{
+						if ($reg_o[$_hijo] <> $this->_data_instance[$_padre])
+						{
+							$all_correct = false;
+							break;
+						}
+					}
+
+					if ( ! $all_correct) 
+						$reg_o -> set_found_as (false); // Esto ingresará un nuevo registro en ves de actualizar uno que no le corresponde
 				}
+				else
+				{
+					// Ya que el objeto existe, se asocia al objeto padre
+					foreach($rx['columnas'] as $_padre => $_hijo) 
+						$reg_o[$_hijo] = $this->_data_instance[$_padre];
+				}
+
+				$_exec = $reg_o->insert_update($_sync, $_changes, ($_op_level + 1));
+				if ( ! $_exec)
+				{
+					$_errors = $reg_o->get_errors();
+					foreach($_errors as $_error)
+					{
+						$this -> add_error ('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
+					}
+					return false;
+				}
+				$_UIDs[] = $reg_o -> UID ();
 			}
-			
-			if ($a_null)
+
+			$this->select();
+			$actuales = $this->offsetGet ($field);
+
+			// Si es attr
+			if ($iattr)
 			{
-				// Todos son NULL
-				continue;
+				// borrar todos los que no se encuentran en la lista enviada
+				$actuales_temp = $actuales;
+				$actuales      = [];
+				while(count($actuales_temp) > 0)
+				{
+					$obj = array_shift($actuales_temp);
+					$UID = $obj->UID ();
+
+					if ( ! in_array($UID, $_UIDs))
+					{
+						$obj -> delete();
+						continue;
+					}
+
+					$actuales[] = $obj;
+				}
+
+				// eliminar los no unicos
+				if ( ! is_empty($auniq))
+				{
+					$actuales_temp = $actuales;
+					$actuales      = [];
+					$valores       = [];
+					while(count($actuales_temp) > 0)
+					{
+						$obj   = array_shift($actuales_temp);
+						$valor = $obj[$auniq];
+
+						if (in_array($valor, $valores))
+						{
+							$obj -> delete();
+							continue;
+						}
+
+						$valores[]  = $valor;
+						$actuales[] = $obj;
+					}
+				}
+
+				$this->_callback_exec ('sync_childs_attr',        $field, $actuales, $_rx, $auniq, $class);
+				$this->_callback_exec ('sync_childs_' . $field . '_attr', $actuales, $_rx, $auniq, $class);
 			}
-			
-			array_unshift($_pks, $rx['clase']);
-			
-			$obj_padre = call_user_func_array('obj', $_pks);
-			
-			if ( ! $obj_padre->found())
-			{
-				$_error = 'No existe objeto `'.$rx['clase'].'`'.$pkn.' ('.$rx['field'].') #FKE';
-				$this->_errors[] = 'Se produjo un error al ' . $from .  ' el registro.';
-				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-				return false;
-			}
+
+			$this->_callback_exec ('sync_childs',   $field, $actuales, $iattr, $_rx, $auniq, $class);
+			$this->_callback_exec ('sync_childs_' . $field, $actuales, $iattr, $_rx, $auniq, $class);
 		}
 
+		$this->_callback_exec ('sync_childs', $rxshj_editeds);
 		return true;
 	}
 
-    /**
-     * insert
+	/**
+	 * insert
 	 * Permite hacer una consulta INSERT a la DB 
-     */
-	public function insert (&$_sync = [], &$_changes = [], $_op_level = 1, $forced = false)
+	 */
+	public function insert (&$_sync = [], &$_changes = [], $_op_level = 1)
 	{
-		if ($this->_found and ! $forced)
+		$columns  = self::columns();
+		$_key     = self::key();
+		$rxs_hijo = self::rxs_hijo();
+
+		if ($this->_found)
 		{
 			$_error = 'El objeto a ingresar ya existe en la base datos.';
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this->add_error($_error);
+			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
-		sql_trans();
+		$this -> _callback_exec ('before_insert');
+		$this -> _callback_exec ('before_insert_update');
 
-		$_valid = $this->verify('insertar', $_op_level);
-		if ( ! $_valid)
-		{
-			sql_trans(false);
-			// ya se envió el trigger_error en el verify
-			return false;
-		}
-
-		$_insert_data = [];
-
-		$columns = self::columns();
+		$_valid = $this->_verify('insertar', $_op_level);
+		if ( ! $_valid) return false;
 
 		$_ai_key = NULL;
-		if ($_key = self::key() and ! is_empty($_key) and $columns[$_key]['ai'])
+		if ( ! is_empty($_key) and $columns[$_key]['ai'] and ! in_array($_key, $this->_manual_setted))
 		{
 			$_ai_key = $_key;
 			unset($columns[$_key]);
 		}
 
+		$_data_instance = $this->_data_instance;
+		$_insert_data   = [];
+		$rxshj_editeds  = [];
+
 		foreach($columns as $column)
 		{
-			if ($column['dg'])
-			{
-				continue;
-			}
+			if ($column['dg']) continue;
 
 			$field = $column['nombre'];
-			$value = isset($this[$field]) ? $this[$field] : NULL;
-
+			$value = isset($_data_instance[$field]) ? $_data_instance[$field] : NULL;
 			$value = qp_esc($value, ! $column['nn']);
-
 			$_insert_data[$field] = $value;
+		}
+
+		foreach($rxs_hijo as $rx)
+		{
+			$field = $rx['field'];
+			$iattr = $rx['is_attr'];
+			$auniq = $rx['attr_uniq'];
+
+			if ( ! in_array($field, $this->_manual_setted)) continue;
+			$rxshj_editeds[$field] = [
+				'iattr' => $iattr,
+				'auniq' => $auniq,
+				'data'  => $_data_instance[$field],
+				'rx'    => $rx,
+			];
 		}
 
 		$query = '';
@@ -1179,16 +1214,26 @@ abstract class ObjetoBase extends JArray
 
 		$gcc = self::gcc();
 		$query = filter_apply ('ObjetoBase::Insert', $query, $gcc, $this);
-		$query = filter_apply ('ObjTbl::Insert',     $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Insert',	 $query, $gcc, $this);
 
+		sql_trans();
 		$_exec = @sql($query,  ! is_null($_ai_key));
 
 		if ( ! $_exec)
 		{
 			sql_trans(false);
+			global $_MYSQL_errno;
 
-			$_error = 'Se produjo un error al ingresar el registro en la base datos.';
-			$this->_errors[] = $_error;
+			switch ($_MYSQL_errno)
+			{
+				case 1062:
+					$_error = 'Se encontró un registro duplicado en la base datos.';
+					break;
+				default:
+					$_error = 'Se produjo un error al ingresar el registro en la base datos.';
+					break;
+			}
+			$this->add_error($_error);
 			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
@@ -1199,186 +1244,137 @@ abstract class ObjetoBase extends JArray
 			$this->_data_original[$_ai_key] = $_exec;
 		}
 
-		// Obteniendo las posibles relaciones hijo que se hayan agregado mnanualmente
-		$rxs_hijo_editeds = [];
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
-		{
-			$field = $rx['field'];
-			if (in_array($field, $this->_manual_setted))
-			{
-				$rxs_hijo_editeds[$field] = [
-					'data' => $this->_data_instance[$field],
-					'rx' => $rx
-				];
-			}
-		}
-
-		$this->select($_sync);
-
+		$this -> select($_sync);
 		$_changes[] = [
-//			'fecha_hora' => time(),
-			'accion' => 'insert',
-			'clase' => self::gcc(),
-			'tabla' => self::tblname(),
+			'accion'    => 'insert',
+			'clase'     => self::gcc(),
+			'tabla'     => self::tblname(),
 			'tabla_key' => $this->_uid(),
-			'anterior' => [],
-			'nuevo' => $this->__toArray(),
+			'anterior'  => [],
+			'nuevo'     => $this->__toArray(),
 		];
 
-		foreach($rxs_hijo_editeds as $_rx)
-		{
-			$rx = $_rx['rx'];
-			$data = $_rx['data'];
-			$class = 'Objeto\\' . $rx['clase'];
+		$this -> _callback_exec ('insert');
+		$this -> _callback_exec ('insert_update');
 
-			foreach($data as $reg)
-			{
-				$reg_o = $reg;
+		$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
+		if ( ! $sync_childs) return false;
 
-				if ( ! is_object($reg_o) or ! is_a($reg_o, $class))
-				{
-					$reg_d = $reg_o;
-					$reg_o = new $class();
-
-					foreach($reg_d as $k => $v)
-					{
-						$reg_o[$k] = $v;
-					}
-				}
-
-				foreach($rx['columnas'] as $_padre => $_hijo)
-				{
-					$reg_o[$_hijo] = $this->_data_instance[$_padre];
-				}
-
-				$_exec = $reg_o->insert_update($_sync, $_changes, ($_op_level + 1));
-				if ( ! $_exec)
-				{
-					$_errors = $reg_o->get_errors();
-					foreach($_errors as $_error)
-					{
-						$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-					}
-					return false;
-				}
-			}
-		}
+		$this -> _callback_exec ('after_insert');
+		$this -> _callback_exec ('after_insert_update');
 
 		sql_trans(true);
+		$this -> select();
 
 		if ($_op_level === 1)
 		{
 			$gcc = self::gcc();
 			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
-			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',	 $_changes, $gcc, $this);
 		}
 
-		return TRUE;
+		return true;
 	}
 
-    /**
-     * insert_forced
-	 * Permite hacer una consulta INSERT aún si existe el registro
-     */
-	public function insert_forced (&$_sync = [], &$_changes = [], $_op_level = 1)
-	{
-		return $this->insert($_sync, $_changes, $_op_level, true);
-	}
-
-    /**
-     * update
+	/**
+	 * update
 	 * Permite hacer una consulta UPDATE a la DB 
-     */
+	 */
 	public function update (&$_sync = [], &$_changes = [], $_op_level = 1)
 	{
+		$columns   = self::columns();
+		$rxs_hijo  = self::rxs_hijo();
+		$rxs_padre = self::rxs_padre();
+		$_keys     = self::keys();
+		$_key      = self::key();
+
 		if ( ! $this->_found)
 		{
 			$_error = 'El objeto a actualizar aún no existe en la base datos.';
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this->add_error($_error);
+			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
-		sql_trans();
+		$this -> _callback_exec ('before_update');
+		$this -> _callback_exec ('before_insert_update');
 
-		$_valid = $this->verify('actualizar', $_op_level);
-		if ( ! $_valid)
-		{
-			sql_trans(false);
-			// ya se envió el trigger_error en el verify
-			return false;
-		}
+		$_valid = $this->_verify('actualizar', $_op_level);
+		if ( ! $_valid) return false;
 
+		$_data_instance      = $this->_data_instance;
 		$_update_data_before = [];
-		$_update_data_after = [];
-		$_update_data = [];
-		$_tabla_key = $this->_uid();
-
-		$columns = self::columns();
+		$_update_data_after  = [];
+		$_update_data        = [];
+		$_tabla_key          = $this->_uid();
+		$_keys_edited        = [];
+		$rxshj_editeds       = [];
 
 		foreach($columns as $column)
 		{
-			if ($column['dg'])
-			{
-				continue;
-			}
+			if ($column['dg']) continue;
 
 			$field = $column['nombre'];
 
-			if (mb_strtolower($column['attr']) === mb_strtolower('on update CURRENT_TIMESTAMP') and 
-				 ! in_array($field, $this->_manual_setted))
-			{
-				continue;
-			}
+			if (mb_strtolower($column['attr']) === mb_strtolower('on update CURRENT_TIMESTAMP') and ! in_array($field, $this->_manual_setted)) continue;
 
-			$value = isset($this[$field]) ? $this[$field] : NULL;
+			$value_after  = isset($_data_instance[$field])       ? $_data_instance[$field]       : NULL;
 			$value_before = isset($this->_data_original[$field]) ? $this->_data_original[$field] : NULL;
 
-			if ($value_before == $value)
-			{
-				continue;
-			}
+			if ($value_before == $value_after) continue;
 
 			$_update_data_before[$field] = $value_before;
-			$_update_data_after[$field] = $value;
-			
-			$value = qp_esc($value, ! $column['nn']);
-			$_update_data[$field] = $value;
+			$_update_data_after [$field] = $value_after;
+
+			$value_after = qp_esc($value_after, ! $column['nn']);
+			$_update_data[$field] = $value_after;
+
+			if (in_array($field, $_keys)) $_keys_edited[] = $field;
+		}
+
+		foreach($rxs_hijo as $rx)
+		{
+			$field = $rx['field'];
+			$iattr = $rx['is_attr'];
+			$auniq = $rx['attr_uniq'];
+
+			if ( ! in_array($field, $this->_manual_setted)) continue;
+			$rxshj_editeds[$field] = [
+				'iattr' => $iattr,
+				'auniq' => $auniq,
+				'data'  => $_data_instance[$field],
+				'rx'    => $rx,
+			];
 		}
 
 		if (count($_update_data) === 0)
 		{
-			sql_trans(true);
-			$this->_errors[] = 'No se han realizado cambios';
-			// no es necesario un trigger
+			$this->add_error('No se han realizado cambios');
+			$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
+			if ( ! $sync_childs) return false;
+			$this -> select ();
 			return true;
 		}
 
-		// validar los rx_hijos con on_update = 'NO ACTION' or 'RESTRICT'
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
+		if (count($_keys_edited) > 0) // Se han actualizado algún KEY
 		{
-			if ( ! in_array($rx['on_update'], ['NO ACTION', 'RESTRICT']))
-			{
-				continue;
-			}
+			$posible_error = grouping($_keys_edited, [
+				'prefix' => ['El campo ', 'Los campos '],
+				'suffix' => [' no puede ser actualizado', ' no pueden ser actualizados'],
+			]);
 
-			$field = $rx['field'];
-			foreach($rx['columnas'] as $_padre => $_hijo)
+			// validar que no hayan hijos con on_update = 'NO ACTION' or 'RESTRICT'
+			foreach($rxs_hijo as $rx)
 			{
-				if (isset($_update_data[$_padre]))
-				{
-					sql_trans(false);
-
-					$_error = 'No se puede actualizar el campo `' . $_padre . '`';
-					$this->_errors[] = $_error;
-					@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-					return false;
-					break 2;
-				}
+				if ( ! in_array($rx['on_update'], ['NO ACTION', 'RESTRICT'])) continue;
+				$_error = $posible_error;
+				$this->add_error($_error);
+				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+				return false;
 			}
 		}
+
+		sql_trans();
 
 		$query = '';
 		$query.= 'UPDATE `' . self::tblname() . '` ' . PHP_EOL;
@@ -1387,434 +1383,230 @@ abstract class ObjetoBase extends JArray
 			return PHP_EOL . '  `' . $o . '` = ' . $p;
 		}, array_keys($_update_data), array_values($_update_data))) . PHP_EOL;
 		$query.= 'WHERE TRUE' . PHP_EOL;
-
-		$this->_where_sql($query);
-
+		$query.= $this->_query_where();
 		$query.= 'LIMIT 1' . PHP_EOL;
 
 		$gcc = self::gcc();
 		$query = filter_apply ('ObjetoBase::Update', $query, $gcc, $this);
 		$query = filter_apply ('ObjTbl::Update',     $query, $gcc, $this);
 
-		$rxs_hijo_changeds = [];
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
-		{
-			if ( ! in_array($rx['on_update'], ['CASCADE', 'SET NULL']))
-			{
-				continue;
-			}
-
-			$field = $rx['field'];
-			$data = $this->offsetGet($field);
-			$vnulo = $rx['on_update'] === 'SET NULL';
-
-			foreach((array)$data as $reg_o)
-			{
-				$_updated = false;
-
-				foreach($rx['columnas'] as $_padre => $_hijo)
-				{
-					if (isset($_update_data[$_padre]))
-					{
-						$_updated = true;
-						$reg_o[$_hijo] = $vnulo ? NULL : $_update_data[$_padre];
-					}
-				}
-
-				if ($_updated)
-				{
-					$rxs_hijo_changeds[] = $reg_o;
-				}
-			}
-		}
-
 		$_exec = @sql($query);
-		
+
 		if ( ! $_exec)
 		{
 			sql_trans(false);
 
 			$_error = 'Se produjo un error al actualizar el registro de la base datos.';
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this->add_error($_error);
+			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
 			return false;
 		}
 
-		// Obteniendo las posibles relaciones hijo que se hayan agregado mnanualmente
-		$rxs_hijo_editeds = [];
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
+		foreach($_keys_edited as $_key)
 		{
-			$field = $rx['field'];
-			if (in_array($field, $this->_manual_setted))
-			{
-				$rxs_hijo_editeds[$field] = [
-					'data' => $this->_data_instance[$field],
-					'rx' => $rx
-				];
-			}
+			// En algunas ocasiones se actualizan los IDs y cuando se ejecuta el SELECT retorna como no encontrado
+			$this->_data_original[$_key] = $this->_data_instance[$_key];
 		}
 
 		$this->select($_sync);
-
 		$_changes[] = [
-//			'fecha_hora' => time(),
-			'accion' => 'update',
-			'clase' => self::gcc(),
-			'tabla' => self::tblname(),
+			'accion'    => 'update',
+			'clase'     => self::gcc(),
+			'tabla'     => self::tblname(),
 			'tabla_key' => $_tabla_key,
-			'anterior' => $_update_data_before,
-			'nuevo' => $_update_data_after,
+			'anterior'  => $_update_data_before,
+			'nuevo'     => $_update_data_after,
 		];
 
-		// Actualizar los RX_hijos cuyos campos han sido actualizados
-		foreach($rxs_hijo_changeds as $reg_o)
-		{
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
+		$this -> _callback_exec ('update');
+		$this -> _callback_exec ('insert_update');
+
+		$this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
 
 		// Actualizar los RX_PADRES que requieren actualización
-		$rxs_padre = self::rxs_padre();
 		foreach($rxs_padre as $rx)
 		{
-			if ( ! $rx['fus'])
-			{
-				continue;
-			}
+			if ( ! $rx['fus']) continue;
 
 			$field = $rx['field'];
 			$reg_o = $this[$field];
 
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
+			$reg_o -> recalc_childs ();
+			$_exec = $reg_o -> update($_sync, $_changes, ($_op_level + 1));
+
 			if ( ! $_exec)
 			{
 				$_errors = $reg_o->get_errors();
 				foreach($_errors as $_error)
 				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
+					$this->add_error('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
 				}
 				return false;
 			}
 		}
 
-		foreach($rxs_hijo_editeds as $_rx)
+		// Actualizar los KEYs de los objetos que no se han actualizado mediante base de datos
+		if (count($_keys_edited) > 0)
 		{
-			$rx = $_rx['rx'];
-			$data = $_rx['data'];
-			$class = 'Objeto\\' . $rx['clase'];
-
-			foreach($data as $reg)
+			foreach($rxs_hijo as $rx)
 			{
-				$reg_o = $reg;
+				if ( ! (
+					in_array($rx['on_update'], ['CASCADE', 'SET NULL']) // Se debe actualizar o poner NULO
+					and $rx['on_delete'] === 'NOTHING DO' // Pero no se generó la RX en la db porque el DELETE es NOTHING DO
+				)) continue;
 
-				if ( ! is_object($reg_o) or ! is_a($reg_o, $class))
+				$field = $rx['field'];
+				$data  = (array)$this->offsetGet($field);
+				$vnulo = $rx['on_update'] === 'SET NULL';
+
+				foreach($data as $reg_o)
 				{
-					$reg_d = $reg_o;
-					$reg_o = new $class();
-
-					foreach($reg_d as $k => $v)
+					foreach($rx['columnas'] as $_padre => $_hijo)
 					{
-						$reg_o[$k] = $v;
+						if (isset($_update_data[$_padre]))
+						{
+							$_updated = true;
+							$reg_o[$_hijo] = $vnulo ? NULL : $_update_data[$_padre];
+						}
 					}
-				}
 
-				foreach($rx['columnas'] as $_padre => $_hijo)
-				{
-					$reg_o[$_hijo] = $this->_data_instance[$_padre];
-				}
-
-				$_exec = $reg_o->insert_update($_sync, $_changes, ($_op_level + 1));
-				if ( ! $_exec)
-				{
-					$_errors = $reg_o->get_errors();
-					foreach($_errors as $_error)
-					{
-						$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-					}
-					return false;
+					$reg_o -> update(); // No importa si genera error
 				}
 			}
 		}
 
+		$this -> _callback_exec ('after_update');
+		$this -> _callback_exec ('after_insert_update');
+
 		sql_trans(true);
+		$this -> select();
 
 		if ($_op_level === 1)
 		{
 			$gcc = self::gcc();
 			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
-			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',	 $_changes, $gcc, $this);
 		}
 
 		return TRUE;
 	}
 
-    /**
-     * insert_update
-	 * Permite hacer una consulta INSERT si el registro no existe o UPDATE si existe
-     */
-	public function insert_update (&$_sync = [], &$_changes = [], $_op_level = 1)
-	{
-		return $this->_found ? $this->update($_sync, $_changes, $_op_level) : $this->insert($_sync, $_changes, $_op_level);
-	}
-
-    /**
-     * delete
+	/**
+	 * delete
 	 * Permite hacer una consulta DELETE a la DB 
-     */
+	 */
 	public function delete (&$_sync = [], &$_changes = [], $_op_level = 1)
 	{
-		if ( ! $this->_found)
-		{
-			$this->_errors[] = 'El objeto no existe aún en la base datos';
-			// no es necesario enviar un trigger_error
-			return true;
-		}
-
-		sql_trans();
-		$_tabla_key = $this->_uid();
-
-		// validar los rx_hijos con on_delete = 'NO ACTION' or 'RESTRICT'
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
-		{
-			if ( ! in_array($rx['on_delete'], ['NO ACTION', 'RESTRICT']))
-			{
-				continue;
-			}
-
-			$field = $rx['field'];
-			$data = $this->offsetGet($field);
-			if (count($data) > 0)
-			{
-				sql_trans(false);
-
-				$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
-				$this->_errors[] = 'Se produjo un error al eliminar el registro de la base datos';
-				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-				return false;
-				break;
-			}
-		}
-
-		$query = '';
-		$query.= 'DELETE FROM `' . self::tblname() . '` ' . PHP_EOL;
-		$query.= 'WHERE TRUE' . PHP_EOL;
-
-		$this->_where_sql($query);
-
-		$query.= 'LIMIT 1' . PHP_EOL;
-
-		$gcc = self::gcc();
-		$query = filter_apply ('ObjetoBase::Delete', $query, $gcc, $this);
-		$query = filter_apply ('ObjTbl::Delete',     $query, $gcc, $this);
-
-		$_delete_data_before = $this->__toArray();
-
-		$rxs_hijo_changeds = [];
-		$rxs_hijo_deleteds = [];
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
-		{
-			if ( ! in_array($rx['on_delete'], ['CASCADE', 'SET NULL']))
-			{
-				continue;
-			}
-
-			$field = $rx['field'];
-			$data = $this->offsetGet($field);
-			$vnulo = $rx['on_delete'] === 'SET NULL';
-
-			foreach($data as $reg_o)
-			{
-				if ($vnulo)
-				{
-					foreach($rx['columnas'] as $_padre => $_hijo)
-					{
-						$reg_o[$_hijo] = NULL;
-					}
-					$rxs_hijo_changeds[] = $reg_o;
-				}
-				else
-				{
-					$rxs_hijo_deleteds[] = $reg_o;
-				}
-			}
-		}
-
-		$_exec = @sql($query);
-		
-		if ( ! $_exec)
-		{
-			sql_trans(false);
-
-			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-			return false;
-		}
-
-		$this->select($_sync);
-
-		$_changes[] = [
-//			'fecha_hora' => time(),
-			'accion' => 'delete',
-			'clase' => self::gcc(),
-			'tabla' => self::tblname(),
-			'tabla_key' => $_tabla_key,
-			'anterior' => $_delete_data_before,
-			'nuevo' => [],
-		];
-
-		// Actualizar los RX_hijos cuyos campos han sido actualizados
-		foreach($rxs_hijo_changeds as $reg_o)
-		{
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
-
-		// Actualizar los RX_hijos cuyos campos han sido actualizados
-		foreach($rxs_hijo_deleteds as $reg_o)
-		{
-			$_exec = $reg_o->delete($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
-
-		// Actualizar los RX_PADRES que requieren actualización
-		$rxs_padre = self::rxs_padre();
-		foreach($rxs_padre as $rx)
-		{
-			if ( ! $rx['fus'])
-			{
-				continue;
-			}
-
-			$field = $rx['field'];
-			$reg_o = $this[$field];
-
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
-
-		sql_trans(true);
-
-		if ($_op_level === 1)
-		{
-			$gcc = self::gcc();
-			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
-			action_apply('ObjTbl::Changes',     $_changes, $gcc, $this);
-		}
-
-		return TRUE;
+		return $this -> delete_wr ([], $_sync, $_changes, $_op_level);
 	}
 
-    /**
-     * delete_wr
+	/**
+	 * delete_wr
 	 * Permite hacer una consulta DELETE a la DB omitiendo la validación de los hijos enviados
-     */
+	 */
 	public function delete_wr ($_omitir_hijos = [], &$_sync = [], &$_changes = [], $_op_level = 1)
 	{
+		$_tabla_key = $this->_uid();
+		$rxs_hijo   = self::rxs_hijo();
+		$rxs_padre  = self::rxs_padre();
+
+		$_omitir_hijos_bool  = count($_omitir_hijos) > 0;
+		$_delete_data_before = (array)$this->_data_instance;
+
 		if ( ! $this->_found)
 		{
-			$this->_errors[] = 'El objeto no existe aún en la base datos';
+			$this->add_error('El objeto no existe aún en la base datos');
 			return true;
 		}
 
-		sql_trans();
-		$_tabla_key = $this->_uid();
+		$this -> _callback_exec ('before_delete');
 
 		// validar los rx_hijos con on_delete = 'NO ACTION' or 'RESTRICT'
-		$rxs_hijo = self::rxs_hijo();
 		foreach($rxs_hijo as $rx)
 		{
-			if ( ! in_array($rx['on_delete'], ['NO ACTION', 'RESTRICT']))
-			{
-				continue;
-			}
-
 			$field = $rx['field'];
-			if (in_array($field, $_omitir_hijos) or in_array($rx['clase'], $_omitir_hijos))
-			{
-				continue;
-			}
+			if ( ! in_array($rx['on_delete'], ['NO ACTION', 'RESTRICT'])) continue;
+			if (in_array($field, $_omitir_hijos) or in_array($rx['clase'], $_omitir_hijos)) continue;
 
 			$data = $this->offsetGet($field);
-			if (count($data) > 0)
-			{
-				sql_trans(false);
+			if (count($data) === 0) continue;
 
-				$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
-				$this->_errors[] = 'Se produjo un error al eliminar el registro de la base datos';
-				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-				return false;
-				break;
-			}
+			$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
+			$this->add_error('Se produjo un error al eliminar el registro de la base datos');
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			return false;
 		}
+
+		sql_trans();
 
 		$query = '';
 		$query.= 'DELETE FROM `' . self::tblname() . '` ' . PHP_EOL;
 		$query.= 'WHERE TRUE' . PHP_EOL;
-
-		$this->_where_sql($query);
-
+		$query.= $this->_query_where();
 		$query.= 'LIMIT 1' . PHP_EOL;
 
 		$gcc = self::gcc();
 		$query = filter_apply ('ObjetoBase::Delete', $query, $gcc, $this);
 		$query = filter_apply ('ObjTbl::Delete',     $query, $gcc, $this);
 
-		$_delete_data_before = $this->__toArray();
+		$_omitir_hijos_bool and sql('SET FOREIGN_KEY_CHECKS=0;');
+		$_exec = @sql($query);
+		$_omitir_hijos_bool and sql('SET FOREIGN_KEY_CHECKS=1;');
 
-		$rxs_hijo_changeds = [];
-		$rxs_hijo_deleteds = [];
-		$rxs_hijo = self::rxs_hijo();
-		foreach($rxs_hijo as $rx)
+		if ( ! $_exec)
 		{
-			if ( ! in_array($rx['on_delete'], ['CASCADE', 'SET NULL']))
-			{
-				continue;
-			}
+			sql_trans(false);
+
+			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
+			$this->add_error($_error);
+			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			return false;
+		}
+
+		$this->select($_sync);
+		$_changes[] = [
+			'accion'    => 'delete',
+			'clase'     => self::gcc(),
+			'tabla'     => self::tblname(),
+			'tabla_key' => $_tabla_key,
+			'anterior'  => $_delete_data_before,
+			'nuevo'     => [],
+		];
+
+		$this -> _callback_exec ('delete');
+
+		// Actualizar los RX_PADRES que requieren actualización
+		foreach($rxs_padre as $rx)
+		{
+			if ( ! $rx['fus']) continue;
 
 			$field = $rx['field'];
-			if (in_array($field, $_omitir_hijos) or in_array($rx['clase'], $_omitir_hijos))
-			{
-				continue;
-			}
+			$reg_o = $this[$field];
 
-			$data = $this->offsetGet($field);
+			$reg_o -> recalc_childs ();
+			$_exec = $reg_o -> update($_sync, $_changes, ($_op_level + 1));
+
+			if ( ! $_exec)
+			{
+				$_errors = $reg_o->get_errors();
+				foreach($_errors as $_error)
+				{
+					$this->add_error('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
+				}
+				return false;
+			}
+		}
+
+		// Actualizar los KEYs de los objetos que no se han actualizado mediante base de datos
+		foreach($rxs_hijo as $rx)
+		{
+			if ( ! (
+				in_array($rx['on_delete'], ['CASCADE', 'SET NULL']) // Se debe actualizar o poner NULO
+				and $rx['on_update'] === 'NOTHING DO' // Pero no se generó la RX en la db porque el DELETE es NOTHING DO
+			)) continue;
+
+			$field = $rx['field'];
+			$data  = (array)$this->offsetGet($field);
 			$vnulo = $rx['on_delete'] === 'SET NULL';
 
 			foreach($data as $reg_o)
@@ -1825,97 +1617,17 @@ abstract class ObjetoBase extends JArray
 					{
 						$reg_o[$_hijo] = NULL;
 					}
-					$rxs_hijo_changeds[] = $reg_o;
+					continue;
 				}
-				else
-				{
-					$rxs_hijo_deleteds[] = $reg_o;
-				}
+
+				$reg_o -> delete(); // No importa si genera error
 			}
 		}
 
-		sql('SET FOREIGN_KEY_CHECKS=0;');
-		$_exec = @sql($query);
-		sql('SET FOREIGN_KEY_CHECKS=1;');
-
-		if ( ! $_exec)
-		{
-			sql_trans(false);
-
-			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
-			$this->_errors[] = $_error;
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
-			return false;
-		}
-
-		$this->select($_sync);
-
-		$_changes[] = [
-//			'fecha_hora' => time(),
-			'accion' => 'delete',
-			'clase' => self::gcc(),
-			'tabla' => self::tblname(),
-			'tabla_key' => $_tabla_key,
-			'anterior' => $_delete_data_before,
-			'nuevo' => [],
-		];
-
-		// Actualizar los RX_hijos cuyos campos han sido actualizados
-		foreach($rxs_hijo_changeds as $reg_o)
-		{
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
-
-		// Actualizar los RX_hijos cuyos campos han sido actualizados
-		foreach($rxs_hijo_deleteds as $reg_o)
-		{
-			$_exec = $reg_o->delete($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
-
-		// Actualizar los RX_PADRES que requieren actualización
-		$rxs_padre = self::rxs_padre();
-		foreach($rxs_padre as $rx)
-		{
-			if ( ! $rx['fus'])
-			{
-				continue;
-			}
-
-			$field = $rx['field'];
-			$reg_o = $this[$field];
-
-			$_exec = $reg_o->update($_sync, $_changes, ($_op_level + 1));
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->_errors[] = '[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error;
-				}
-				return false;
-			}
-		}
+		$this -> _callback_exec ('after_delete');
 
 		sql_trans(true);
+		$this -> select();
 
 		if ($_op_level === 1)
 		{
@@ -1927,52 +1639,310 @@ abstract class ObjetoBase extends JArray
 		return TRUE;
 	}
 
-    /**
-     * reset
-	 * Permite deshacer cualquier cambio realizado hasta el último select realizado
-	 * Esto permite que previo a hacer un update o delete, la información regrese a como era el ultimo select
-     */
-	public function reset ()
+	//////////////////////////////////////
+	/// Constructor del objeto         ///
+	//////////////////////////////////////
+	public function __construct (...$data_keys)
 	{
-		return $this->select();
+		/** Habilitando los atributos que contendrán la data del objeto */
+		$this->_data_original = new JArray();
+		$this->_data_instance = new JArray();
+
+		/** Paso al objeto como array */
+		parent::__construct($this->_data_instance);
+		$this-> __construct_callbacks();
+		$this-> __construct_fields ();
+
+		while(count($data_keys) > 0)
+		{
+			$last = array_pop($data_keys);
+			if (is_null($last)) continue;
+
+			$data_keys[] = $last;
+			break;
+		}
+
+		/** Si no se ha enviado las llaves entonces es un posible objeto nuevo */
+		if (count($data_keys) === 0) return;
+
+		/** Seteando la información de las llaves */
+		$_keys = self::keys();
+		foreach($_keys as $_ind => $_field)
+		{
+			if ( ! isset($data_keys[$_ind]) or is_null($data_keys[$_ind])) continue;
+
+			// Agregando a la data de la instancia
+			$this->_data_instance[$_field] = $data_keys[$_ind];
+			$this->_data_original[$_field] = $data_keys[$_ind];
+		}
+
+		/** Buscar información del objeto basado en los campos laves */
+		$this -> select();
 	}
-	
-    /**
-     * getData()
-     * Obtiene un array con los campos requeridos
-     *
-     * @param Array $fields Campos requeridos
-     * @return Array
-     */
-	public function getData ($fields = NULL)
+
+	//////////////////////////////////////
+	/// Apoyos del objeto y su info    ///
+	//////////////////////////////////////
+
+	/**
+	 * __construct_callbacks ()
+	 */
+	protected function __construct_callbacks()
 	{
-		if (is_null($fields))
-		{
-			return (array)$this->_data_instance;
-		}
-		
-		$return = [];
+		$this->_callback_add('offsetSet', function ($newval, $index, $that) {
+			$this -> _calc_ag ();
+		});
 
-		foreach((array)$fields as $field)
-		{
-			$function = [$this, 'get_' . $field] and
-			is_callable($function) and 
-			$return[$field] = call_user_func($function);
-		}
-		
-		return (array)$return;
+		$this->_callback_add('before_set', function ($newval, $index, $that) {
+			$newval = $this -> CastVal($index, $newval);
+			return $newval;
+		});
 	}
 
+	/**
+	 * __construct_fields
+	 * Permite añadir o corregir atributos faltantes
+	 */
+	protected function __construct_fields ()
+	{
+		$columns                  = self::columns();                  // Alojando las columnas
+		$rxs_padre_nexto_fields   = self::rxs_padre_nexto_fields();   // Alojando todos los objetos de las cuales alguno de estos campos dependen
+		$rxs_padre_nonexto_fields = self::rxs_padre_nonexto_fields(); // Alojando todos los objetos de las cuales alguno de estos campos dependen
+		$rxs_hijo                 = self::rxs_hijo();                 // Alojando las relaciones de objetos que dependen de este objeto
+
+		foreach($columns as $column)
+		{
+			$field   = $column['nombre'];
+			$default = $column['defecto'];
+
+			if (isset($this->_data_instance[$field]) and ! is_empty($this->_data_instance[$field])) continue;
+
+			$this->_data_instance[$field] = $default;
+		}
+
+		foreach($rxs_hijo as $rx)
+		{
+			$field   = $rx['field'];
+			$is_attr = $rx['is_attr'];
+
+			$is_attr and 
+			$this->_data_instance[$field] = (array) $this -> offsetGet ($field);
+		}
+
+		// Calculando los AG
+		$this->_calc_ag();
+
+		foreach($columns as $column)
+		{
+			$field = $column['nombre'];
+			if (isset($this->_data_original[$field]) and ! is_empty($this->_data_original[$field])) continue;
+			$this->_data_original[$field] = $this->_data_instance[$field];
+		}
+
+		$this->_fields_cast_val();
+	}
+
+	/**
+	 * _calc_ag ()
+	 * Calcula todos los autogenerados de código
+	 */
+	protected function _calc_ag ()
+	{
+		$columns = self::columns();
+		foreach($columns as $column)
+		{
+			if (is_empty($column['ag'])) continue;
+
+			$method = $column['ag'];
+			is_callable($method) or $method = [$this, $method];
+			if ( ! is_callable($method)) continue;
+
+			$field = $column['nombre'];
+			if (in_array($field, $this->_manual_setted)) continue; // Ha sido manipulado manualmente así que no se continuará calculando
+
+			try
+			{
+				$actual = $this[$field];
+				$valor  = call_user_func_array($method, [
+					$this,
+					$field,
+					$actual,
+				]);
+
+				if ($actual <> $valor)
+				{
+					$this->offsetSet($field, $valor, false);
+				}
+			}
+			catch (Exception $e)
+			{}
+		}
+	}
+
+	/**
+	 * _fields_cast_val ()
+	 */
+	protected function _fields_cast_val ()
+	{
+		$fields = self::fields();
+		foreach($fields as $field)
+		{
+			if ( ! isset($this->_data_instance[$field])) continue;
+			$this->_data_instance[$field] = $this -> CastVal ($field, $this->_data_instance[$field]);
+		}
+	}
+
+	/**
+	 * _uid
+	 * Hasheo único basado en los atributos llaves
+	 */
+	protected function _uid ()
+	{
+		$_key  = self::key();
+		$_keys = self::keys();
+
+		if ( ! is_empty($_key)) return $this->_data_original[$_key];
+
+		$_llaves = [ self::gcc() ];
+		foreach($_keys as $_key)
+			$_llaves[] = $this->_data_original[$_key];
+
+		return md5(json_encode($_llaves));
+	}
+
+	/**
+	 * _query_select
+	 */
+	protected function _query_select ()
+	{
+		$query = '';
+		$query.= 'SELECT *' . PHP_EOL;
+		$query.= 'FROM `' . self::tblname() . '` tbl' . PHP_EOL;
+		$query.= 'WHERE TRUE' . PHP_EOL;
+		$query.= $this->_query_where('tbl');
+		$query.= 'LIMIT 1' . PHP_EOL;
+
+		$gcc   = self::gcc();
+		$query = filter_apply ('ObjetoBase::Select', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::Select',     $query, $gcc, $this);
+		$query = $this -> _callback_exec ('query_select',   $query, $this -> _default_context);
+
+		return $query;
+	}
+
+	/**
+	 * _query_where
+	 */
+	protected function _query_where ($_as_tbl = '')
+	{
+		is_empty($_as_tbl) or $_as_tbl = '`' . $_as_tbl . '`.';
+
+		$query   = '';
+		$keys    = self::keys();
+		$columns = self::columns();
+		$_data   = $this->_found ? $this->_data_original : $this->_data_instance;
+
+		foreach($keys as $key)
+		{
+			$column   = $columns[$key];
+			$nullable = ! $column['nn'];
+
+			if (is_null($_data[$key]) and $nullable)
+			{
+				$query.= ' AND ' . $_as_tbl . '`'.$key.'` IS NULL' . PHP_EOL;
+				continue;
+			}
+
+			$query.= ' AND ' . $_as_tbl . '`'.$key.'` = ' . qp_esc($_data[$key]) . PHP_EOL;
+		}
+
+		return $query;
+	}
+
+	/**
+	 * _verify
+	 * Permite validar que todos los campos requeridos esten llenos
+	 */
+	protected function _verify ($from = null, $_op_level = 1, $trigger_error = true)
+	{
+		// Validar No vacíos
+		$not_valids = [];
+		$columns    = self::columns();
+
+		$columns_ne = array_keys(array_filter($columns, function($o){
+			return $o['ne'];
+		}));
+		foreach($columns_ne as $column)
+		{
+			if (is_empty($this->_data_instance[$column]))
+				$not_valids[] = $column;
+		}
+
+		if (count($not_valids) > 0)
+		{
+			$_error = grouping($not_valids, [
+				'prefix' => ['El campo ', 'Los campos '],
+				'suffix' => [' es requerido', ' son requeridos'],
+			]);
+			$this->add_error($_error);
+
+			if ($trigger_error)
+				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+
+			return false;
+		}
+
+		// Validar campos hijos
+		$rxs_padre = self::rxs_padre();
+		foreach($rxs_padre as $rx)
+		{
+			$a_null = true;
+			$_pks   = [];
+			$_pkn   = '';
+
+			foreach($rx['columnas'] as $_padre => $_hijo)
+			{
+				$_valor_hijo = $this->_data_instance[$_hijo];
+				if ( ! is_null($_valor_hijo)) $a_null = false;
+				$_pks[] = $_valor_hijo;
+
+				if ($rx['c1']) $pkn = ' con `' . $_padre . '` = "' . $_valor_hijo . '"';
+			}
+
+			if ($a_null) continue; // Todos son NULL
+
+			array_unshift($_pks, $rx['clase']);
+			$obj_padre = call_user_func_array('obj', $_pks);
+
+			if ( ! $obj_padre->found())
+			{
+				$_error = 'No existe objeto `' . $rx['clase'] . '`' . $pkn . ' (' . $rx['field'] . ') #FKE';
+				$this->add_error('Se produjo un error al ' . $from .  ' el registro.');
+
+				if ($trigger_error)
+					@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+
+				return false;
+			}
+		}
+
+		return $this -> _callback_exec ('verify', true, $from, $_op_level, $trigger_error);
+	}
+
+	//////////////////////////////////////
+	/// Magic Functions                ///
+	//////////////////////////////////////
+
+	/**
+	 * offsetGet
+	 */
 	public function offsetGet ($index)
 	{
-		$_founded = NULL;
+		$_founded     = NULL;
 		$_founded_obj = NULL;
 
-		// Alojando todos los objetos de las cuales alguno de estos campos dependen
 		$rxs_padre = self::rxs_padre();
-		
-		// Alojando las relaciones de objetos que dependen de este objeto
-		$rxs_hijo = self::rxs_hijo();
+		$rxs_hijo  = self::rxs_hijo();
 
 		if (is_null($_founded))
 		{
@@ -1980,7 +1950,7 @@ abstract class ObjetoBase extends JArray
 			{
 				if ($rx['field'] === $index)
 				{
-					$_founded = 'rxs_padre';
+					$_founded     = 'rxs_padre';
 					$_founded_obj = $rx;
 					break;
 				}
@@ -1993,22 +1963,16 @@ abstract class ObjetoBase extends JArray
 			{
 				if ($rx['field'] === $index)
 				{
-					$_founded = 'rxs_hijo';
+					$_founded     = 'rxs_hijo';
 					$_founded_obj = $rx;
 					break;
 				}
 			}
 		}
 
-		if ( ! is_null($_founded_obj) and in_array($_founded_obj['field'], $this->_manual_setted))
-		{
-			$_founded = NULL;
-		}
+		if ( ! is_null($_founded_obj) and in_array($_founded_obj['field'], $this->_manual_setted)) $_founded = NULL;
 
-		if (is_null($_founded))
-		{
-			return parent::offsetGet($index);
-		}
+		if (is_null($_founded)) return parent::offsetGet($index);
 
 		isset($this->_callbacks['before_get']) and
 		$this->_callbacks['before_get']($index, $this);
@@ -2019,7 +1983,7 @@ abstract class ObjetoBase extends JArray
 		switch($_founded)
 		{
 			case 'rxs_padre':
-				$_obj_params = [];
+				$_obj_params   = [];
 				$_obj_params[] = $_founded_obj['clase'];
 
 				foreach($_founded_obj['columnas'] as $_hijo => $_padre)
@@ -2028,9 +1992,9 @@ abstract class ObjetoBase extends JArray
 				}
 
 				$obj = call_user_func_array('obj', $_obj_params);
-
 				$return = $obj;
 				break;
+
 			case 'rxs_hijo':
 				$class = 'Objeto\\' . $_founded_obj['clase'];
 
@@ -2051,9 +2015,10 @@ abstract class ObjetoBase extends JArray
 					}
 				}
 
-				$gcc = self::gcc();
+				$gcc = $class::gcc();
 				$query = filter_apply ('ObjetoBase::Select', $query, $gcc, $this);
-				$query = filter_apply ('ObjTbl::Select',     $query, $gcc, $this);
+				$query = filter_apply ('ObjTbl::Select',	 $query, $gcc, $this);
+				$query = $this -> _callback_exec('query_select_childs', $query, $index, $gcc, $_founded_obj);
 
 				$data = sql_data($query);
 
@@ -2064,7 +2029,6 @@ abstract class ObjetoBase extends JArray
 				}
 				break;
 		}
-		
 
 		isset($this->_callbacks['get']) and
 		$this->_callbacks['get']($return, $index, $this);
@@ -2074,11 +2038,27 @@ abstract class ObjetoBase extends JArray
 
 		isset($this->_callbacks[__FUNCTION__]) and
 		$this->_callbacks[__FUNCTION__]($return, $index, $this);
-        return $return;
-    }
-	
+
+		return $return;
+	}
+
+	/**
+	 * offsetSet
+	 */
 	public function offsetSet ($index, $newval, $manual = TRUE)
 	{
+		$_rxs_padre_castval_objects = self::rxs_padre_castval_objects();
+		$_rxs_padre_castval_objects_fields = array_keys($_rxs_padre_castval_objects);
+		if (in_array($index, $_rxs_padre_castval_objects_fields) and is_a($newval, $_rxs_padre_castval_objects[$index]['class']))
+		{
+			$campos = $_rxs_padre_castval_objects[$index]['campos'];
+			foreach($campos as $padre => $hijo)
+			{
+				$this->offsetSet($hijo, $newval[$padre], $manual);
+			}
+			return;
+		}
+
 		if ($manual)
 		{
 			if (is_null($newval))
@@ -2088,16 +2068,17 @@ abstract class ObjetoBase extends JArray
 			else
 			{
 				$this->_manual_setted[] = $index;
+				$this->_manual_setted = array_unique($this->_manual_setted);
 			}
 		}
 
 		return parent::offsetSet($index, $newval);
 	}
 
-    function __toArray()
-    {
+	public function __toArray()
+	{
 		isset($this->_callbacks['before_toarray']) and
-		$this->_callbacks['before_toarray']($this);
+		      $this->_callbacks['before_toarray']($this);
 
 		$return = [];
 		$fields = self::fields();
@@ -2107,17 +2088,59 @@ abstract class ObjetoBase extends JArray
 		}
 
 		isset($this->_callbacks['toarray']) and
-		$this->_callbacks['toarray']($return, $this);
-		isset($this->_callbacks[__FUNCTION__]) and
-		$this->_callbacks[__FUNCTION__]($return, $this);
-		return $return;
-    }
+		      $this->_callbacks['toarray']($return, $this);
 
-    /**
-     * count ()
-     */
-    public function count ()
-    {
-        return $this->_found ? 1 : 0;
-    }
+		isset($this->_callbacks[__FUNCTION__]) and
+		      $this->_callbacks[__FUNCTION__]($return, $this);
+
+		return $return;
+	}
+
+	/**
+	 * count ()
+	 */
+	public function count ()
+	{
+		return $this->_found ? 1 : 0;
+	}
+
+	/**
+	 * __toString  ()
+	 */
+	public function __toString  ()
+	{
+		$field = self::toString();
+		$key   = self::key();
+		$keys  = self::keys();
+
+		is_null($field) and $field = $key;
+		is_null($field) and $field = array_shift($keys);
+
+		return $this->$field;
+	}
+
+	//////////////////////////////////////
+	/// Deprecated                     ///
+	//////////////////////////////////////
+
+	protected function _where_query ()
+	{
+		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+	}
+	protected function verify ($from = null, $_op_level = 1)
+	{
+		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+	}
+	protected function _where_sql (&$query)
+	{
+		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+	}
+	protected function _repair_data ()
+	{
+		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+	}
+	protected function _repair_data_type ($indice = NULL, $valor = NULL)
+	{
+		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+	}
 }

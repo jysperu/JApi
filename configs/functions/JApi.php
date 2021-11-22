@@ -512,6 +512,11 @@ if ( ! function_exists('print_array'))
 			{
 				$_arr = array_html($_arr);
 			}
+			elseif (is_a($_arr, 'ArrayObject') and function_exists('array_html') and $_class = get_class($_arr) and $_arr = (array)$_arr)
+			{
+				$_arr = '<small style="color: #000">['.$_class.']</small><br><br>' .
+						array_html($_arr);
+			}
 			else
 			{
 				$_arr = htmlentities(print_r($_arr, true));

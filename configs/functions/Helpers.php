@@ -63,19 +63,21 @@ if ( ! function_exists('def_empty'))
 	 * @param mixed
 	 * @return mixed
 	 */
-	function def_empty($v, $def = NULL)
+	function def_empty($valor, ...$valores)
 	{
-		if ( ! is_empty($v))
+		array_unshift($valores, $valor);
+		foreach($valores as $valor)
 		{
-			return $v;
+			is_callable($valor) and 
+			$valor = $valor ();
+
+			if ( ! is_empty($valor))
+			{
+				return $valor;
+			}
 		}
 
-		if (is_callable($def))
-		{
-			return $def();
-		}
-
-		return $def;
+		return null;
 	}
 }
 

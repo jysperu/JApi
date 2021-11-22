@@ -31,6 +31,7 @@ $CON = null;
  * - Errno // Número de error detectado
  */
 $_MYSQL_history = [];
+$_MYSQL_errno   = null;
 
 if ( ! function_exists('use_CON'))
 {
@@ -323,7 +324,7 @@ if ( ! function_exists('sql'))
 	 */
 	function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL, $modulo = null)
 	{
-		global $_MYSQL_history;
+		global $_MYSQL_history, $_MYSQL_errno;
 
 		$trace = debug_backtrace(false);
 		while(count($trace) > 0 and (
@@ -350,7 +351,7 @@ if ( ! function_exists('sql'))
 
 		if ( ! $result)
 		{
-			$_ERRNO = mysqli_errno($conection);
+			$_MYSQL_errno = $_ERRNO = mysqli_errno($conection);
 			$_ERROR = mysqli_error($conection);
 
 			$_stat = [
@@ -415,7 +416,7 @@ if ( ! function_exists('sql_data'))
 
 	function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL, $modulo = null)
 	{
-		global $_MYSQL_history;
+		global $_MYSQL_history, $_MYSQL_errno;
 		static $_executeds = [];
 
 		$trace = debug_backtrace(false);
@@ -453,7 +454,7 @@ if ( ! function_exists('sql_data'))
 
 		if ( ! $result)
 		{
-			$_ERRNO = mysqli_errno($conection);
+			$_MYSQL_errno = $_ERRNO = mysqli_errno($conection);
 			$_ERROR = mysqli_error($conection);
 
 			$_stat = [
