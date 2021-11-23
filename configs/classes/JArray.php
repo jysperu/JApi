@@ -285,7 +285,7 @@ class JArray extends ArrayObject
 			return call_user_func_array('(array_diff|diff)', $args);
 		}
 
-		throw new Exception('Call to undefined method ' . get_called_class() . '::' . $name . '()');
+		throw new Exception('Función requerida no existe `' . get_called_class() . '::' . $name . '()`');
 		return $this;
 	}
 

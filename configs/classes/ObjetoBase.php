@@ -109,6 +109,11 @@ abstract class ObjetoBase extends JArray
 	 */
 	protected static $_rxs_padre = [];
 
+	/**
+	 * $_extra_functions
+	 */
+	public static $_static_extra_functions = [];
+
 	//////////////////////////////////////
 	/// Funciones gestión de clase     ///
 	//////////////////////////////////////
@@ -721,6 +726,11 @@ abstract class ObjetoBase extends JArray
 	 */
 	protected $_errors = [];
 
+	/**
+	 * $_extra_functions
+	 */
+	protected $_extra_functions = [];
+
 	//////////////////////////////////////
 	/// Funciones del objeto creado    ///
 	//////////////////////////////////////
@@ -925,6 +935,50 @@ abstract class ObjetoBase extends JArray
 		$return = $this -> _callback_exec ('getData_' . $context, $return);
 
 		return $return;
+	}
+
+	/**
+	 * FSADD ()
+	 */
+	public static function FSADD ($key, $callback)
+	{
+		$_gcc = get_called_class();
+		$_extra_functions = $_gcc::$_static_extra_functions;
+		isset($_extra_functions[$_gcc]) or $_extra_functions[$_gcc] = [];
+
+		$_extra_functions[$_gcc][$key] = $callback;
+
+		$_gcc::$_static_extra_functions = $_extra_functions;
+		return $_gcc;
+	}
+
+	/**
+	 * _extra_functions_static_add ()
+	 */
+	protected function _extra_functions_static_add ($key, $callback)
+	{
+		$_gcc = get_called_class();
+		$_extra_functions = self::$_static_extra_functions;
+		isset($_extra_functions[$_gcc]) or $_extra_functions[$_gcc] = [];
+
+		$_extra_functions[$_gcc][$key] = $callback;
+
+		self::$_static_extra_functions = $_extra_functions;
+		return $this;
+	}
+
+	/**
+	 * _callback_add ()
+	 */
+	protected function _callback_add ($key, $callback)
+	{
+		$_extra_functions = $this -> _extra_functions;
+		isset($_extra_functions[$key]) or $_extra_functions[$key] = [];
+
+		$_extra_functions[$key] = $callback;
+
+		$this -> _extra_functions = $_extra_functions;
+		return $this;
 	}
 
 	//////////////////////////////////////
@@ -2117,6 +2171,57 @@ abstract class ObjetoBase extends JArray
 		is_null($field) and $field = array_shift($keys);
 
 		return $this->$field;
+	}
+
+	/**
+	 * __call ()
+	 */
+	public function __call ($name, $args)
+	{
+		try
+		{
+			$undefined_method = false;
+			$return = parent :: __call ($name, $args);
+		}
+		catch (Exception $e)
+		{
+			if ( ! preg_match('/^Función requerida no existe/i', $e->getMessage()))
+				throw $e;
+			$undefined_method = true;
+		}
+
+		$params = $args;
+		$params[] = $this;
+		$params[] = $name;
+
+		$_gcc = get_called_class();
+		$_extra_functions = self::$_static_extra_functions;
+		isset($_extra_functions[$_gcc]) or $_extra_functions[$_gcc] = [];
+		if (isset($_extra_functions[$_gcc][$name]))
+		{
+			try
+			{
+				$temp = call_user_func_array($_extra_functions[$_gcc][$name], $params);
+				return $temp;
+			}
+			catch(Exception $e)
+			{}
+		}
+
+		$_extra_functions = $this -> _extra_functions;
+		if (isset($_extra_functions[$name]))
+		{
+			try
+			{
+				$temp = call_user_func_array($_extra_functions[$name], $params);
+				return $temp;
+			}
+			catch(Exception $e)
+			{}
+		}
+
+		if ($undefined_method) throw $e;
+		return $return;
 	}
 
 	//////////////////////////////////////
