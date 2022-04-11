@@ -32,6 +32,7 @@ $CON = null;
  */
 $_MYSQL_history = [];
 $_MYSQL_errno   = null;
+$_MYSQL_afctrow = null;
 
 if ( ! function_exists('use_CON'))
 {
@@ -298,6 +299,25 @@ if ( ! function_exists('sql_qpesc'))
 		}
 
 		is_array($valor) and $valor = json_encode($valor);
+		if (is_object($valor))
+		{
+			if (method_exists($valor, '__toArray'))
+			{
+				$valor = json_encode($valor -> __toArray());
+			}
+			elseif (method_exists($valor, 'ToArray'))
+			{
+				$valor = json_encode($valor -> ToArray());
+			}
+			elseif (is_a($valor, 'Serializable'))
+			{
+				$valor = serialize($valor);
+			}
+			else
+			{
+				$valor = serialize($valor); // umm
+			}
+		}
 
 		return '"' . sql_esc($valor, $conection) . '"';
 	}
@@ -324,7 +344,7 @@ if ( ! function_exists('sql'))
 	 */
 	function sql(string $query, $is_insert = FALSE, mysqli $conection = NULL, $modulo = null)
 	{
-		global $_MYSQL_history, $_MYSQL_errno;
+		global $_MYSQL_history, $_MYSQL_errno, $_MYSQL_afctrow;
 
 		$trace = debug_backtrace(false);
 		while(count($trace) > 0 and (
@@ -378,6 +398,7 @@ if ( ! function_exists('sql'))
 
 		$is_insert and
 		$return = mysqli_insert_id($conection);
+		$_MYSQL_afctrow = mysqli_affected_rows($conection);
 
 		$_stat = [
 			'query' => $query,
@@ -389,7 +410,7 @@ if ( ! function_exists('sql'))
 			'endin' => $_consulta_fin,
 			'conct' => $conection->identify,
 			'funct' => 'sql',
-			'afrow' => $conection->affected_rows,
+			'afrow' => $_MYSQL_afctrow,
 			($is_insert ? 'insert_id' : 'return') => $return,
 			'filen' => $trace,
 			'modul' => $modulo,
@@ -414,7 +435,7 @@ if ( ! function_exists('sql_data'))
 	 * @return mixed
 	 */
 
-	function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL, $modulo = null)
+	function sql_data(string $query, $return_first = FALSE, $fields = NULL, mysqli $conection = NULL, $modulo = null, $just_get_result = false)
 	{
 		global $_MYSQL_history, $_MYSQL_errno;
 		static $_executeds = [];
@@ -474,6 +495,8 @@ if ( ! function_exists('sql_data'))
 			APP() -> action_apply('SQL/Stat', $_stat, $conection);
 			trigger_error('Error en el query: ' . PHP_EOL . $query . PHP_EOL . $_ERRNO . ': ' . $_ERROR, E_USER_WARNING);
 
+			if ($just_get_result) return $result;
+
 			$sql_data_result = MysqlResultData::fromArray([])
 			-> quitar_fields('log');
 		}
@@ -495,6 +518,8 @@ if ( ! function_exists('sql_data'))
 			];
 			$_MYSQL_history[] = $_stat;
 			APP() -> action_apply('SQL/Stat', $_stat, $conection);
+
+			if ($just_get_result) return $result;
 
 			$sql_data_result = new MysqlResultData ($result);
 		}

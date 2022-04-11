@@ -64,6 +64,21 @@ class JArray extends ArrayObject
 		return $return;
 	}
 
+	/**
+	 * clear ()
+	 */
+	public function clear()
+	{
+		$keys = array_keys((array) $this);
+		while (count($keys) > 0)
+		{
+			$key = array_shift   ($keys);
+			$this -> offsetUnset ($key );
+		}
+
+		return $return;
+	}
+
 	//////////////////////////////////////
 	/// Constructor del objeto         ///
 	//////////////////////////////////////
@@ -298,7 +313,7 @@ class JArray extends ArrayObject
 		$index  = array_shift($_args);
 		$newval = array_shift($_args);
 
-		if (is_null($index) )     return $this->__toArray();
+			if (is_null($index) ) return $this->__toArray();
 		elseif (is_null($newval)) return $this->__get($index);
 		else                      return $this->__set($index, $newval);
 	}
@@ -337,6 +352,11 @@ class JArray extends ArrayObject
 	{
 		$context = $this->_default_context;
 
+		$gcc = get_called_class();
+
+		if ($method = '_before_get_' . $index and method_exists($this, $method))
+			$this -> $method ($index, $context);
+
 		$this->_callback_exec('before_get',           $index, $context);
 		$this->_callback_exec('before_get_' . $index, $index, $context);
 		$this->_callback_exec('before_get_' . $index . '_' . $context, $index, $context);
@@ -348,6 +368,9 @@ class JArray extends ArrayObject
 		$return = $this->_callback_exec('get_' . $index . '_' . $context, $return, $index, $context);
 		$return = $this->_callback_exec(__FUNCTION__,    $return, $index, $context);
 
+		if ($method = '_after_get_' . $index and method_exists($this, $method))
+			$return = $this -> $method ($return, $index, $context);
+
 		return $return;
 	}
 
@@ -356,6 +379,11 @@ class JArray extends ArrayObject
 	 */
 	public function offsetSet ($index, $newval)
 	{
+		$gcc = get_called_class();
+
+		if ($method = '_before_set_' . $index and method_exists($this, $method))
+			$newval = $this -> $method ($newval, $index);
+
 		$newval = $this->_callback_exec('before_set',           $newval, $index);
 		$newval = $this->_callback_exec('before_set_' . $index, $newval, $index);
 
@@ -364,6 +392,12 @@ class JArray extends ArrayObject
 		$this->_callback_exec('set',           $newval, $index);
 		$this->_callback_exec('set_' . $index, $newval, $index);
 		$this->_callback_exec(__FUNCTION__,    $newval, $index);
+
+		if ($method = '_after_set_' . $index and method_exists($this, $method))
+			$this -> $method ($newval, $index);
+
+		if ($method = '_after_set' and method_exists($this, $method))
+			$this -> $method ($newval, $index);
 
 		return $return; // void
 	}

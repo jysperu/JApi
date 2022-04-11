@@ -5,19 +5,9 @@
  * @upddated 22/DIC/2021 03:14 AM
  */
 
-abstract class ObjetoBase extends JArray
+abstract class ObjetoBase extends JArray implements CasterVal_Constants
 {
-	//////////////////////////////////////
-	/// Constantes                     ///
-	//////////////////////////////////////
-	const Numero    =  1;
-	const Texto     =  2;
-	const Arreglo   =  4;
-	const FechaHora =  8;
-	const Fecha     = 16;
-	const Hora      = 32;
-	const Boolean   = 64;
-	const Ilimitado = -1;
+	use CasterVal;
 
 	//////////////////////////////////////
 	/// Variables gestión de clase     ///
@@ -164,6 +154,16 @@ abstract class ObjetoBase extends JArray
 	{
 		$that = self::gcc();
 		return $that::$_toString;
+	}
+
+	/**
+	 * add_static_var_item ()
+	 */
+	public static function add_static_var_item($_var, $_reg)
+	{
+		$that = self::gcc();
+		$that::$$_var[] = $_reg;
+		return;
 	}
 
 	/**
@@ -441,14 +441,14 @@ abstract class ObjetoBase extends JArray
 				$rx['c1'] = count($rx['columnas']) === 1;
 				if ($rx['c1'])
 				{
-					$rxc1_cam_padre = array_keys($rx['columnas']) [0];
+					$rxc1_cam_padre = array_keys  ($rx['columnas']) [0];
 					$rxc1_cam_hijo  = array_values($rx['columnas']) [0];
 				}
 
 				// Corrigiendo posibles atributos dañados
 				if (is_null ($rx['field']))
 				{
-					$tbl_subname = $rx['c1'] ? $rxc1_cam_hijo : $rx['tabla'];
+					$tbl_subname = $rx['c1'] ? preg_replace('/\_(?:id|codigo)$/i', '', $rxc1_cam_hijo) : $rx['tabla'];
 					$tbl_subname_idx = '';
 					do
 					{
@@ -673,7 +673,7 @@ abstract class ObjetoBase extends JArray
 		}
 
 		$query = 'SELECT * FROM `' . self::tblname() . '` WHERE TRUE' . $_sql_where;
-		$data = (array)sql_data($query, FALSE);
+		$data = (array) sql_data($query, FALSE);
 
 		$_return = [];
 		foreach($data as $reg)
@@ -682,6 +682,26 @@ abstract class ObjetoBase extends JArray
 		}
 
 		return $_return;
+	}
+
+	/**
+	 * FindBy ()
+	 * Busca un objeto basado en filtros
+	 * @param array $filter
+	 * @param int $limit
+	 * @param string $sortby
+	 * @return array[self]
+	 */
+	public static function FindBy ($filter = [])
+	{
+		$that = self::gcc();
+		$lista = self :: Lista ($filter, 1);
+		$lista = (array) $lista;
+
+		$first = array_shift($lista);
+		is_null($first) and $first = new $that();
+
+		return $first;
 	}
 
 	//////////////////////////////////////
@@ -750,6 +770,19 @@ abstract class ObjetoBase extends JArray
 		}
 
 		$this->_errors[] = $error;
+	}
+
+	/**
+	 * logger ()
+	 */
+	public function logger ($_error, $_op_level = 1, $_function = null, $_severity = E_USER_WARNING, $filepath = __FILE__, $line = __LINE__)
+	{
+		$message = $_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . $_function . ']';
+		\logger ($message, $_severity, $_severity, [
+			'Objeto' => (array) $this,
+		], $filepath, $line);
+
+		return $this;
 	}
 
 	/**
@@ -822,52 +855,15 @@ abstract class ObjetoBase extends JArray
 		$tipo     = $column['tipo'];
 
 		if (is_empty($valor))
-			return $nullable ? null : ( $tipo === self::Arreglo ? [] : '' );
+			return $this -> _cv_onempty ($nullable, $tipo);
 
-		switch ($tipo)
-		{
-			case self::Boolean:
-				$valor = strtobool ($valor);
-				break;
-			case self::Numero:
-				$valor = floatval ($valor);
-				break;
-			case self::Arreglo:
-				if (is_string($valor))
-				{
-					$json = json_decode($valor, true);
-					if ( ! is_null($json)) $valor = $json;
-				}
-
-				$valor = (array) $valor;
-				break;
-			default:
-				$valor = (string) $valor;
-				break;
-		}
-
-		$largo_req = $column['largo'];
-		$largo_act = is_string($valor) ? mb_strlen($valor) : 0;
-
-		if ($largo_req > 0 and $largo_act > $largo_req and ! in_array($tipo, [ self::Arreglo, self::Boolean ]))
-		{
-			$valor = mb_substr($valor, 0, $largo_req);
-		}
-
-		$opciones  = $column['opciones'];
-		if ( ! is_empty($opciones) and ! in_array($tipo, [ self::Boolean ]))
-		{
-			if (is_array($valor))
-			{
-				$valor = array_filter($valor, function($o) use ($opciones) {
-					return in_array($o, $opciones);
-				});
-			}
-			elseif ( ! in_array($valor, $opciones))
-			{
-				$valor = $nullable ? null : ( $tipo === self::Arreglo ? [] : '' );
-			}
-		}
+		$valor = $this -> _cv_check_tipo      ($valor, $tipo);
+		$valor = $this -> _cv_check_largo_max ($valor, $tipo, (int) $column['largo'],    function ($error) use ($indice){
+			$this -> logger ('Índice [' . $indice . ']: ' . $error, 0, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
+		});
+		$valor = $this -> _cv_check_in_array  ($valor, $tipo, (array) $column['opciones'], $nullable, function ($error) use ($indice){
+			$this -> logger ('Índice [' . $indice . ']: ' . $error, 0, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
+		});
 
 		   isset($this->_callbacks['cast_val']) and 
 		$valor = $this->_callbacks['cast_val']($valor, $indice,   $this);
@@ -968,9 +964,9 @@ abstract class ObjetoBase extends JArray
 	}
 
 	/**
-	 * _callback_add ()
+	 * _extra_functions_add ()
 	 */
-	protected function _callback_add ($key, $callback)
+	protected function _extra_functions_add ($key, $callback)
 	{
 		$_extra_functions = $this -> _extra_functions;
 		isset($_extra_functions[$key]) or $_extra_functions[$key] = [];
@@ -1022,7 +1018,7 @@ abstract class ObjetoBase extends JArray
 	{
 		$_uid  = $this -> _uid();
 		$query = $this -> _query_select ();
-		$data  = sql_data($query, TRUE);
+		$data  = $this -> _sql_data($query, TRUE);
 
 		if (is_null($data) or count($data) === 0)
 		{
@@ -1193,20 +1189,55 @@ abstract class ObjetoBase extends JArray
 	}
 
 	/**
+	 * sync_rx_padres
+	 */
+	public function sync_rx_padres ($rxs_padre, &$_sync = [], &$_changes = [], $_op_level = 1)
+	{
+		$rxs_padre = $this->_callback_exec ('before_sync_rx_padres', $rxs_padre);
+		if (count($rxs_padre) === 0) return true;
+
+		// Actualizar los RX_PADRES que requieren actualización
+		foreach($rxs_padre as $rx)
+		{
+			if ( ! $rx['fus']) continue;
+
+			$field = $rx['field'];
+			$reg_o = $this[$field];
+
+			$reg_o -> recalc_childs ();
+			$_exec = $reg_o -> update($_sync, $_changes, ($_op_level + 1));
+
+			if ( ! $_exec)
+			{
+				$_errors = $reg_o->get_errors();
+				foreach($_errors as $_error)
+				{
+					$this->add_error('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
+				}
+				return false;
+			}
+		}
+
+		$this->_callback_exec ('sync_rx_padres', $rxs_padre);
+		return true;
+	}
+
+	/**
 	 * insert
 	 * Permite hacer una consulta INSERT a la DB 
 	 */
 	public function insert (&$_sync = [], &$_changes = [], $_op_level = 1)
 	{
-		$columns  = self::columns();
-		$_key     = self::key();
-		$rxs_hijo = self::rxs_hijo();
+		$columns   = self::columns();
+		$_key      = self::key();
+		$rxs_hijo  = self::rxs_hijo();
+		$rxs_padre = self::rxs_padre();
 
 		if ($this->_found)
 		{
 			$_error = 'El objeto a ingresar ya existe en la base datos.';
 			$this->add_error($_error);
-			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1233,7 +1264,7 @@ abstract class ObjetoBase extends JArray
 
 			$field = $column['nombre'];
 			$value = isset($_data_instance[$field]) ? $_data_instance[$field] : NULL;
-			$value = qp_esc($value, ! $column['nn']);
+			$value = $this -> _qp_esc($value, ! $column['nn']);
 			$_insert_data[$field] = $value;
 		}
 
@@ -1271,7 +1302,7 @@ abstract class ObjetoBase extends JArray
 		$query = filter_apply ('ObjTbl::Insert',	 $query, $gcc, $this);
 
 		sql_trans();
-		$_exec = @sql($query,  ! is_null($_ai_key));
+		$_exec = $this -> _sql($query,  ! is_null($_ai_key));
 
 		if ( ! $_exec)
 		{
@@ -1288,7 +1319,7 @@ abstract class ObjetoBase extends JArray
 					break;
 			}
 			$this->add_error($_error);
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1314,6 +1345,10 @@ abstract class ObjetoBase extends JArray
 		$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
 		if ( ! $sync_childs) return false;
 
+		$sync_rx_padres = $this -> sync_rx_padres ($rxs_padre , $_sync, $_changes, $_op_level);
+		if ( ! $sync_rx_padres) return false;
+
+		
 		$this -> _callback_exec ('after_insert');
 		$this -> _callback_exec ('after_insert_update');
 
@@ -1346,7 +1381,7 @@ abstract class ObjetoBase extends JArray
 		{
 			$_error = 'El objeto a actualizar aún no existe en la base datos.';
 			$this->add_error($_error);
-			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1380,7 +1415,7 @@ abstract class ObjetoBase extends JArray
 			$_update_data_before[$field] = $value_before;
 			$_update_data_after [$field] = $value_after;
 
-			$value_after = qp_esc($value_after, ! $column['nn']);
+			$value_after = $this -> _qp_esc($value_after, ! $column['nn']);
 			$_update_data[$field] = $value_after;
 
 			if (in_array($field, $_keys)) $_keys_edited[] = $field;
@@ -1404,8 +1439,13 @@ abstract class ObjetoBase extends JArray
 		if (count($_update_data) === 0)
 		{
 			$this->add_error('No se han realizado cambios');
+
 			$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
 			if ( ! $sync_childs) return false;
+
+			$sync_rx_padres = $this -> sync_rx_padres ($rxs_padre, $_sync, $_changes, $_op_level);
+			if ( ! $sync_rx_padres) return false;
+
 			$this -> select ();
 			return true;
 		}
@@ -1423,7 +1463,7 @@ abstract class ObjetoBase extends JArray
 				if ( ! in_array($rx['on_update'], ['NO ACTION', 'RESTRICT'])) continue;
 				$_error = $posible_error;
 				$this->add_error($_error);
-				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+				$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 				return false;
 			}
 		}
@@ -1444,7 +1484,7 @@ abstract class ObjetoBase extends JArray
 		$query = filter_apply ('ObjetoBase::Update', $query, $gcc, $this);
 		$query = filter_apply ('ObjTbl::Update',     $query, $gcc, $this);
 
-		$_exec = @sql($query);
+		$_exec = $this -> _sql($query);
 
 		if ( ! $_exec)
 		{
@@ -1452,7 +1492,7 @@ abstract class ObjetoBase extends JArray
 
 			$_error = 'Se produjo un error al actualizar el registro de la base datos.';
 			$this->add_error($_error);
-			@trigger_error  ($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1475,29 +1515,11 @@ abstract class ObjetoBase extends JArray
 		$this -> _callback_exec ('update');
 		$this -> _callback_exec ('insert_update');
 
-		$this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
+		$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
+		if ( ! $sync_childs) return false;
 
-		// Actualizar los RX_PADRES que requieren actualización
-		foreach($rxs_padre as $rx)
-		{
-			if ( ! $rx['fus']) continue;
-
-			$field = $rx['field'];
-			$reg_o = $this[$field];
-
-			$reg_o -> recalc_childs ();
-			$_exec = $reg_o -> update($_sync, $_changes, ($_op_level + 1));
-
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->add_error('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
-				}
-				return false;
-			}
-		}
+		$sync_rx_padres = $this -> sync_rx_padres ($rxs_padre, $_sync, $_changes, $_op_level);
+		if ( ! $sync_rx_padres) return false;
 
 		// Actualizar los KEYs de los objetos que no se han actualizado mediante base de datos
 		if (count($_keys_edited) > 0)
@@ -1587,7 +1609,7 @@ abstract class ObjetoBase extends JArray
 
 			$_error = 'No se puede eliminar el registro `' . self::gcc() . '` hasta que se eliminen los registros `' . $rx['clase'] . '`';
 			$this->add_error('Se produjo un error al eliminar el registro de la base datos');
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1603,9 +1625,9 @@ abstract class ObjetoBase extends JArray
 		$query = filter_apply ('ObjetoBase::Delete', $query, $gcc, $this);
 		$query = filter_apply ('ObjTbl::Delete',     $query, $gcc, $this);
 
-		$_omitir_hijos_bool and sql('SET FOREIGN_KEY_CHECKS=0;');
-		$_exec = @sql($query);
-		$_omitir_hijos_bool and sql('SET FOREIGN_KEY_CHECKS=1;');
+		$_omitir_hijos_bool and $this -> _sql('SET FOREIGN_KEY_CHECKS=0;');
+		$_exec = 				$this -> _sql($query);
+		$_omitir_hijos_bool and $this -> _sql('SET FOREIGN_KEY_CHECKS=1;');
 
 		if ( ! $_exec)
 		{
@@ -1613,7 +1635,7 @@ abstract class ObjetoBase extends JArray
 
 			$_error = 'Se produjo un error al eliminar el registro de la base datos.';
 			$this->add_error($_error);
-			@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -1629,29 +1651,7 @@ abstract class ObjetoBase extends JArray
 
 		$this -> _callback_exec ('delete');
 
-		// Actualizar los RX_PADRES que requieren actualización
-		foreach($rxs_padre as $rx)
-		{
-			if ( ! $rx['fus']) continue;
-
-			$field = $rx['field'];
-			$reg_o = $this[$field];
-
-			$reg_o -> recalc_childs ();
-			$_exec = $reg_o -> update($_sync, $_changes, ($_op_level + 1));
-
-			if ( ! $_exec)
-			{
-				$_errors = $reg_o->get_errors();
-				foreach($_errors as $_error)
-				{
-					$this->add_error('[' . $reg_o::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '] ' . $_error);
-				}
-				return false;
-			}
-		}
-
-		// Actualizar los KEYs de los objetos que no se han actualizado mediante base de datos
+		// Eliminar los objetos hijos o Actualizar los KEYs que relaciona a este objeto que no se ha actualizado mediante base de datos
 		foreach($rxs_hijo as $rx)
 		{
 			if ( ! (
@@ -1678,6 +1678,9 @@ abstract class ObjetoBase extends JArray
 			}
 		}
 
+		$sync_rx_padres = $this -> sync_rx_padres ($rxs_padre, $_sync, $_changes, $_op_level);
+		if ( ! $sync_rx_padres) return false;
+
 		$this -> _callback_exec ('after_delete');
 
 		sql_trans(true);
@@ -1693,11 +1696,161 @@ abstract class ObjetoBase extends JArray
 		return TRUE;
 	}
 
+	/**
+	 * insert_odk_update
+	 * Permite hacer una consulta INSERT ON DUPLICATE KEY UPDATE  a la DB 
+	 */
+	public function insert_odk_update (&$_sync = [], &$_changes = [], $_op_level = 1)
+	{
+		$columns   = self::columns();
+		$_key      = self::key();
+		$rxs_hijo  = self::rxs_hijo();
+		$rxs_padre = self::rxs_padre();
+
+		if ($this->_found)
+		{
+			$_error = 'El objeto a ingresar ya existe en la base datos.';
+			$this->add_error($_error);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
+			return false;
+		}
+
+		$this -> _callback_exec ('before_insert');
+		$this -> _callback_exec ('before_insert_update');
+
+		$_valid = $this->_verify('insertar', $_op_level);
+		if ( ! $_valid) return false;
+
+		$_ai_key = NULL;
+		if ( ! is_empty($_key) and $columns[$_key]['ai'] and ! in_array($_key, $this->_manual_setted))
+		{
+			$_ai_key = $_key;
+			unset($columns[$_key]);
+		}
+
+		$_data_instance = $this->_data_instance;
+		$_insert_data   = [];
+		$rxshj_editeds  = [];
+
+		foreach($columns as $column)
+		{
+			if ($column['dg']) continue;
+
+			$field = $column['nombre'];
+			$value = isset($_data_instance[$field]) ? $_data_instance[$field] : NULL;
+			$value = $this -> _qp_esc($value, ! $column['nn']);
+			$_insert_data[$field] = $value;
+		}
+
+		foreach($rxs_hijo as $rx)
+		{
+			$field = $rx['field'];
+			$iattr = $rx['is_attr'];
+			$auniq = $rx['attr_uniq'];
+
+			if ( ! in_array($field, $this->_manual_setted)) continue;
+			$rxshj_editeds[$field] = [
+				'iattr' => $iattr,
+				'auniq' => $auniq,
+				'data'  => $_data_instance[$field],
+				'rx'    => $rx,
+			];
+		}
+
+		$query = '';
+		$query.= 'INSERT INTO `' . self::tblname() . '` ' . PHP_EOL;
+		$query.= '(';
+		$query.= implode(', ', array_map(function($o){
+			return PHP_EOL . '  `' . $o . '`';
+		}, array_keys($_insert_data))) . PHP_EOL;
+		$query.= ')' . PHP_EOL;
+		$query.= 'VALUES' . PHP_EOL;
+		$query.= '(';
+		$query.= implode(', ', array_map(function($o){
+			return PHP_EOL . '  ' . $o;
+		}, array_values($_insert_data))) . PHP_EOL;
+		$query.= ')' . PHP_EOL;
+		$query.= 'ON DUPLICATE KEY UPDATE' . PHP_EOL;
+		$query.= implode(', ', array_map(function($o, $p){
+			return PHP_EOL . '  `' . $o . '` = ' . $p;
+		}, array_keys($_insert_data), array_values($_insert_data))) . PHP_EOL;
+
+		$gcc = self::gcc();
+		$query = filter_apply ('ObjetoBase::InsertODKU', $query, $gcc, $this);
+		$query = filter_apply ('ObjTbl::InsertODKU',	 $query, $gcc, $this);
+
+		sql_trans();
+		$_exec = $this -> _sql($query,  ! is_null($_ai_key));
+
+		if ( ! $_exec)
+		{
+			sql_trans(false);
+			global $_MYSQL_errno;
+
+			switch ($_MYSQL_errno)
+			{
+				case 1062:
+					$_error = 'Se encontró un registro duplicado en la base datos.';
+					break;
+				default:
+					$_error = 'Se produjo un error al ingresar el registro en la base datos.';
+					break;
+			}
+			$this->add_error($_error);
+			$this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
+			return false;
+		}
+
+		if ( ! is_null($_ai_key))
+		{
+			$this->_data_instance[$_ai_key] = $_exec;
+			$this->_data_original[$_ai_key] = $_exec;
+		}
+
+		$this -> select($_sync);
+		$_changes[] = [
+			'accion'    => 'insert',
+			'clase'     => self::gcc(),
+			'tabla'     => self::tblname(),
+			'tabla_key' => $this->_uid(),
+			'anterior'  => [],
+			'nuevo'     => $this->__toArray(),
+		];
+
+		$this -> _callback_exec ('insert_odku');
+		$this -> _callback_exec ('insert_update');
+
+		$sync_childs = $this -> sync_childs($rxshj_editeds, $_sync, $_changes, $_op_level);
+		if ( ! $sync_childs) return false;
+
+		$sync_rx_padres = $this -> sync_rx_padres ($rxs_padre , $_sync, $_changes, $_op_level);
+		if ( ! $sync_rx_padres) return false;
+
+		
+		$this -> _callback_exec ('after_insert_odku');
+		$this -> _callback_exec ('after_insert_update');
+
+		sql_trans(true);
+		$this -> select();
+
+		if ($_op_level === 1)
+		{
+			$gcc = self::gcc();
+			action_apply('ObjetoBase::Changes', $_changes, $gcc, $this);
+			action_apply('ObjTbl::Changes',	 $_changes, $gcc, $this);
+		}
+
+		return true;
+	}
+
 	//////////////////////////////////////
 	/// Constructor del objeto         ///
 	//////////////////////////////////////
 	public function __construct (...$data_keys)
 	{
+		$gcc = get_called_class();
+		$gcc :: establecer_CON($this);
+
 		/** Habilitando los atributos que contendrán la data del objeto */
 		$this->_data_original = new JArray();
 		$this->_data_instance = new JArray();
@@ -1706,6 +1859,8 @@ abstract class ObjetoBase extends JArray
 		parent::__construct($this->_data_instance);
 		$this-> __construct_callbacks();
 		$this-> __construct_fields ();
+
+		$this -> _callback_exec ('construct');
 
 		while(count($data_keys) > 0)
 		{
@@ -1733,6 +1888,9 @@ abstract class ObjetoBase extends JArray
 		/** Buscar información del objeto basado en los campos laves */
 		$this -> select();
 	}
+
+	public static function establecer_CON ($instance)
+	{}
 
 	//////////////////////////////////////
 	/// Apoyos del objeto y su info    ///
@@ -1907,7 +2065,7 @@ abstract class ObjetoBase extends JArray
 				continue;
 			}
 
-			$query.= ' AND ' . $_as_tbl . '`'.$key.'` = ' . qp_esc($_data[$key]) . PHP_EOL;
+			$query.= ' AND ' . $_as_tbl . '`'.$key.'` = ' . $this -> _qp_esc($_data[$key]) . PHP_EOL;
 		}
 
 		return $query;
@@ -1917,7 +2075,7 @@ abstract class ObjetoBase extends JArray
 	 * _verify
 	 * Permite validar que todos los campos requeridos esten llenos
 	 */
-	protected function _verify ($from = null, $_op_level = 1, $trigger_error = true)
+	protected function _verify ($from = null, $_op_level = 1, $_logger_error = true)
 	{
 		// Validar No vacíos
 		$not_valids = [];
@@ -1940,8 +2098,7 @@ abstract class ObjetoBase extends JArray
 			]);
 			$this->add_error($_error);
 
-			if ($trigger_error)
-				@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+			$_logger_error and $this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 
 			return false;
 		}
@@ -1957,7 +2114,7 @@ abstract class ObjetoBase extends JArray
 			foreach($rx['columnas'] as $_padre => $_hijo)
 			{
 				$_valor_hijo = $this->_data_instance[$_hijo];
-				if ( ! is_null($_valor_hijo)) $a_null = false;
+				if ( ! is_empty($_valor_hijo)) $a_null = false;
 				$_pks[] = $_valor_hijo;
 
 				if ($rx['c1']) $pkn = ' con `' . $_padre . '` = "' . $_valor_hijo . '"';
@@ -1973,14 +2130,13 @@ abstract class ObjetoBase extends JArray
 				$_error = 'No existe objeto `' . $rx['clase'] . '`' . $pkn . ' (' . $rx['field'] . ') #FKE';
 				$this->add_error('Se produjo un error al ' . $from .  ' el registro.');
 
-				if ($trigger_error)
-					@trigger_error($_error . ' [' . self::gcc() . ($_op_level > 1 ? ('#' . $_op_level) : '') . '*' . __FUNCTION__ . ']', E_USER_WARNING);
+				$_logger_error and $this -> logger ($_error, $_op_level, __FUNCTION__, E_USER_WARNING, __FILE__, __LINE__);
 
 				return false;
 			}
 		}
 
-		return $this -> _callback_exec ('verify', true, $from, $_op_level, $trigger_error);
+		return $this -> _callback_exec ('verify', true, $from, $_op_level, $_logger_error);
 	}
 
 	//////////////////////////////////////
@@ -2065,7 +2221,7 @@ abstract class ObjetoBase extends JArray
 					}
 					else
 					{
-						$query.= ' AND `'.$_hijo.'` = ' . qp_esc($this->_data_original[$_padre]) . PHP_EOL;
+						$query.= ' AND `'.$_hijo.'` = ' . $this -> _qp_esc($this->_data_original[$_padre]) . PHP_EOL;
 					}
 				}
 
@@ -2074,7 +2230,7 @@ abstract class ObjetoBase extends JArray
 				$query = filter_apply ('ObjTbl::Select',	 $query, $gcc, $this);
 				$query = $this -> _callback_exec('query_select_childs', $query, $index, $gcc, $_founded_obj);
 
-				$data = sql_data($query);
+				$data = $this -> _sql_data($query);
 
 				$return = [];
 				foreach($data as $reg)
@@ -2224,28 +2380,29 @@ abstract class ObjetoBase extends JArray
 		return $return;
 	}
 
-	//////////////////////////////////////
-	/// Deprecated                     ///
-	//////////////////////////////////////
-
-	protected function _where_query ()
+	/** DB */
+	protected $_CON;
+	protected function CON ()
 	{
-		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+		isset($this -> _CON) or $this -> _CON = use_CON ();
+		return $this -> _CON;
 	}
-	protected function verify ($from = null, $_op_level = 1)
+	public function set_CON ($CON)
 	{
-		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+		$this -> _CON = $CON;
+		return $this;
 	}
-	protected function _where_sql (&$query)
+	protected function _sql(string $query, $is_insert = FALSE)
 	{
-		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+			return sql ($query, $is_insert, $this -> CON());
 	}
-	protected function _repair_data ()
+	protected function _sql_data(string $query, $return_first = FALSE, $fields = NULL)
 	{
-		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+			return sql_data ($query, $return_first, $fields, $this -> CON());
 	}
-	protected function _repair_data_type ($indice = NULL, $valor = NULL)
+	protected function _qp_esc ($valor = '', $or_null = FALSE)
 	{
-		trigger_error('Función defasada: ' . __FUNCTION__, E_USER_DEPRECATED);
+			return qp_esc ($valor, $or_null, $this -> CON());
 	}
+	
 }

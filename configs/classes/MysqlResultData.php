@@ -118,7 +118,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	protected $data_result = [];
 	protected $campos = [];
 	protected $fields = [];
-	
+
 	public function __construct($result = NULL)
 	{
 		if ( ! is_a($result, 'mysqli_result'))
@@ -220,17 +220,17 @@ CREATE TEMPORARY TABLE `' . $table . '`
 
 		parent::__construct($this->data_result);
 	}
-	
+
 	public function getFields()
 	{
 		return $this->fields;
 	}
-	
+
 	public function getCampos()
 	{
 		return $this->campos;
 	}
-	
+
 	public function quitar_fields($fields)
 	{
 		$fields = (array)$fields;
@@ -290,7 +290,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 
 		return $this;
 	}
-	
+
 	public function filter_fields($fields)
 	{
 		if ( ! is_array($fields))
@@ -333,12 +333,12 @@ CREATE TEMPORARY TABLE `' . $table . '`
 
 		return $this;
 	}
-	
+
 	public function count()
 	{
 		return count($this->data);
 	}
-	
+
 	public function first()
 	{
 		if (count($this->data_result) === 0)

@@ -17,6 +17,11 @@ class JApi
 	//=================================================================================//
 
 	/**
+	 * $_session_name
+	 */
+	public static $_session_name = 'JApi';
+
+	/**
 	 * $_dir_functions
 	 * Variable que almacena la ruta de la carpeta que contiene los archivos de funciones
 	 */
@@ -27,6 +32,11 @@ class JApi
 	 * Variable que almacena la ruta del archivo install.php
 	 */
 	public static $_file_install = '/install/install.php';
+	public static $_file_install_objects = '/install/install.objects.php';
+	public static $_file_install_tablas  = '/install/install.tablas.php';
+	public static $_file_install_extras  = '/install/install.extras.php';
+	public static $_file_install_updates = '/install/install.updates.php';
+	public static $_file_install_data    = '/install/install.data.php';
 
 	/**
 	 * $_file_app
@@ -51,9 +61,12 @@ class JApi
 	 * Bases de espacios de nombres de las clases para el autoload
 	 */
 	public static $_autoload_bases = [
-		'Objeto'    , // Carpeta `objetos`   aloja todos los controladores de objetos de la base datos
-		'Request'   , // Carpeta `requests`  aloja todos los procesadores de solicitudes
-		'Response'  , // Carpeta `responses` aloja todas las respuestas HTML
+		'Modelo'   , // Carpeta `modelos`   aloja todos los modelos de objetos las cuales no están como base datos pero los objetos que los llaman si
+		'Proceso'  , // Carpeta `procesos`  aloja todos los procesos agrupados
+		'Objeto'   , // Carpeta `objetos`   aloja todos los controladores de objetos de la base datos
+		'Request'  , // Carpeta `requests`  aloja todos los procesadores de solicitudes
+		'Response' , // Carpeta `responses` aloja todas las respuestas HTML
+		'Structure', // Carpeta `structure` aloja todas las estructuras HTML
 	];
 
 	/**
@@ -806,6 +819,21 @@ class JApi
 			return $this->_config;
 		}
 
+		if (is_array($get))
+		{
+			$return = $this->_config;
+			foreach($get as $k)
+			{
+				if ( ! is_array($return) or ! isset($return[$k]))
+				{
+					return null;
+				}
+
+				$return = $return[$k];
+			}
+			return $return;
+		}
+
 		isset($this->_config[$get]) or $this->_config[$get] = NULL;
 		return $this->_config[$get];
 	}
@@ -950,7 +978,7 @@ class JApi
 		ini_set('default_charset', $charset);
 		ini_set('php.internal_encoding', $charset);
 		mb_substitute_character('none');
-		define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
+		defined('UTF8_ENABLED') or define('UTF8_ENABLED', defined('PREG_BAD_UTF8_ERROR') && $charset === 'UTF-8');
 
 		return $this;
 	}
@@ -3091,13 +3119,47 @@ class JApi
 		 * CACHE_DIR
 		 * Indica el path por defecto a guardar la cache
 		 */
-		defined('CACHE_DIR')       or define('CACHE_DIR', APPPATH . DS . 'cache');
+		defined('CACHE_DIR') or define('CACHE_DIR', APPPATH . DS . 'data_cache');
+		file_exists(CACHE_DIR) or mkdir(CACHE_DIR, 0777, true);
+
+		/**
+		 * SESION_DIR
+		 * Indica el path por defecto a guardar las sesiones
+		 */
+		defined('SESION_DIR') or define('SESION_DIR', APPPATH . DS . 'data_sesion');
+		file_exists(SESION_DIR) or mkdir(SESION_DIR, 0777, true);
 
 		/**
 		 * CACHE_LIFETIME
 		 * Indica el tiempo de vida por defecto de la cache
 		 */
-		defined('CACHE_LIFETIME')      or define('CACHE_LIFETIME', 60 * 60 * 24 * 7 *4 *12); // 1 AÑO
+		defined('CACHE_LIFETIME') or define('CACHE_LIFETIME', 60 * 60 * 24 * 7 * 4 * 12); // 1 AÑO
+
+		if ( ! defined('REQUEST_PUBLICIP'))
+		{
+			$ip_address = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
+			$spoof = NULL;
+			foreach(['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'HTTP_X_CLIENT_IP', 'HTTP_X_CLUSTER_CLIENT_IP'] as $ind)
+			{
+				if ( ! isset($_SERVER[$ind]) or is_null($_SERVER[$ind]) or empty($_SERVER[$ind])) continue;
+
+				$spoof = $_SERVER[$ind];
+				sscanf($spoof, '%[^,]', $spoof);
+
+				if ( ! filter_var($spoof, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
+				{
+					$spoof = NULL;
+					continue;
+				}
+
+				break;
+			}
+			is_null($spoof) or $ip_address = $spoof;
+
+			define('REQUEST_PUBLICIP', $ip_address);
+		}
+
+		defined('REQUEST_USERAGENT') or define('REQUEST_USERAGENT', isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : (ISCOMMAND ? 'command' : 'Not Found'));
 	}
 
 	/**
@@ -3233,11 +3295,25 @@ class JApi
 	}
 
 	/**
+	 * _init_loads_file()
+	 */
+	protected function _init_loads_file ($dir = NULL)
+	{
+		$_load_file = $dir . '/load.php';
+		$_load_file = $this->filter_apply('JApi/Load/File', $_load_file, $dir);
+
+		if ( ! file_exists($_load_file)) return;
+
+		@include_once ($_load_file);
+	}
+
+	/**
 	 * _init_install()
 	 */
-	protected function _init_install ($dir = NULL)
+	protected function _init_install_for ($for = '', $dir = NULL)
 	{
-		$_install_file = $dir . self::$_file_install;
+		$for = '_file_install' . (empty($for) ? '' : '_') . $for;
+		$_install_file = $dir . self::$$for;
 		if ( ! file_exists($_install_file)) return;
 
 		$_install02_file = dirname($_install_file) . DS . basename($_install_file, '.php') . '-' . na(4) . '.php';
@@ -3248,6 +3324,30 @@ class JApi
 		@include_once ($_install02_file);
 		$this->action_apply('JApi/install/end', $dir, $_install02_file);
 		@rename($_install02_file, $_installed_file);
+	}
+	protected function _init_install ($dir = NULL)
+	{
+		$this->_init_install_for('', $dir);
+	}
+	protected function _init_install_objects ($dir = NULL)
+	{
+		$this->_init_install_for('objects', $dir);
+	}
+	protected function _init_install_tablas ($dir = NULL)
+	{
+		$this->_init_install_for('tablas', $dir);
+	}
+	protected function _init_install_extras ($dir = NULL)
+	{
+		$this->_init_install_for('extras', $dir);
+	}
+	protected function _init_install_updates ($dir = NULL)
+	{
+		$this->_init_install_for('updates', $dir);
+	}
+	protected function _init_install_data ($dir = NULL)
+	{
+		$this->_init_install_for('data', $dir);
 	}
 
 	/**
@@ -3539,20 +3639,25 @@ class JApi
 		$this->_ob_level = ob_get_level();
 		ob_start();
 
-		/** Iniciando las variables _SESSION */
-		session_start();
-
 		/** Definiendo las variables necesarias */
 		$this -> _init_variables ();
+
+		/** Iniciando las variables _SESSION */
+		session_name( self :: $_session_name );
+		if( ! @is_writable(ini_get('session.save_path')) && ini_get('session.save_handler') === 'files')
+		{
+			ini_set('session.save_path', SESION_DIR );
+		}
+		session_start();
 
 		/** Corrigiendo directorio base cuando se ejecuta como comando */
 		ISCOMMAND and chdir(APPPATH);
 
 		/** Añadiendo los directorios de aplicaciones base */
 		$this
-		-> add_app_directory(APPPATH , 25, 'APPPATH' ) // Orden 25 (será leído al inicio, a menos que se ponga otro directorio con menor orden)
-		-> add_app_directory(COREPATH, 50, 'COREPATH') // Orden 50 (será leido al medio, a menos que se ponga otro directorio con mayor orden)
-		-> add_app_directory(JAPIPATH, 75, 'JAPIPATH') // Orden 75 (será leido al final, a menos que se ponga otro directorio con mayor orden)
+		-> add_app_directory(APPPATH , 555, 'APPPATH' ) // Orden 555 (será leído al inicio, a menos que se ponga otro directorio con menor orden)
+		-> add_app_directory(COREPATH, 777, 'COREPATH') // Orden 777 (será leido al medio, a menos que se ponga otro directorio con mayor orden)
+		-> add_app_directory(JAPIPATH, 999, 'JAPIPATH') // Orden 999 (será leido al final, a menos que se ponga otro directorio con mayor orden)
 		;
 
 		/**
@@ -3643,11 +3748,29 @@ class JApi
 		$this -> map_app_directories ([$this, '_init_load_config'], true);
 		$this -> action_apply('JApi/ConfigLoaded');
 
+		/** Completando configuración para iniciar el request y response */
+		$this -> _headers = [];
+		$this -> _rqs_method = url('request_method');
+		$this -> _rqs_uri_inicial = $this -> URI = url('path');
+
+		/**
+		 * Se llama al /load.php
+		 */
+		$this -> action_apply('JApi/SystemLoading/Before', $this -> URI, $this -> _rqs_method, $this);
+		$this -> map_app_directories ([$this, '_init_loads_file'], true);
+		$this -> action_apply('JApi/SystemLoaded');
+
 		/**
 		 * Procesando todos los /install/install.php
 		 * El orden a recorrer es de menor a mayor para que los directorios prioritarios puedan instalar sus requerimientos primero
 		 */
 		$this -> map_app_directories ([$this, '_init_install']);
+		$this -> map_app_directories ([$this, '_init_install_objects']);
+		$this -> map_app_directories ([$this, '_init_install_tablas']);
+		$this -> map_app_directories ([$this, '_init_install_extras']);
+		$this -> map_app_directories ([$this, '_init_install_updates']);
+		$this -> map_app_directories ([$this, '_init_install_data']);
+
 		$this -> action_apply('JApi/Installed');
 
 		/**
@@ -3657,15 +3780,10 @@ class JApi
 		$this -> map_app_directories ([$this, '_init_load_app']);
 		$this -> action_apply('JApi/APPLoaded');
 
-		/** Completando configuración para iniciar el request y response */
-		$this -> _headers = [];
-		$this -> _rqs_method = url('request_method');
-		$this -> _rqs_uri_inicial = $this -> URI = url('path');
-
-		$this -> action_apply ('JApi/set_response_type',    $this -> _response_type, $this);
-		$this -> action_apply ('JApi/set_response_charset', $this -> _response_charset,       $this);
-		$this -> action_apply ('JApi/set_LANG',             $this -> LANG,           $this);
-		$this -> action_apply ('JApi/set_timezone',         $this -> timezone,       $this);
+		$this -> action_apply ('JApi/set_response_type',    $this -> _response_type,    $this);
+		$this -> action_apply ('JApi/set_response_charset', $this -> _response_charset, $this);
+		$this -> action_apply ('JApi/set_LANG',             $this -> LANG,              $this);
+		$this -> action_apply ('JApi/set_timezone',         $this -> timezone,          $this);
 
 		$this -> action_apply('JApi/Config/Complete');
 

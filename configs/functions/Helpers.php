@@ -430,7 +430,7 @@ if ( ! function_exists('js_compressor'))
 
 				if (preg_match('/^\/\/ Error/i', $temp))
 				{
-					throw new Exception($temp, 0, ['code' => (string)$content]);
+					throw new Exception($temp);
 				}
 
 				if ($temp === FALSE or empty($temp))
@@ -512,7 +512,7 @@ if ( ! function_exists('css_compressor'))
 
 				if (preg_match('/^\/\/ Error/i', $temp))
 				{
-					throw new Exception($temp, 0, ['code' => (string)$content]);
+					throw new Exception($temp);
 				}
 
 				if ($temp === FALSE or empty($temp))
