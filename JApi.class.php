@@ -226,13 +226,13 @@ class JApi
 	 * $timezone
 	 * Variable que almacena la zona horaria
 	 */
-	protected $timezone;
+	protected $timezone = 'America/Lima';
 
 	/**
 	 * $utc
 	 * Variable que almacena el utc del usuario
 	 */
-	protected $utc;
+	protected $utc = '-05:00';
 
 	/**
 	 * $_cache_instances
