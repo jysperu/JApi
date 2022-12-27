@@ -41,7 +41,7 @@ if ( ! class_exists('url_part'))
 			return call_user_func($this->string_callback, $this->datos, $this);
 		}
 
-		public function __debugInfo()
+		public function __debugInfo():array
 		{
 			$data = [];
 

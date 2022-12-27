@@ -334,7 +334,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 		return $this;
 	}
 
-	public function count()
+	public function count():int
 	{
 		return count($this->data);
 	}
@@ -468,7 +468,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 *
 	 * @return Array
 	 */
-	public function __debugInfo()
+	public function __debugInfo():array
 	{
 		return [
 			'class'  => get_class(),
@@ -489,7 +489,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 * @param string
 	 * @return bool
 	 */
-	public function offsetExists ($offset)
+	public function offsetExists (mixed $offset):bool
 	{
 		return isset($this->data_result[$offset]);
 	}
@@ -500,7 +500,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 * @param string
 	 * @return Mixed
 	 */
-	public function offsetGet ($offset)
+	public function offsetGet (mixed $offset):mixed
 	{
 		return $this->data_result[$offset];
 	}
@@ -512,7 +512,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 * @param mixed
 	 * @return void
 	 */
-	public function offsetSet ($offset, $value)
+	public function offsetSet (mixed $offset, mixed $value):void
 	{
 		$this->data_result[$offset] = $value;
 	}
@@ -523,7 +523,7 @@ CREATE TEMPORARY TABLE `' . $table . '`
 	 * @param string
 	 * @return void
 	 */
-	public function offsetUnset ($offset)
+	public function offsetUnset (mixed $offset):void
 	{
 		unset ($this->data_result[$offset]);
 	}

@@ -333,7 +333,7 @@ class JArray extends ArrayObject
 	/**
 	 * offsetExists ()
 	 */
-	public function offsetExists ($index)
+	public function offsetExists (mixed $index):bool
 	{
 		$this->_callback_exec('before_exists', $index);
 
@@ -348,7 +348,7 @@ class JArray extends ArrayObject
 	/**
 	 * offsetExists ()
 	 */
-	public function offsetGet ($index)
+	public function offsetGet (mixed $index):mixed
 	{
 		$context = $this->_default_context;
 
@@ -377,7 +377,7 @@ class JArray extends ArrayObject
 	/**
 	 * offsetSet ()
 	 */
-	public function offsetSet ($index, $newval)
+	public function offsetSet (mixed $index, mixed $newval):void
 	{
 		$gcc = get_called_class();
 
@@ -399,13 +399,13 @@ class JArray extends ArrayObject
 		if ($method = '_after_set' and method_exists($this, $method))
 			$this -> $method ($newval, $index);
 
-		return $return; // void
+		return; // void
 	}
 
 	/**
 	 * offsetUnset ()
 	 */
-	public function offsetUnset ($index)
+	public function offsetUnset (mixed $index):void
 	{
 		$this->_callback_exec('before_unset',           $index);
 		$this->_callback_exec('before_unset_' . $index, $index);
@@ -416,7 +416,7 @@ class JArray extends ArrayObject
 		$this->_callback_exec('unset_' . $index, $index);
 		$this->_callback_exec(__FUNCTION__,      $index);
 
-		return $return; // void
+		return; // void
 	}
 
 	//////////////////////////////////////
